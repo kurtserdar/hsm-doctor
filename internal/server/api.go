@@ -111,6 +111,7 @@ func (s *Server) handleScan(w http.ResponseWriter, r *http.Request) {
 	res := policy.Evaluate(inv, s.rules, time.Now())
 	rep := report.New(s.version, inv, res)
 	s.persistScan(rep, "local")
+	s.metrics.observeScan(rep)
 	writeJSON(w, http.StatusOK, rep)
 }
 

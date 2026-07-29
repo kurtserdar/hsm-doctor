@@ -249,6 +249,26 @@ func TestAPIEndpoints(t *testing.T) {
 		}
 	})
 
+	t.Run("prometheus metrics", func(t *testing.T) {
+		// Ensure at least one scan has been observed.
+		getJSON(t, fmt.Sprintf("%s/api/v1/slots/%d/scan", ts.URL, slot), http.StatusOK)
+
+		body := getJSONRaw(t, ts.URL+"/metrics")
+		for _, want := range []string{
+			"hsmdoctor_health_score{",
+			`hsmdoctor_findings{`,
+			`severity="critical"`,
+			`hsmdoctor_objects{`,
+			"hsmdoctor_scans_total{",
+			"hsmdoctor_build_info{",
+			"hsmdoctor_certificate_min_days_to_expiry{",
+		} {
+			if !bytes.Contains([]byte(body), []byte(want)) {
+				t.Errorf("metrics output missing %q", want)
+			}
+		}
+	})
+
 	t.Run("spa fallback", func(t *testing.T) {
 		resp, err := http.Get(ts.URL + "/some/client/route")
 		if err != nil {

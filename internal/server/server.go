@@ -24,7 +24,8 @@ type Server struct {
 	rules   *policy.Config
 	version string
 	// store persists scan history and drift events; nil disables persistence.
-	store store.Store
+	store   store.Store
+	metrics *metrics
 }
 
 // New loads the PKCS#11 module and prepares the server. A nil store
@@ -34,7 +35,10 @@ func New(modulePath, pin string, rules *policy.Config, version string, st store.
 	if err != nil {
 		return nil, err
 	}
-	return &Server{client: client, pin: pin, rules: rules, version: version, store: st}, nil
+	return &Server{
+		client: client, pin: pin, rules: rules, version: version,
+		store: st, metrics: newMetrics(version),
+	}, nil
 }
 
 // Close releases the PKCS#11 module and the store.
@@ -52,6 +56,7 @@ func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	s.registerAPI(mux)
 	s.registerHistoryAPI(mux)
+	mux.Handle("GET /metrics", s.metrics.handler())
 	registerUI(mux)
 	return logRequests(mux)
 }
