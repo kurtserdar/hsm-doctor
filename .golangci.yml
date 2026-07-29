@@ -9,3 +9,5 @@ linters:
         - fmt.Fprint
         - fmt.Fprintf
         - fmt.Fprintln
+        # Closing an HTTP response body in deferred test cleanup.
+        - (io.ReadCloser).Close
