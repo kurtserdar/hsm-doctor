@@ -1,0 +1,113 @@
+# HSM Doctor default security posture rules.
+#
+# Customize by copying this file and passing it to scan via --rules.
+# Every field under "match" must hold for a rule to fire (logical AND).
+# See docs/rules.md for the full condition reference.
+
+scoring:
+  critical: 25
+  high: 10
+  medium: 5
+  low: 2
+
+rules:
+  - id: HSM-001
+    title: Extractable private key
+    severity: critical
+    description: >-
+      A private key with CKA_EXTRACTABLE=true can be wrapped and exported
+      from the HSM. Production signing and decryption keys should never be
+      extractable.
+    match:
+      class: private-key
+      extractable: true
+
+  - id: HSM-002
+    title: Private key not marked sensitive
+    severity: critical
+    description: >-
+      A private key with CKA_SENSITIVE=false may reveal key material through
+      C_GetAttributeValue on some implementations.
+    match:
+      class: private-key
+      sensitive: false
+
+  - id: HSM-003
+    title: Weak RSA key
+    severity: high
+    description: >-
+      RSA keys shorter than 2048 bits are considered broken for new use and
+      are disallowed by NIST SP 800-57 since 2013.
+    match:
+      class: private-key
+      key_type: RSA
+      key_size_lt: 2048
+
+  - id: HSM-004
+    title: Expired certificate
+    severity: high
+    description: The certificate's validity period has ended.
+    match:
+      class: certificate
+      cert_expired: true
+
+  - id: HSM-005
+    title: Certificate expiring soon
+    severity: medium
+    description: The certificate expires within the next 30 days.
+    match:
+      class: certificate
+      cert_expires_within_days: 30
+
+  - id: HSM-006
+    title: Duplicate object label
+    severity: medium
+    description: >-
+      Multiple objects of the same class share a CKA_LABEL. Applications
+      selecting keys by label may silently pick the wrong object.
+    match:
+      duplicate_label: true
+
+  - id: HSM-007
+    title: Orphan private key
+    severity: medium
+    description: >-
+      No certificate or public key shares this private key's CKA_ID. The key
+      may be leftover from an incomplete rotation or deletion.
+    match:
+      class: private-key
+      orphan: true
+
+  - id: HSM-008
+    title: Orphan certificate
+    severity: low
+    description: >-
+      No private key shares this certificate's CKA_ID. The certificate may
+      be stale and safe to remove.
+    match:
+      class: certificate
+      orphan: true
+
+  - id: HSM-009
+    title: Signing key can also decrypt
+    severity: medium
+    description: >-
+      A key that both signs and decrypts mixes usage roles, widening the
+      impact of a compromise and enabling cross-protocol attacks.
+    match:
+      class: private-key
+      sign: true
+      decrypt: true
+
+  - id: HSM-010
+    title: Weak mechanisms enabled
+    severity: medium
+    description: >-
+      The token advertises legacy mechanisms (SHA-1 or MD5 signatures,
+      single DES). Disable them where the HSM configuration allows it.
+    match:
+      mechanism_any_of:
+        - CKM_SHA1_RSA_PKCS
+        - CKM_MD5_RSA_PKCS
+        - CKM_DES_CBC
+        - CKM_DES_ECB
