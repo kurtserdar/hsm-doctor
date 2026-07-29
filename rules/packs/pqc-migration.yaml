@@ -1,0 +1,61 @@
+# Post-quantum migration advisories. Mostly informational: these findings
+# do not lower the health score, they chart the migration work ahead.
+pack:
+  name: pqc-migration
+  description: >-
+    Post-quantum migration advisories: missing PQC capability and inventory
+    exposed to a future quantum adversary. Informational by design — see
+    also "hsmdoctor pqc" for the full readiness assessment.
+
+rules:
+  - id: PQCM-001
+    title: No quantum-safe signature mechanism available
+    severity: info
+    description: >-
+      The token advertises no ML-DSA (FIPS 204) mechanisms; quantum-safe
+      signing is not possible on this device yet.
+    match:
+      mechanism_missing: [CKM_ML_DSA, CKM_ML_DSA_KEY_PAIR_GEN]
+
+  - id: PQCM-002
+    title: No quantum-safe key-encapsulation mechanism available
+    severity: info
+    description: >-
+      The token advertises no ML-KEM (FIPS 203) mechanisms; quantum-safe
+      key establishment is not possible on this device yet.
+    match:
+      mechanism_missing: [CKM_ML_KEM, CKM_ML_KEM_KEY_PAIR_GEN]
+
+  - id: PQCM-003
+    title: RSA decryption key exposed to harvest-now-decrypt-later
+    severity: info
+    description: >-
+      Traffic recorded today can be decrypted once a cryptographically
+      relevant quantum computer exists. Decryption keys are the most urgent
+      part of any migration plan.
+    match:
+      class: private-key
+      key_type: RSA
+      decrypt: true
+
+  - id: PQCM-004
+    title: RSA unwrapping key exposed to harvest-now-decrypt-later
+    severity: info
+    description: >-
+      Keys wrapped under RSA today can be recovered by a future quantum
+      adversary along with everything they protect.
+    match:
+      class: private-key
+      key_type: RSA
+      unwrap: true
+
+  - id: PQCM-005
+    title: EC key-agreement key exposed to harvest-now-decrypt-later
+    severity: info
+    description: >-
+      ECDH exchanges recorded today are recoverable by a future quantum
+      adversary.
+    match:
+      class: private-key
+      key_type: EC
+      derive: true

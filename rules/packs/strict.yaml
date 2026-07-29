@@ -1,0 +1,106 @@
+# Opinionated attribute hygiene for high-assurance deployments.
+pack:
+  name: strict
+  description: >-
+    Strict attribute hygiene for high-assurance deployments: key lifecycle
+    guarantees, single-purpose keys and immutable objects. Expect findings
+    on tokens that were not provisioned with these goals in mind.
+
+rules:
+  - id: STRICT-001
+    title: Private key not marked sensitive
+    severity: critical
+    match:
+      class: private-key
+      sensitive: false
+
+  - id: STRICT-002
+    title: Extractable private key
+    severity: critical
+    match:
+      class: private-key
+      extractable: true
+
+  - id: STRICT-003
+    title: Private key was not always sensitive
+    severity: medium
+    description: >-
+      CKA_ALWAYS_SENSITIVE=false means the key material may have existed
+      outside HSM protection at some point in its life.
+    match:
+      class: private-key
+      always_sensitive: false
+
+  - id: STRICT-004
+    title: Private key was extractable at some point
+    severity: medium
+    description: >-
+      CKA_NEVER_EXTRACTABLE=false means the key could have been wrapped out
+      earlier, even if it is not extractable now.
+    match:
+      class: private-key
+      never_extractable: false
+
+  - id: STRICT-005
+    title: Modifiable private key
+    severity: low
+    description: Immutable objects prevent silent attribute drift.
+    match:
+      class: private-key
+      modifiable: true
+
+  - id: STRICT-006
+    title: Signing key can also decrypt
+    severity: medium
+    match:
+      class: private-key
+      sign: true
+      decrypt: true
+
+  - id: STRICT-007
+    title: Signing key can also unwrap
+    severity: medium
+    match:
+      class: private-key
+      sign: true
+      unwrap: true
+
+  - id: STRICT-008
+    title: Extractable secret key
+    severity: high
+    match:
+      class: secret-key
+      extractable: true
+
+  - id: STRICT-009
+    title: Secret key allowed to do everything
+    severity: medium
+    description: >-
+      A key that encrypts, decrypts, wraps and unwraps mixes data protection
+      with key management duties.
+    match:
+      class: secret-key
+      encrypt: true
+      decrypt: true
+      wrap: true
+      unwrap: true
+
+  - id: STRICT-010
+    title: Duplicate object label
+    severity: medium
+    match:
+      duplicate_label: true
+
+  - id: STRICT-011
+    title: Orphan private key
+    severity: medium
+    match:
+      class: private-key
+      orphan: true
+
+  - id: STRICT-012
+    title: Orphan certificate
+    severity: low
+    match:
+      class: certificate
+      orphan: true

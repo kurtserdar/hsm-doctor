@@ -1,0 +1,102 @@
+# NIST-aligned key strength and algorithm transition rules.
+pack:
+  name: nist
+  description: >-
+    Key-strength and algorithm rules aligned with NIST SP 800-57 Part 1 and
+    the SP 800-131A transition schedule. Guidance only — passing this pack
+    is not a compliance or certification statement.
+
+rules:
+  - id: NIST-001
+    title: RSA key below 2048 bits
+    severity: high
+    description: >-
+      RSA moduli under 2048 bits provide less than 112 bits of security and
+      have been disallowed by SP 800-131A since 2013.
+    match:
+      class: private-key
+      key_type: RSA
+      key_size_lt: 2048
+
+  - id: NIST-002
+    title: RSA key below 3072 bits
+    severity: low
+    description: >-
+      RSA-2048 provides ~112 bits of security, approved through 2030.
+      Plan migration to at least RSA-3072 (128-bit strength) for keys that
+      must remain in service beyond that.
+    match:
+      class: private-key
+      key_type: RSA
+      key_size_lt: 3072
+
+  - id: NIST-003
+    title: EC key below 256 bits
+    severity: high
+    description: >-
+      Elliptic curves under 256 bits provide less than 128 bits of security;
+      SP 800-131A disallows curves under 224 bits and 224-255 bit curves are
+      approaching end of life.
+    match:
+      class: private-key
+      key_type: EC
+      key_size_lt: 256
+
+  - id: NIST-004
+    title: Legacy DSA or DH key present
+    severity: medium
+    description: >-
+      FIPS 186-5 removed DSA signature generation approval; finite-field DH
+      keys deserve review under SP 800-56A revisions.
+    match:
+      class: private-key
+      key_type_in: [DSA, DH]
+
+  - id: NIST-005
+    title: TDEA (3DES) or DES key present
+    severity: high
+    description: >-
+      SP 800-131A disallows TDEA encryption after 2023; single DES has been
+      disallowed for decades.
+    match:
+      key_type_in: [DES, DES2, DES3]
+
+  - id: NIST-006
+    title: Single-DES mechanisms enabled
+    severity: high
+    description: The token still advertises single-DES mechanisms.
+    match:
+      mechanism_any_of:
+        - CKM_DES_KEY_GEN
+        - CKM_DES_CBC
+        - CKM_DES_ECB
+
+  - id: NIST-007
+    title: SHA-1 signature mechanisms enabled
+    severity: medium
+    description: >-
+      SHA-1 is disallowed for digital signature generation
+      (SP 800-131A); disable these mechanisms where configuration allows.
+    match:
+      mechanism_any_of:
+        - CKM_SHA1_RSA_PKCS
+        - CKM_SHA1_RSA_PKCS_PSS
+        - CKM_ECDSA_SHA1
+        - CKM_DSA_SHA1
+
+  - id: NIST-008
+    title: MD5 mechanisms enabled
+    severity: high
+    description: MD5 is cryptographically broken.
+    match:
+      mechanism_any_of:
+        - CKM_MD5_RSA_PKCS
+        - CKM_MD5_HMAC
+
+  - id: NIST-009
+    title: Certificate signed with SHA-1 or MD5
+    severity: high
+    description: The stored certificate carries a broken signature algorithm.
+    match:
+      class: certificate
+      cert_sig_alg_in: [SHA1-RSA, MD5-RSA, ECDSA-SHA1, DSA-SHA1]

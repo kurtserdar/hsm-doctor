@@ -1,0 +1,64 @@
+# CA/Browser Forum Baseline Requirements inspired rules for tokens hosting
+# TLS PKI material.
+pack:
+  name: cabf
+  description: >-
+    Rules inspired by the CA/Browser Forum TLS Baseline Requirements for
+    tokens that hold CA or subscriber TLS material. Guidance only — passing
+    this pack is not a compliance or certification statement.
+
+rules:
+  - id: CABF-001
+    title: Subscriber certificate valid longer than 398 days
+    severity: medium
+    description: >-
+      TLS subscriber certificates issued after 2020-09-01 must not exceed
+      398 days of validity; browsers reject longer ones.
+    match:
+      class: certificate
+      cert_is_ca: false
+      cert_validity_days_gt: 398
+
+  - id: CABF-002
+    title: Certificate signed with SHA-1 or MD5
+    severity: high
+    description: SHA-1 TLS certificates have been forbidden since 2016.
+    match:
+      class: certificate
+      cert_sig_alg_in: [SHA1-RSA, MD5-RSA, ECDSA-SHA1]
+
+  - id: CABF-003
+    title: RSA key below 2048 bits
+    severity: high
+    description: The Baseline Requirements set 2048 bits as the RSA minimum.
+    match:
+      class: private-key
+      key_type: RSA
+      key_size_lt: 2048
+
+  - id: CABF-004
+    title: EC key on a curve outside P-256/P-384/P-521
+    severity: medium
+    description: >-
+      The Baseline Requirements only allow the NIST P-256, P-384 and P-521
+      curves for TLS hierarchies.
+    match:
+      class: private-key
+      key_type: EC
+      curve_not_in: [P-256, P-384, P-521]
+
+  - id: CABF-005
+    title: Expired certificate
+    severity: high
+    description: The certificate's validity period has ended.
+    match:
+      class: certificate
+      cert_expired: true
+
+  - id: CABF-006
+    title: Certificate expiring within 30 days
+    severity: medium
+    description: Renew before browsers and clients start failing.
+    match:
+      class: certificate
+      cert_expires_within_days: 30

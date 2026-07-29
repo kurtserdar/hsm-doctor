@@ -62,8 +62,8 @@ func (r *Report) JSON(w io.Writer) error {
 	return enc.Encode(r)
 }
 
-// severities in display order.
-var severities = []policy.Severity{policy.SevCritical, policy.SevHigh, policy.SevMedium, policy.SevLow}
+// severities in display order; info findings are advisory and score-neutral.
+var severities = []policy.Severity{policy.SevCritical, policy.SevHigh, policy.SevMedium, policy.SevLow, policy.SevInfo}
 
 // Text writes the human-readable console report.
 func (r *Report) Text(w io.Writer) error {
@@ -112,7 +112,7 @@ func (r *Report) Text(w io.Writer) error {
 	}
 
 	c := r.Counts
-	fmt.Fprintln(w, "INFO")
+	fmt.Fprintln(w, "SUMMARY")
 	fmt.Fprintf(w, "  Private keys:   %d\n", c.PrivateKeys)
 	fmt.Fprintf(w, "  Public keys:    %d\n", c.PublicKeys)
 	fmt.Fprintf(w, "  Secret keys:    %d\n", c.SecretKeys)

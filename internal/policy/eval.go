@@ -103,7 +103,7 @@ func Evaluate(inv *inventory.Inventory, cfg *Config, now time.Time) *Result {
 
 	for i := range cfg.Rules {
 		rule := &cfg.Rules[i]
-		if len(rule.Match.MechanismAnyOf) > 0 {
+		if rule.Match.tokenScoped() {
 			evalMechanismRule(inv, rule, res)
 			continue
 		}
@@ -141,20 +141,38 @@ func evalMechanismRule(inv *inventory.Inventory, rule *Rule, res *Result) {
 	for _, m := range inv.Mechanisms {
 		available[m.Name] = true
 	}
-	var hits []string
-	for _, name := range rule.Match.MechanismAnyOf {
+
+	if len(rule.Match.MechanismAnyOf) > 0 {
+		var hits []string
+		for _, name := range rule.Match.MechanismAnyOf {
+			if available[name] {
+				hits = append(hits, name)
+			}
+		}
+		if len(hits) > 0 {
+			res.Findings = append(res.Findings, Finding{
+				RuleID:   rule.ID,
+				Title:    rule.Title,
+				Severity: rule.Severity,
+				Detail:   "token advertises: " + strings.Join(hits, ", "),
+			})
+		}
+		return
+	}
+
+	// mechanism_missing: a capability gap. Fires only when the token
+	// advertises none of the listed mechanisms.
+	for _, name := range rule.Match.MechanismMissing {
 		if available[name] {
-			hits = append(hits, name)
+			return
 		}
 	}
-	if len(hits) > 0 {
-		res.Findings = append(res.Findings, Finding{
-			RuleID:   rule.ID,
-			Title:    rule.Title,
-			Severity: rule.Severity,
-			Detail:   "token advertises: " + strings.Join(hits, ", "),
-		})
-	}
+	res.Findings = append(res.Findings, Finding{
+		RuleID:   rule.ID,
+		Title:    rule.Title,
+		Severity: rule.Severity,
+		Detail:   "token advertises none of: " + strings.Join(rule.Match.MechanismMissing, ", "),
+	})
 }
 
 // matchObject checks every set condition field against one object. The
@@ -169,6 +187,24 @@ func matchObject(rule *Rule, o *inventory.Object, f *facts) (bool, string) {
 	if c.KeyType != "" && o.KeyType != c.KeyType {
 		return false, ""
 	}
+	if len(c.KeyTypeIn) > 0 {
+		if o.KeyType == "" || !contains(c.KeyTypeIn, o.KeyType) {
+			return false, ""
+		}
+		details = append(details, "key type "+o.KeyType)
+	}
+	if len(c.CurveIn) > 0 {
+		if o.Curve == "" || !contains(c.CurveIn, o.Curve) {
+			return false, ""
+		}
+		details = append(details, "curve "+o.Curve)
+	}
+	if len(c.CurveNotIn) > 0 {
+		if o.Curve == "" || contains(c.CurveNotIn, o.Curve) {
+			return false, ""
+		}
+		details = append(details, fmt.Sprintf("curve %s outside the allowed set", o.Curve))
+	}
 	for _, b := range []struct {
 		cond *bool
 		attr *bool
@@ -176,8 +212,14 @@ func matchObject(rule *Rule, o *inventory.Object, f *facts) (bool, string) {
 	}{
 		{c.Extractable, o.Extractable, "CKA_EXTRACTABLE"},
 		{c.Sensitive, o.Sensitive, "CKA_SENSITIVE"},
+		{c.AlwaysSensitive, o.AlwaysSensitive, "CKA_ALWAYS_SENSITIVE"},
+		{c.NeverExtractable, o.NeverExtractable, "CKA_NEVER_EXTRACTABLE"},
+		{c.Modifiable, o.Modifiable, "CKA_MODIFIABLE"},
 		{c.Sign, o.Sign, "CKA_SIGN"},
+		{c.Verify, o.Verify, "CKA_VERIFY"},
+		{c.Encrypt, o.Encrypt, "CKA_ENCRYPT"},
 		{c.Decrypt, o.Decrypt, "CKA_DECRYPT"},
+		{c.Derive, o.Derive, "CKA_DERIVE"},
 		{c.Wrap, o.Wrap, "CKA_WRAP"},
 		{c.Unwrap, o.Unwrap, "CKA_UNWRAP"},
 	} {
@@ -217,6 +259,31 @@ func matchObject(rule *Rule, o *inventory.Object, f *facts) (bool, string) {
 		details = append(details, fmt.Sprintf("expires %s (%d days left)",
 			o.Certificate.NotAfter.Format("2006-01-02"), int(left.Hours()/24)))
 	}
+	if c.CertValidityDaysGT > 0 {
+		if o.Certificate == nil {
+			return false, ""
+		}
+		validity := o.Certificate.NotAfter.Sub(o.Certificate.NotBefore)
+		if validity <= time.Duration(c.CertValidityDaysGT)*24*time.Hour {
+			return false, ""
+		}
+		details = append(details, fmt.Sprintf("validity %d days > %d",
+			int(validity.Hours()/24), c.CertValidityDaysGT))
+	}
+	if len(c.CertSigAlgIn) > 0 {
+		if o.Certificate == nil || !contains(c.CertSigAlgIn, o.Certificate.SignatureAlgorithm) {
+			return false, ""
+		}
+		details = append(details, "signature algorithm "+o.Certificate.SignatureAlgorithm)
+	}
+	if c.CertIsCA != nil {
+		if o.Certificate == nil || o.Certificate.IsCA != *c.CertIsCA {
+			return false, ""
+		}
+		if *c.CertIsCA {
+			details = append(details, "CA certificate")
+		}
+	}
 	if c.DuplicateLabel != nil {
 		if f.isDuplicateLabel(o) != *c.DuplicateLabel {
 			return false, ""
@@ -234,6 +301,15 @@ func matchObject(rule *Rule, o *inventory.Object, f *facts) (bool, string) {
 		}
 	}
 	return true, strings.Join(details, "; ")
+}
+
+func contains(list []string, v string) bool {
+	for _, item := range list {
+		if item == v {
+			return true
+		}
+	}
+	return false
 }
 
 // objectRef renders a short human-readable object reference.

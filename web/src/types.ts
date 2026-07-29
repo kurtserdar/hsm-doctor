@@ -81,7 +81,7 @@ export interface Inventory {
   objects: InventoryObject[] | null;
 }
 
-export type Severity = "critical" | "high" | "medium" | "low";
+export type Severity = "critical" | "high" | "medium" | "low" | "info";
 
 export interface Finding {
   rule_id: string;

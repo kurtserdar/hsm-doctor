@@ -5,7 +5,7 @@ package version
 // -ldflags "-X github.com/kurtserdar/hsm-doctor/internal/version.Version=..."
 var (
 	// Version is the semantic version of the build.
-	Version = "0.4.0-dev"
+	Version = "0.5.0-dev"
 	// Commit is the git commit hash the binary was built from.
 	Commit = "unknown"
 )
