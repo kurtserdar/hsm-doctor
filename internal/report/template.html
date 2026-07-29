@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HSM Doctor report — {{if .Inventory.Slot.Token}}{{.Inventory.Slot.Token.Label}}{{else}}slot {{.Inventory.Slot.ID}}{{end}}</title>
+<style>
+  :root {
+    --fg: #1a202c; --muted: #64748b; --bg: #f8fafc; --card: #ffffff;
+    --border: #e2e8f0;
+    --critical: #b91c1c; --high: #c2410c; --medium: #a16207; --low: #475569;
+    --good: #15803d; --warn: #a16207; --bad: #b91c1c;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+         color: var(--fg); background: var(--bg); }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+  header { display: flex; align-items: baseline; justify-content: space-between;
+           flex-wrap: wrap; gap: .5rem; margin-bottom: 1.5rem; }
+  header h1 { font-size: 1.35rem; margin: 0; }
+  header .meta { color: var(--muted); font-size: .85rem; }
+  .card { background: var(--card); border: 1px solid var(--border);
+          border-radius: 8px; padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+  dl { margin: 0; } dt { font-size: .75rem; text-transform: uppercase;
+       letter-spacing: .05em; color: var(--muted); }
+  dd { margin: 0 0 .75rem; font-weight: 500; overflow-wrap: anywhere; }
+  .score { font-size: 2.6rem; font-weight: 700; line-height: 1; }
+  .score.good { color: var(--good); } .score.warn { color: var(--warn); } .score.bad { color: var(--bad); }
+  .score-label { color: var(--muted); font-size: .85rem; }
+  h2 { font-size: 1.05rem; margin: 2rem 0 .75rem; }
+  table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+  th, td { text-align: left; padding: .5rem .65rem; border-bottom: 1px solid var(--border);
+           vertical-align: top; }
+  th { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  .tablebox { overflow-x: auto; }
+  .badge { display: inline-block; padding: .1rem .5rem; border-radius: 999px;
+           font-size: .72rem; font-weight: 600; text-transform: uppercase; color: #fff; }
+  .badge.critical { background: var(--critical); } .badge.high { background: var(--high); }
+  .badge.medium { background: var(--medium); } .badge.low { background: var(--low); }
+  .muted { color: var(--muted); }
+  code { background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+         padding: 0 .3rem; font-size: .85em; }
+  details summary { cursor: pointer; color: var(--muted); }
+  footer { margin-top: 3rem; color: var(--muted); font-size: .8rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>HSM Doctor — scan report</h1>
+    <div class="meta">generated {{datetime .GeneratedAt}} by hsmdoctor {{.Version}}</div>
+  </header>
+
+  <div class="card grid">
+    <div>
+      <div class="score {{.ScoreClass}}">{{.Score}}<span class="score-label">/100</span></div>
+      <div class="score-label">health score</div>
+    </div>
+    <dl>
+      <dt>Module</dt><dd>{{.Inventory.Module.Description}} ({{.Inventory.Module.Manufacturer}} {{.Inventory.Module.LibraryVersion}})</dd>
+      <dt>Path</dt><dd><code>{{.Inventory.Module.Path}}</code></dd>
+    </dl>
+    <dl>
+      {{with .Inventory.Slot.Token}}
+      <dt>Token</dt><dd>{{.Label}}</dd>
+      <dt>Device</dt><dd>{{.Manufacturer}} {{.Model}} · serial {{.SerialNumber}} · fw {{.FirmwareVersion}}</dd>
+      {{end}}
+      <dt>Slot / scanned</dt><dd>{{.Inventory.Slot.ID}} · {{datetime .Inventory.ScannedAt}}{{if not .Inventory.LoggedIn}} · <strong>no login — private objects not visible</strong>{{end}}</dd>
+    </dl>
+  </div>
+
+  <div class="card grid">
+    <dl><dt>Private keys</dt><dd>{{.Counts.PrivateKeys}}</dd></dl>
+    <dl><dt>Public keys</dt><dd>{{.Counts.PublicKeys}}</dd></dl>
+    <dl><dt>Secret keys</dt><dd>{{.Counts.SecretKeys}}</dd></dl>
+    <dl><dt>Certificates</dt><dd>{{.Counts.Certificates}}</dd></dl>
+    <dl><dt>Mechanisms</dt><dd>{{len .Inventory.Mechanisms}}</dd></dl>
+    <dl><dt>Findings</dt><dd>{{len .Findings}}</dd></dl>
+  </div>
+
+  <h2>Findings</h2>
+  {{if not .Findings}}<div class="card">No findings — every object passed the rule set.</div>{{end}}
+  {{range .SevGroups}}
+  <div class="card">
+    <div class="tablebox">
+    <table>
+      <thead><tr><th style="width:7rem">Severity</th><th style="width:6rem">Rule</th><th>Finding</th><th>Object / detail</th></tr></thead>
+      <tbody>
+      {{$sev := .Severity}}
+      {{range .Findings}}
+        <tr>
+          <td><span class="badge {{$sev}}">{{$sev}}</span></td>
+          <td><code>{{.RuleID}}</code></td>
+          <td>{{.Title}}</td>
+          <td>{{if .Object}}{{.Object}}{{end}}{{if .Detail}}<div class="muted">{{.Detail}}</div>{{end}}</td>
+        </tr>
+      {{end}}
+      </tbody>
+    </table>
+    </div>
+  </div>
+  {{end}}
+
+  <h2>Objects</h2>
+  <div class="card">
+    <div class="tablebox">
+    <table>
+      <thead><tr><th>Class</th><th>Label</th><th>ID</th><th>Type</th><th>Size</th><th>Flags</th><th>Certificate</th></tr></thead>
+      <tbody>
+      {{range .Inventory.Objects}}
+        <tr>
+          <td>{{.Class}}</td>
+          <td>{{.Label}}</td>
+          <td><code>{{.ID}}</code></td>
+          <td>{{.KeyType}}{{if .Curve}} {{.Curve}}{{end}}</td>
+          <td>{{if .KeyBits}}{{.KeyBits}}{{end}}</td>
+          <td class="muted">
+            {{if .Sensitive}}{{if not (deref .Sensitive)}}sensitive=false {{end}}{{end -}}
+            {{if .Extractable}}{{if deref .Extractable}}extractable {{end}}{{end -}}
+            {{if .Sign}}{{if deref .Sign}}sign {{end}}{{end -}}
+            {{if .Decrypt}}{{if deref .Decrypt}}decrypt {{end}}{{end -}}
+            {{if .Wrap}}{{if deref .Wrap}}wrap {{end}}{{end -}}
+            {{if .Unwrap}}{{if deref .Unwrap}}unwrap {{end}}{{end}}
+          </td>
+          <td>{{with .Certificate}}{{.Subject}}<div class="muted">expires {{date .NotAfter}}</div>{{end}}</td>
+        </tr>
+      {{end}}
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <h2>Mechanisms</h2>
+  <div class="card">
+    <details>
+      <summary>{{len .Inventory.Mechanisms}} mechanisms advertised by the token</summary>
+      <div class="tablebox">
+      <table>
+        <thead><tr><th>Name</th><th>Key size</th><th>Capabilities</th></tr></thead>
+        <tbody>
+        {{range .Inventory.Mechanisms}}
+          <tr>
+            <td><code>{{.Name}}</code></td>
+            <td>{{if or .MinKeySize .MaxKeySize}}{{.MinKeySize}}–{{.MaxKeySize}}{{end}}</td>
+            <td class="muted">{{range $i, $f := .Flags}}{{if $i}}, {{end}}{{$f}}{{end}}</td>
+          </tr>
+        {{end}}
+        </tbody>
+      </table>
+      </div>
+    </details>
+  </div>
+
+  <footer>Generated by <a href="https://github.com/kurtserdar/hsm-doctor">HSM Doctor</a> — metadata-only scan; no key material was read.</footer>
+</div>
+</body>
+</html>
