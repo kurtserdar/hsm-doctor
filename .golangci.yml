@@ -11,3 +11,6 @@ linters:
         - fmt.Fprintln
         # Closing an HTTP response body in deferred test cleanup.
         - (io.ReadCloser).Close
+        # Deferred cleanup of read-only query results and test databases.
+        - (*database/sql.Rows).Close
+        - (*github.com/kurtserdar/hsm-doctor/internal/store.DB).Close

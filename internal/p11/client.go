@@ -12,6 +12,11 @@ import (
 type Client struct {
 	ctx  *pkcs11.Ctx
 	path string
+	// finalize records whether this client performed C_Initialize. When the
+	// library was already initialized by another client in this process,
+	// closing must NOT finalize: the shared Cryptoki state belongs to the
+	// initializing owner and finalizing it would kill their sessions.
+	finalize bool
 }
 
 // Open loads and initializes the PKCS#11 module at the given path.
@@ -20,6 +25,7 @@ func Open(path string) (*Client, error) {
 	if ctx == nil {
 		return nil, fmt.Errorf("cannot load PKCS#11 module %q", path)
 	}
+	c := &Client{ctx: ctx, path: path, finalize: true}
 	if err := ctx.Initialize(); err != nil {
 		var pe pkcs11.Error
 		// An already-initialized library is fine to reuse.
@@ -27,14 +33,18 @@ func Open(path string) (*Client, error) {
 			ctx.Destroy()
 			return nil, wrap("C_Initialize", err)
 		}
+		c.finalize = false
 	}
-	return &Client{ctx: ctx, path: path}, nil
+	return c, nil
 }
 
-// Close finalizes and unloads the module.
+// Close unloads the module, finalizing the library only when this client
+// was the one that initialized it.
 func (c *Client) Close() {
 	if c.ctx != nil {
-		_ = c.ctx.Finalize()
+		if c.finalize {
+			_ = c.ctx.Finalize()
+		}
 		c.ctx.Destroy()
 		c.ctx = nil
 	}

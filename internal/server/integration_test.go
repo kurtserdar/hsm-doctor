@@ -8,11 +8,14 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/kurtserdar/hsm-doctor/internal/p11"
 	"github.com/kurtserdar/hsm-doctor/internal/policy"
 	"github.com/kurtserdar/hsm-doctor/internal/server"
+	"github.com/kurtserdar/hsm-doctor/internal/store"
 	"github.com/kurtserdar/hsm-doctor/internal/testutil"
 	"github.com/kurtserdar/hsm-doctor/rules"
 )
@@ -39,7 +42,11 @@ func newTestServer(t *testing.T) (*httptest.Server, uint) {
 	if err != nil {
 		t.Fatalf("loading rules: %v", err)
 	}
-	srv, err := server.New(testutil.ModulePath(t), testutil.UserPIN, cfg, "test")
+	st, err := store.Open(filepath.Join(t.TempDir(), "history.db"))
+	if err != nil {
+		t.Fatalf("store.Open: %v", err)
+	}
+	srv, err := server.New(testutil.ModulePath(t), testutil.UserPIN, cfg, "test", st)
 	if err != nil {
 		t.Fatalf("server.New: %v", err)
 	}
@@ -165,6 +172,80 @@ func TestAPIEndpoints(t *testing.T) {
 		out := getJSON(t, ts.URL+"/api/v1/slots/notanumber/scan", http.StatusBadRequest)
 		if out["error"] == nil {
 			t.Error("invalid slot should return a JSON error")
+		}
+	})
+
+	t.Run("history and auto-drift", func(t *testing.T) {
+		// Baseline scan (self-sufficient even when run with -run filters).
+		getJSON(t, fmt.Sprintf("%s/api/v1/slots/%d/scan", ts.URL, slot), http.StatusOK)
+
+		resp, err := http.Get(ts.URL + "/api/v1/hsms")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer resp.Body.Close()
+		var hsms []map[string]any
+		if err := json.NewDecoder(resp.Body).Decode(&hsms); err != nil {
+			t.Fatal(err)
+		}
+		if len(hsms) != 1 {
+			t.Fatalf("want 1 HSM in fleet, got %d", len(hsms))
+		}
+		hsmID := int64(hsms[0]["id"].(float64))
+
+		// Mutate the token via a separate module handle, then scan again:
+		// the server must record a drift event automatically.
+		mod, err := p11.Open(testutil.ModulePath(t))
+		if err != nil {
+			t.Fatalf("opening module for mutation: %v", err)
+		}
+		sess, err := mod.OpenSession(slot, testutil.UserPIN, true)
+		if err != nil {
+			mod.Close()
+			t.Fatalf("opening session: %v", err)
+		}
+		testutil.GenerateECKeyPair(t, sess, "drift-key", []byte{0x03})
+		sess.Close()
+		mod.Close()
+
+		getJSON(t, fmt.Sprintf("%s/api/v1/slots/%d/scan", ts.URL, slot), http.StatusOK)
+
+		// Two scans stored, newest first.
+		scansResp, err := http.Get(fmt.Sprintf("%s/api/v1/hsms/%d/scans", ts.URL, hsmID))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer scansResp.Body.Close()
+		var scans []map[string]any
+		if err := json.NewDecoder(scansResp.Body).Decode(&scans); err != nil {
+			t.Fatal(err)
+		}
+		if len(scans) < 2 {
+			t.Fatalf("want at least 2 stored scans, got %d", len(scans))
+		}
+
+		// Exactly one drift event mentioning the new key pair.
+		driftResp, err := http.Get(fmt.Sprintf("%s/api/v1/hsms/%d/drift", ts.URL, hsmID))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer driftResp.Body.Close()
+		var events []map[string]any
+		if err := json.NewDecoder(driftResp.Body).Decode(&events); err != nil {
+			t.Fatal(err)
+		}
+		if len(events) == 0 {
+			t.Fatal("expected at least one drift event after mutating the token")
+		}
+		if events[0]["changes"].(float64) < 2 {
+			t.Errorf("drift event should count the new key pair: %v", events[0])
+		}
+
+		// Full stored report is retrievable.
+		scanID := int64(scans[0]["id"].(float64))
+		rec := getJSON(t, fmt.Sprintf("%s/api/v1/hsms/%d/scans/%d", ts.URL, hsmID, scanID), http.StatusOK)
+		if rec["report"] == nil {
+			t.Error("stored scan should include the full report")
 		}
 	})
 

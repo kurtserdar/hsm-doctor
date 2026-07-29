@@ -14,6 +14,7 @@ import (
 
 	"github.com/kurtserdar/hsm-doctor/internal/p11"
 	"github.com/kurtserdar/hsm-doctor/internal/policy"
+	"github.com/kurtserdar/hsm-doctor/internal/store"
 )
 
 // Server holds the shared state of one running instance.
@@ -22,26 +23,35 @@ type Server struct {
 	pin     string
 	rules   *policy.Config
 	version string
+	// store persists scan history and drift events; nil disables persistence.
+	store store.Store
 }
 
-// New loads the PKCS#11 module and prepares the server.
-func New(modulePath, pin string, rules *policy.Config, version string) (*Server, error) {
+// New loads the PKCS#11 module and prepares the server. A nil store
+// disables scan history and drift recording.
+func New(modulePath, pin string, rules *policy.Config, version string, st store.Store) (*Server, error) {
 	client, err := p11.Open(modulePath)
 	if err != nil {
 		return nil, err
 	}
-	return &Server{client: client, pin: pin, rules: rules, version: version}, nil
+	return &Server{client: client, pin: pin, rules: rules, version: version, store: st}, nil
 }
 
-// Close releases the PKCS#11 module.
+// Close releases the PKCS#11 module and the store.
 func (s *Server) Close() {
 	s.client.Close()
+	if s.store != nil {
+		if err := s.store.Close(); err != nil {
+			log.Printf("warning: closing store: %v", err)
+		}
+	}
 }
 
 // Handler builds the full HTTP handler: API plus embedded UI.
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	s.registerAPI(mux)
+	s.registerHistoryAPI(mux)
 	registerUI(mux)
 	return logRequests(mux)
 }

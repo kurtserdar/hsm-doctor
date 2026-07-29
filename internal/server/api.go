@@ -109,7 +109,9 @@ func (s *Server) handleScan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	res := policy.Evaluate(inv, s.rules, time.Now())
-	writeJSON(w, http.StatusOK, report.New(s.version, inv, res))
+	rep := report.New(s.version, inv, res)
+	s.persistScan(rep, "local")
+	writeJSON(w, http.StatusOK, rep)
 }
 
 func (s *Server) handleCerts(w http.ResponseWriter, r *http.Request) {
