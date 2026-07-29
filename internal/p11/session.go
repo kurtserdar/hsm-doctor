@@ -9,14 +9,22 @@ import (
 
 // Session wraps an open PKCS#11 session, optionally authenticated.
 type Session struct {
-	ctx      *pkcs11.Ctx
-	handle   pkcs11.SessionHandle
-	loggedIn bool
+	client *Client
+	ctx    *pkcs11.Ctx
+	handle pkcs11.SessionHandle
+	slotID uint
+	// loginRef is true when this session holds a reference on the token's
+	// shared login state (see Client.logins).
+	loginRef bool
 }
 
 // OpenSession opens a session on the given slot. When pin is non-empty a
 // CKU_USER login is performed. Set rw to true only for operations that create
 // objects (functional tests use ephemeral session objects).
+//
+// Login state is shared by all sessions of the application, so concurrent
+// authenticated sessions are reference-counted: the token is logged out only
+// when the last authenticated session closes.
 func (c *Client) OpenSession(slotID uint, pin string, rw bool) (*Session, error) {
 	flags := uint(pkcs11.CKF_SERIAL_SESSION)
 	if rw {
@@ -26,26 +34,40 @@ func (c *Client) OpenSession(slotID uint, pin string, rw bool) (*Session, error)
 	if err != nil {
 		return nil, wrap(fmt.Sprintf("C_OpenSession(slot %d)", slotID), err)
 	}
-	s := &Session{ctx: c.ctx, handle: h}
+	s := &Session{client: c, ctx: c.ctx, handle: h, slotID: slotID}
 	if pin != "" {
-		if err := c.ctx.Login(h, pkcs11.CKU_USER, pin); err != nil {
+		// The login itself is serialized so a concurrent pair cannot both
+		// see "not logged in yet" and race the reference count.
+		c.mu.Lock()
+		err := c.ctx.Login(h, pkcs11.CKU_USER, pin)
+		if err != nil {
 			var pe pkcs11.Error
 			// Being already logged in on another session is not a failure.
 			if !errors.As(err, &pe) || pe != pkcs11.CKR_USER_ALREADY_LOGGED_IN {
+				c.mu.Unlock()
 				_ = c.ctx.CloseSession(h)
 				return nil, wrap("C_Login", err)
 			}
-		} else {
-			s.loggedIn = true
 		}
+		// Both outcomes mean this session relies on the shared login.
+		c.logins[slotID]++
+		s.loginRef = true
+		c.mu.Unlock()
 	}
 	return s, nil
 }
 
-// Close logs out (when this session logged in) and closes the session.
+// Close releases this session's login reference (logging the token out when
+// it was the last authenticated session) and closes the session.
 func (s *Session) Close() {
-	if s.loggedIn {
-		_ = s.ctx.Logout(s.handle)
+	if s.loginRef && s.client != nil {
+		s.client.mu.Lock()
+		s.client.logins[s.slotID]--
+		if s.client.logins[s.slotID] <= 0 {
+			delete(s.client.logins, s.slotID)
+			_ = s.ctx.Logout(s.handle)
+		}
+		s.client.mu.Unlock()
 	}
 	_ = s.ctx.CloseSession(s.handle)
 }

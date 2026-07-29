@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/miekg/pkcs11"
 )
@@ -17,6 +18,13 @@ type Client struct {
 	// closing must NOT finalize: the shared Cryptoki state belongs to the
 	// initializing owner and finalizing it would kill their sessions.
 	finalize bool
+
+	// PKCS#11 login state is per token, not per session: logging out from
+	// one session logs out every session of the application. logins
+	// reference-counts authenticated sessions per slot so the token is
+	// only logged out when the last one closes.
+	mu     sync.Mutex
+	logins map[uint]int
 }
 
 // Open loads and initializes the PKCS#11 module at the given path.
@@ -25,7 +33,7 @@ func Open(path string) (*Client, error) {
 	if ctx == nil {
 		return nil, fmt.Errorf("cannot load PKCS#11 module %q", path)
 	}
-	c := &Client{ctx: ctx, path: path, finalize: true}
+	c := &Client{ctx: ctx, path: path, finalize: true, logins: map[uint]int{}}
 	if err := ctx.Initialize(); err != nil {
 		var pe pkcs11.Error
 		// An already-initialized library is fine to reuse.
