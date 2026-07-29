@@ -1,1 +1,0 @@
-{"root":["./src/api.ts","./src/env.d.ts","./src/main.ts","./src/router.ts","./src/store.ts","./src/types.ts","./src/App.vue","./src/views/BenchView.vue","./src/views/CertificatesView.vue","./src/views/DashboardView.vue","./src/views/InventoryView.vue","./src/views/TestsView.vue","./vite.config.ts"],"version":"5.8.3"}
