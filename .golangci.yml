@@ -1,0 +1,11 @@
+version: "2"
+
+linters:
+  settings:
+    errcheck:
+      # Report renderers write to an io.Writer (usually stdout); checking
+      # every fmt.Fprint* call adds noise without improving safety.
+      exclude-functions:
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln

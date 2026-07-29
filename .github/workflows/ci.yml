@@ -38,6 +38,17 @@ jobs:
           go vet ./...
           go vet -tags=integration ./...
 
+      - name: Lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.3.0
+
+      - name: Lint (integration tag)
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.3.0
+          args: --build-tags integration
+
       - name: Build
         run: go build ./...
 
