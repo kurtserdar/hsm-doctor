@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/kurtserdar/hsm-doctor/internal/inventory"
-	"github.com/kurtserdar/hsm-doctor/internal/p11"
 	"github.com/kurtserdar/hsm-doctor/internal/policy"
 	"github.com/kurtserdar/hsm-doctor/internal/report"
 	"github.com/kurtserdar/hsm-doctor/internal/version"
@@ -32,17 +31,13 @@ Only object metadata is read; private key material never leaves the HSM.`,
 				return err
 			}
 
-			pin, err := conn.resolvePIN(true)
-			if err != nil {
-				return err
-			}
-			client, err := p11.Open(conn.module)
+			client, slot, pin, err := conn.connect(true, true)
 			if err != nil {
 				return err
 			}
 			defer client.Close()
 
-			inv, err := inventory.Collect(client, conn.slot, pin)
+			inv, err := inventory.Collect(client, slot, pin)
 			if err != nil {
 				return err
 			}

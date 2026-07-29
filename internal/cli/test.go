@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/kurtserdar/hsm-doctor/internal/funtest"
-	"github.com/kurtserdar/hsm-doctor/internal/p11"
 	"github.com/spf13/cobra"
 )
 
@@ -23,17 +23,13 @@ func newTestCmd() *cobra.Command {
 using ephemeral session objects only. Nothing is persisted on the token and
 all created objects are destroyed when the test finishes.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			pin, err := conn.resolvePIN(true)
-			if err != nil {
-				return err
-			}
-			client, err := p11.Open(conn.module)
+			client, slot, pin, err := conn.connect(true, true)
 			if err != nil {
 				return err
 			}
 			defer client.Close()
 
-			res, err := funtest.Run(client, conn.slot, pin, profileName)
+			res, err := funtest.Run(client, slot, pin, profileName)
 			if err != nil {
 				return err
 			}
@@ -55,7 +51,8 @@ all created objects are destroyed when the test finishes.`,
 		},
 	}
 	conn.register(cmd, true)
-	cmd.Flags().StringVar(&profileName, "profile", "sign-verify", "test profile to run")
+	cmd.Flags().StringVar(&profileName, "profile", "sign-verify",
+		fmt.Sprintf("test profile to run (available: %s)", strings.Join(funtest.ProfileNames(), ", ")))
 	cmd.Flags().BoolVar(&asJSON, "json", false, "output as JSON")
 	return cmd
 }

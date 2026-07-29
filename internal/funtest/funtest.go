@@ -7,6 +7,7 @@ package funtest
 
 import (
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/kurtserdar/hsm-doctor/internal/p11"
@@ -79,6 +80,7 @@ func ProfileNames() []string {
 	for n := range profiles {
 		names = append(names, n)
 	}
+	sort.Strings(names)
 	return names
 }
 

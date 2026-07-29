@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/kurtserdar/hsm-doctor/internal/inventory"
-	"github.com/kurtserdar/hsm-doctor/internal/p11"
 	"github.com/kurtserdar/hsm-doctor/internal/snapshot"
 	"github.com/kurtserdar/hsm-doctor/internal/version"
 	"github.com/spf13/cobra"
@@ -20,17 +19,13 @@ func newSnapshotCmd() *cobra.Command {
 		Long: `Collects the metadata inventory of a token and writes it to a JSON file.
 Compare two snapshots later with "hsmdoctor diff" to detect drift.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			pin, err := conn.resolvePIN(true)
-			if err != nil {
-				return err
-			}
-			client, err := p11.Open(conn.module)
+			client, slot, pin, err := conn.connect(true, true)
 			if err != nil {
 				return err
 			}
 			defer client.Close()
 
-			inv, err := inventory.Collect(client, conn.slot, pin)
+			inv, err := inventory.Collect(client, slot, pin)
 			if err != nil {
 				return err
 			}

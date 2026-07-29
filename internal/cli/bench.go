@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/kurtserdar/hsm-doctor/internal/bench"
-	"github.com/kurtserdar/hsm-doctor/internal/p11"
 	"github.com/spf13/cobra"
 )
 
@@ -24,11 +23,7 @@ budget per primitive, so a benchmark cannot overload a token indefinitely.
 
 Avoid running benchmarks against production HSMs serving live traffic.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			pin, err := conn.resolvePIN(true)
-			if err != nil {
-				return err
-			}
-			client, err := p11.Open(conn.module)
+			client, slot, pin, err := conn.connect(true, true)
 			if err != nil {
 				return err
 			}
@@ -39,7 +34,7 @@ Avoid running benchmarks against production HSMs serving live traffic.`,
 				"Running bounded benchmark: %s or %d ops per primitive, %d session(s)\n\n",
 				opts.Duration, opts.MaxOps, opts.Sessions)
 
-			res, err := bench.Run(client, conn.slot, pin, opts)
+			res, err := bench.Run(client, slot, pin, opts)
 			if err != nil {
 				return err
 			}

@@ -26,7 +26,7 @@ func newDiscoverCmd() *cobra.Command {
 		Long: `Loads a PKCS#11 library, lists its slots and tokens, and optionally the
 mechanisms supported by each token. No login is required.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := p11.Open(conn.module)
+			client, _, _, err := conn.connect(false, false)
 			if err != nil {
 				return err
 			}

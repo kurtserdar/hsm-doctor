@@ -38,6 +38,29 @@ func TestSignVerifyProfileAgainstSoftHSM(t *testing.T) {
 	}
 }
 
+func TestKeyWrappingProfileAgainstSoftHSM(t *testing.T) {
+	client, slot := testutil.NewSoftHSM(t)
+
+	res, err := funtest.Run(client, slot, testutil.UserPIN, "key-wrapping")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	for _, s := range res.Steps {
+		// SoftHSM supports all three steps; anything else is a regression.
+		if s.Status != funtest.StatusPass {
+			t.Errorf("step %q: %s %s", s.Name, s.Status, s.Detail)
+		}
+	}
+
+	inv, err := inventory.Collect(client, slot, testutil.UserPIN)
+	if err != nil {
+		t.Fatalf("Collect after key-wrapping run: %v", err)
+	}
+	if len(inv.Objects) != 0 {
+		t.Errorf("key-wrapping test left %d object(s) on the token", len(inv.Objects))
+	}
+}
+
 func TestUnknownProfile(t *testing.T) {
 	client, slot := testutil.NewSoftHSM(t)
 	if _, err := funtest.Run(client, slot, testutil.UserPIN, "no-such-profile"); err == nil {
