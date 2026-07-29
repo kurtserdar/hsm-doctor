@@ -34,7 +34,16 @@ functional tests use ephemeral session objects that leave no trace on the token.
 | `hsmdoctor bench` | Performance measurement with strictly bounded load (duration + op budget caps) |
 | `hsmdoctor snapshot` | Record the full metadata state of a token as JSON |
 | `hsmdoctor diff` | Compare two snapshots and report drift: new/removed objects, attribute flips, mechanism and firmware changes |
-| `hsmdoctor serve` | Local web interface + REST API for everything above |
+| `hsmdoctor serve` | Local web interface + REST API with scan history, automatic drift detection, Prometheus metrics and cron-scheduled scans |
+| `hsmdoctor server` | Central fleet server: collects reports pushed by agents, stores history, detects drift, serves the fleet dashboard |
+| `hsmdoctor agent` | Runs where the vendor PKCS#11 client lives; scans on an interval and pushes reports to the central server |
+
+Tokens can be addressed classically (`--module` + `--slot`) or with an
+RFC 7512 PKCS#11 URI:
+
+```sh
+hsmdoctor scan --uri "pkcs11:token=PROD-PARTITION?module-path=/usr/lib/libCryptoki2_64.so" --pin-env HSM_PIN
+```
 
 ## Install
 
@@ -192,15 +201,40 @@ hsmdoctor serve --module /usr/lib/softhsm/libsofthsm2.so --pin-env HSM_PIN
 ```
 
 The embedded web interface (Vue 3) covers dashboard with health score and
-findings, inventory browsing, certificate expiry, functional tests and
-benchmarks. Everything is also available as a JSON API under `/api/v1` —
-see [docs/api.md](docs/api.md) for endpoints and the security model. The
-server binds to loopback by default and is designed for local,
-single-operator use.
+findings, inventory browsing, certificate expiry, functional tests,
+benchmarks and the fleet view with score history and drift feeds. Scans are
+persisted to SQLite, consecutive scans are diffed automatically, and
+`/metrics` exposes Prometheus gauges per HSM. Everything is also available
+as a JSON API under `/api/v1` — see [docs/api.md](docs/api.md).
+
+Optional hardening: `--auth-config` (bearer tokens with admin/viewer
+roles), `--tls-cert`/`--tls-key`, `--webhook-url` for drift notifications
+and `--schedule "0 */6 * * *"` for automatic scans.
+
+## Fleet monitoring (central mode)
+
+Monitor many HSMs across hosts: run a central server, then enroll an agent
+on every machine that has a vendor PKCS#11 client installed. PINs never
+leave the agent hosts — only finished reports are pushed.
+
+```sh
+# On the central host
+export HSMDOCTOR_ENROLL=$(openssl rand -hex 16)
+hsmdoctor server --listen 0.0.0.0:8443 --tls-cert srv.pem --tls-key srv.key \
+  --auth-config auth.yaml --enroll-token-env HSMDOCTOR_ENROLL
+
+# On each HSM client host
+hsmdoctor agent --server https://doctor.example.com:8443 \
+  --enroll-token-env HSMDOCTOR_ENROLL \
+  --module /usr/lib/libCryptoki2_64.so --pin-env HSM_PIN --interval 15m
+```
+
+See [docs/deployment.md](docs/deployment.md) for the full setup including
+authentication, webhooks and systemd units.
 
 ## Roadmap
 
-- **v0.3** — central server mode, agent architecture, multi-HSM dashboard, Prometheus metrics, authentication/RBAC for the API
+- **v0.4** — PostgreSQL backend option, mTLS for agents, OIDC/SSO, e-mail notifications
 - **v1.0** — vendor plugins (Luna, nShield, ...) for HA/appliance/partition health, PQC readiness checks (ML-DSA, ML-KEM), PKCS#11 call tracing, policy packs
 
 ## Development
