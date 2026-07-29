@@ -69,6 +69,16 @@ type DriftEvent struct {
 	Diff       json.RawMessage `json:"diff"`
 }
 
+// Agent is an enrolled push client. Only the SHA-256 hash of its bearer
+// token is stored.
+type Agent struct {
+	ID        int64     `json:"id"`
+	Name      string    `json:"name"`
+	TokenHash string    `json:"-"`
+	CreatedAt time.Time `json:"created_at"`
+	LastSeen  time.Time `json:"last_seen"`
+}
+
 // Store is the persistence interface. A SQLite implementation ships today;
 // the interface keeps the door open for PostgreSQL in a later release.
 type Store interface {
@@ -87,6 +97,13 @@ type Store interface {
 
 	InsertDriftEvent(e *DriftEvent) (int64, error)
 	ListDriftEvents(hsmID int64, limit int) ([]DriftEvent, error)
+
+	// UpsertAgent registers an agent or rotates its token hash on re-enroll.
+	UpsertAgent(name, tokenHash string) (int64, error)
+	// GetAgentByTokenHash resolves a pushed bearer token; nil when unknown.
+	GetAgentByTokenHash(hash string) (*Agent, error)
+	TouchAgent(id int64) error
+	ListAgents() ([]Agent, error)
 
 	Close() error
 }

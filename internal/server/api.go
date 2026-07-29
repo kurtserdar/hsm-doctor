@@ -55,19 +55,29 @@ func slotFromPath(r *http.Request) (uint, error) {
 }
 
 func (s *Server) handleInfo(w http.ResponseWriter, r *http.Request) {
+	out := map[string]any{
+		"tool":    "hsmdoctor",
+		"version": s.version,
+		"mode":    "local",
+	}
+	if s.client == nil {
+		out["mode"] = "central"
+		writeJSON(w, http.StatusOK, out)
+		return
+	}
 	info, err := s.client.Info()
 	if err != nil {
 		writeError(w, http.StatusBadGateway, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{
-		"tool":    "hsmdoctor",
-		"version": s.version,
-		"module":  info,
-	})
+	out["module"] = info
+	writeJSON(w, http.StatusOK, out)
 }
 
 func (s *Server) handleDiscover(w http.ResponseWriter, r *http.Request) {
+	if !s.requireClient(w) {
+		return
+	}
 	info, err := s.client.Info()
 	if err != nil {
 		writeError(w, http.StatusBadGateway, err)
@@ -98,6 +108,9 @@ func (s *Server) handleDiscover(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleScan(w http.ResponseWriter, r *http.Request) {
+	if !s.requireClient(w) {
+		return
+	}
 	slot, err := slotFromPath(r)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
@@ -116,6 +129,9 @@ func (s *Server) handleScan(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleCerts(w http.ResponseWriter, r *http.Request) {
+	if !s.requireClient(w) {
+		return
+	}
 	slot, err := slotFromPath(r)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
@@ -143,6 +159,9 @@ func (s *Server) handleCerts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleSnapshot(w http.ResponseWriter, r *http.Request) {
+	if !s.requireClient(w) {
+		return
+	}
 	slot, err := slotFromPath(r)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
@@ -157,6 +176,9 @@ func (s *Server) handleSnapshot(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleTest(w http.ResponseWriter, r *http.Request) {
+	if !s.requireClient(w) {
+		return
+	}
 	slot, err := slotFromPath(r)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
@@ -181,6 +203,9 @@ func (s *Server) handleTest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleBench(w http.ResponseWriter, r *http.Request) {
+	if !s.requireClient(w) {
+		return
+	}
 	slot, err := slotFromPath(r)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)

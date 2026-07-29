@@ -8,6 +8,7 @@
 package server
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"time"
@@ -19,6 +20,8 @@ import (
 
 // Server holds the shared state of one running instance.
 type Server struct {
+	// client is the local PKCS#11 module; nil in central mode, where all
+	// scan data arrives through the ingest API.
 	client  *p11.Client
 	pin     string
 	rules   *policy.Config
@@ -26,10 +29,12 @@ type Server struct {
 	// store persists scan history and drift events; nil disables persistence.
 	store   store.Store
 	metrics *metrics
+	// enrollToken enables agent enrollment when non-empty (central mode).
+	enrollToken string
 }
 
-// New loads the PKCS#11 module and prepares the server. A nil store
-// disables scan history and drift recording.
+// New loads the PKCS#11 module and prepares a local-mode server. A nil
+// store disables scan history and drift recording.
 func New(modulePath, pin string, rules *policy.Config, version string, st store.Store) (*Server, error) {
 	client, err := p11.Open(modulePath)
 	if err != nil {
@@ -41,9 +46,20 @@ func New(modulePath, pin string, rules *policy.Config, version string, st store.
 	}, nil
 }
 
+// NewCentral prepares a central-mode server: no local PKCS#11 module, scan
+// data is pushed by agents. An empty enrollToken disables new enrollments.
+func NewCentral(version string, st store.Store, enrollToken string) *Server {
+	return &Server{
+		version: version, store: st,
+		metrics: newMetrics(version), enrollToken: enrollToken,
+	}
+}
+
 // Close releases the PKCS#11 module and the store.
 func (s *Server) Close() {
-	s.client.Close()
+	if s.client != nil {
+		s.client.Close()
+	}
 	if s.store != nil {
 		if err := s.store.Close(); err != nil {
 			log.Printf("warning: closing store: %v", err)
@@ -56,9 +72,22 @@ func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	s.registerAPI(mux)
 	s.registerHistoryAPI(mux)
+	s.registerIngestAPI(mux)
 	mux.Handle("GET /metrics", s.metrics.handler())
 	registerUI(mux)
 	return logRequests(mux)
+}
+
+// errNoLocalModule is returned by local-scan endpoints in central mode.
+var errNoLocalModule = errors.New("this server has no local PKCS#11 module (central mode); reports are pushed by agents")
+
+// requireClient guards endpoints that need the local PKCS#11 module.
+func (s *Server) requireClient(w http.ResponseWriter) bool {
+	if s.client == nil {
+		writeError(w, http.StatusServiceUnavailable, errNoLocalModule)
+		return false
+	}
+	return true
 }
 
 // ListenAndServe runs the server until the process exits.

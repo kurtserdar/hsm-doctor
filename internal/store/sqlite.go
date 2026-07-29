@@ -58,6 +58,16 @@ CREATE TABLE drift_events (
 );
 CREATE INDEX idx_drift_hsm ON drift_events(hsm_id, detected_at DESC, id DESC);
 `,
+	`
+CREATE TABLE agents (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    name        TEXT NOT NULL UNIQUE,
+    token_hash  TEXT NOT NULL,
+    created_at  TIMESTAMP NOT NULL,
+    last_seen   TIMESTAMP NOT NULL
+);
+CREATE INDEX idx_agents_token ON agents(token_hash);
+`,
 }
 
 // DB is the SQLite-backed Store.
@@ -283,6 +293,56 @@ WHERE hsm_id = ? ORDER BY taken_at DESC, id DESC LIMIT 1`, hsmID).
 	}
 	rec.Report = report
 	return &rec, nil
+}
+
+func (s *DB) UpsertAgent(name, tokenHash string) (int64, error) {
+	now := time.Now().UTC()
+	var id int64
+	err := s.db.QueryRow(`
+INSERT INTO agents (name, token_hash, created_at, last_seen)
+VALUES (?, ?, ?, ?)
+ON CONFLICT (name) DO UPDATE SET token_hash = excluded.token_hash, last_seen = excluded.last_seen
+RETURNING id`, name, tokenHash, now, now).Scan(&id)
+	if err != nil {
+		return 0, fmt.Errorf("upserting agent: %w", err)
+	}
+	return id, nil
+}
+
+func (s *DB) GetAgentByTokenHash(hash string) (*Agent, error) {
+	var a Agent
+	err := s.db.QueryRow(`
+SELECT id, name, token_hash, created_at, last_seen FROM agents WHERE token_hash = ?`, hash).
+		Scan(&a.ID, &a.Name, &a.TokenHash, &a.CreatedAt, &a.LastSeen)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("looking up agent: %w", err)
+	}
+	return &a, nil
+}
+
+func (s *DB) TouchAgent(id int64) error {
+	_, err := s.db.Exec(`UPDATE agents SET last_seen = ? WHERE id = ?`, time.Now().UTC(), id)
+	return err
+}
+
+func (s *DB) ListAgents() ([]Agent, error) {
+	rows, err := s.db.Query(`SELECT id, name, token_hash, created_at, last_seen FROM agents ORDER BY name`)
+	if err != nil {
+		return nil, fmt.Errorf("listing agents: %w", err)
+	}
+	defer rows.Close()
+	var out []Agent
+	for rows.Next() {
+		var a Agent
+		if err := rows.Scan(&a.ID, &a.Name, &a.TokenHash, &a.CreatedAt, &a.LastSeen); err != nil {
+			return nil, err
+		}
+		out = append(out, a)
+	}
+	return out, rows.Err()
 }
 
 func (s *DB) InsertDriftEvent(e *DriftEvent) (int64, error) {
