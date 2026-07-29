@@ -1,12 +1,21 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
+
+// jsonEncoder returns an indenting JSON encoder for CLI output.
+func jsonEncoder(w io.Writer) *json.Encoder {
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	return enc
+}
 
 // connFlags holds the connection options shared by commands that talk to a
 // PKCS#11 module.
