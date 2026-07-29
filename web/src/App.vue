@@ -37,6 +37,7 @@ onMounted(async () => {
         <RouterLink to="/certificates">Certificates</RouterLink>
         <RouterLink to="/tests">Functional Tests</RouterLink>
         <RouterLink to="/bench">Performance</RouterLink>
+        <RouterLink to="/pqc">PQC Readiness</RouterLink>
       </template>
       <RouterLink to="/fleet">Fleet</RouterLink>
     </nav>

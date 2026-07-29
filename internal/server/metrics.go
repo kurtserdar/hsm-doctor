@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/kurtserdar/hsm-doctor/internal/certmon"
+	"github.com/kurtserdar/hsm-doctor/internal/pqc"
 	"github.com/kurtserdar/hsm-doctor/internal/report"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -21,6 +22,10 @@ type metrics struct {
 	certMinDays  *prometheus.GaugeVec
 	lastScanTime *prometheus.GaugeVec
 	scansTotal   *prometheus.CounterVec
+
+	pqcAdvertised *prometheus.GaugeVec
+	pqcVulnerable *prometheus.GaugeVec
+	pqcHNDL       *prometheus.GaugeVec
 }
 
 func newMetrics(version string) *metrics {
@@ -51,8 +56,21 @@ func newMetrics(version string) *metrics {
 			Name: "hsmdoctor_scans_total",
 			Help: "Total number of scans performed since process start.",
 		}, []string{"serial", "label"}),
+		pqcAdvertised: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "hsmdoctor_pqc_family_advertised",
+			Help: "1 when the token advertises the PQC family's mechanisms (ML-KEM, ML-DSA, SLH-DSA).",
+		}, []string{"serial", "label", "family"}),
+		pqcVulnerable: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "hsmdoctor_pqc_quantum_vulnerable_keys",
+			Help: "Number of private keys using quantum-vulnerable algorithms.",
+		}, []string{"serial", "label"}),
+		pqcHNDL: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "hsmdoctor_pqc_hndl_exposed_keys",
+			Help: "Quantum-vulnerable private keys able to decrypt or unwrap (harvest-now-decrypt-later exposure).",
+		}, []string{"serial", "label"}),
 	}
-	reg.MustRegister(m.healthScore, m.findings, m.objects, m.certMinDays, m.lastScanTime, m.scansTotal)
+	reg.MustRegister(m.healthScore, m.findings, m.objects, m.certMinDays, m.lastScanTime, m.scansTotal,
+		m.pqcAdvertised, m.pqcVulnerable, m.pqcHNDL)
 
 	buildInfo := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "hsmdoctor_build_info",
@@ -104,4 +122,17 @@ func (m *metrics) observeScan(rep *report.Report) {
 		}
 		m.certMinDays.WithLabelValues(serial, label).Set(float64(min))
 	}
+
+	// PQC readiness series come from the same scan data.
+	det := pqc.Detect(inv.Mechanisms)
+	for _, f := range det.Families {
+		v := 0.0
+		if f.Advertised {
+			v = 1.0
+		}
+		m.pqcAdvertised.WithLabelValues(serial, label, f.Family).Set(v)
+	}
+	exposure := pqc.Assess(inv, det)
+	m.pqcVulnerable.WithLabelValues(serial, label).Set(float64(exposure.ClassicalPrivateKeys))
+	m.pqcHNDL.WithLabelValues(serial, label).Set(float64(exposure.HarvestNowDecryptLater))
 }

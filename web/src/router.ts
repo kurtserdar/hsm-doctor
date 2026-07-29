@@ -6,6 +6,7 @@ import TestsView from "./views/TestsView.vue";
 import BenchView from "./views/BenchView.vue";
 import FleetView from "./views/FleetView.vue";
 import HSMDetailView from "./views/HSMDetailView.vue";
+import PQCView from "./views/PQCView.vue";
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -17,5 +18,6 @@ export const router = createRouter({
     { path: "/certificates", name: "certificates", component: CertificatesView, meta: { title: "Certificates" } },
     { path: "/tests", name: "tests", component: TestsView, meta: { title: "Functional Tests" } },
     { path: "/bench", name: "bench", component: BenchView, meta: { title: "Performance" } },
+    { path: "/pqc", name: "pqc", component: PQCView, meta: { title: "PQC Readiness" } },
   ],
 });

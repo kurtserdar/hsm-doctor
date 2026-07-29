@@ -10,7 +10,15 @@ import (
 
 	"github.com/kurtserdar/hsm-doctor/internal/inventory"
 	"github.com/kurtserdar/hsm-doctor/internal/policy"
+	"github.com/kurtserdar/hsm-doctor/internal/pqc"
 )
+
+// PQCSummary is the score-neutral post-quantum block embedded in reports.
+type PQCSummary struct {
+	Verdict            pqc.Verdict   `json:"verdict"`
+	AdvertisedFamilies []string      `json:"advertised_families,omitempty"`
+	Exposure           *pqc.Exposure `json:"exposure"`
+}
 
 // Report bundles everything a single scan produced.
 type Report struct {
@@ -19,17 +27,30 @@ type Report struct {
 	Score     int                  `json:"score"`
 	Counts    inventory.Counts     `json:"counts"`
 	Findings  []policy.Finding     `json:"findings"`
+	PQC       *PQCSummary          `json:"pqc,omitempty"`
 	Inventory *inventory.Inventory `json:"inventory"`
 }
 
-// New assembles a report from scan results.
+// New assembles a report from scan results, including the PQC readiness
+// summary derived from the inventory's mechanism list.
 func New(version string, inv *inventory.Inventory, res *policy.Result) *Report {
+	det := pqc.Detect(inv.Mechanisms)
+	summary := &PQCSummary{
+		Verdict:  det.Verdict,
+		Exposure: pqc.Assess(inv, det),
+	}
+	for _, f := range det.Families {
+		if f.Advertised {
+			summary.AdvertisedFamilies = append(summary.AdvertisedFamilies, f.Family)
+		}
+	}
 	return &Report{
 		Tool:      "hsmdoctor",
 		Version:   version,
 		Score:     res.Score,
 		Counts:    inv.Count(),
 		Findings:  res.Findings,
+		PQC:       summary,
 		Inventory: inv,
 	}
 }
@@ -97,5 +118,17 @@ func (r *Report) Text(w io.Writer) error {
 	fmt.Fprintf(w, "  Secret keys:    %d\n", c.SecretKeys)
 	fmt.Fprintf(w, "  Certificates:   %d\n", c.Certificates)
 	fmt.Fprintf(w, "  Mechanisms:     %d\n", len(inv.Mechanisms))
+
+	if p := r.PQC; p != nil {
+		fmt.Fprintf(w, "\nPQC READINESS: %s", p.Verdict)
+		if len(p.AdvertisedFamilies) > 0 {
+			fmt.Fprintf(w, " (%s)", strings.Join(p.AdvertisedFamilies, ", "))
+		}
+		fmt.Fprintln(w)
+		if p.Exposure != nil {
+			fmt.Fprintf(w, "  %s\n", p.Exposure.Summary)
+		}
+		fmt.Fprintln(w, "  (informational; does not affect the health score — see 'hsmdoctor pqc')")
+	}
 	return nil
 }

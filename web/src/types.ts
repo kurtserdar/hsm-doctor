@@ -199,6 +199,45 @@ export interface DriftDiff {
   object_changes?: { object: string; field: string; old: string; new: string }[];
 }
 
+export interface PQCFamilyStatus {
+  family: string;
+  kind: string;
+  fips: string;
+  advertised: boolean;
+  mechanisms?: string[];
+  incomplete?: boolean;
+}
+
+export interface PQCResponse {
+  detection: {
+    cryptoki_version?: string;
+    families: PQCFamilyStatus[];
+    vendor_defined?: string[];
+    verdict: "READY" | "PARTIAL" | "NOT READY";
+  };
+  exposure: {
+    total_private_keys: number;
+    classical_private_keys: number;
+    pqc_private_keys: number;
+    harvest_now_decrypt_later: number;
+    classical_certificates: number;
+    summary: string;
+  };
+  host_openssl?: {
+    available: boolean;
+    version?: string;
+    ml_kem: boolean;
+    ml_dsa: boolean;
+    slh_dsa: boolean;
+  };
+  tests?: {
+    family: string;
+    set: string;
+    status: string;
+    detail?: string;
+  }[];
+}
+
 export interface DriftEvent {
   id: number;
   hsm_id: number;

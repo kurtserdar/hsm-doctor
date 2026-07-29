@@ -4,6 +4,7 @@ import type {
   DiscoverResponse,
   DriftEvent,
   HSMSummary,
+  PQCResponse,
   ScanReport,
   ScanSummary,
   ServerInfo,
@@ -62,6 +63,17 @@ export function hsmScan(id: number, scanID: number): Promise<ScanSummary> {
 
 export function hsmDrift(id: number, limit = 20): Promise<DriftEvent[]> {
   return request(`/api/v1/hsms/${id}/drift?limit=${limit}`);
+}
+
+export function pqcAssess(
+  slot: number,
+  opts: { test: boolean; host: boolean },
+): Promise<PQCResponse> {
+  const qs = new URLSearchParams();
+  if (opts.test) qs.set("test", "true");
+  if (opts.host) qs.set("host", "true");
+  const suffix = qs.size ? `?${qs}` : "";
+  return request(`/api/v1/slots/${slot}/pqc${suffix}`);
 }
 
 export function discover(withMechanisms = false): Promise<DiscoverResponse> {

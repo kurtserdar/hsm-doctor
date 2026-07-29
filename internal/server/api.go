@@ -26,6 +26,7 @@ func (s *Server) registerAPI(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/slots/{slot}/snapshot", s.handleSnapshot)
 	mux.HandleFunc("POST /api/v1/slots/{slot}/test", s.handleTest)
 	mux.HandleFunc("POST /api/v1/slots/{slot}/bench", s.handleBench)
+	mux.HandleFunc("GET /api/v1/slots/{slot}/pqc", s.handlePQC)
 	mux.HandleFunc("POST /api/v1/diff", s.handleDiff)
 }
 

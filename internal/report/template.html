@@ -131,6 +131,18 @@
     </div>
   </div>
 
+  {{with .PQC}}
+  <h2>PQC Readiness</h2>
+  <div class="card">
+    <p style="margin-top:0">
+      <span class="badge {{if eq (printf "%s" .Verdict) "READY"}}ok{{else if eq (printf "%s" .Verdict) "PARTIAL"}}medium{{else}}critical{{end}}">{{.Verdict}}</span>
+      {{if .AdvertisedFamilies}}<span class="muted"> advertised: {{range $i, $f := .AdvertisedFamilies}}{{if $i}}, {{end}}{{$f}}{{end}}</span>{{end}}
+    </p>
+    {{with .Exposure}}<p class="muted" style="margin-bottom:0">{{.Summary}}</p>{{end}}
+    <p class="muted" style="margin-bottom:0; font-size:.8rem">Informational — does not affect the health score.</p>
+  </div>
+  {{end}}
+
   <h2>Mechanisms</h2>
   <div class="card">
     <details>

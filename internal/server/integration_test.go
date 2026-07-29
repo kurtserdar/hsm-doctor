@@ -249,6 +249,21 @@ func TestAPIEndpoints(t *testing.T) {
 		}
 	})
 
+	t.Run("pqc assessment", func(t *testing.T) {
+		out := getJSON(t, fmt.Sprintf("%s/api/v1/slots/%d/pqc", ts.URL, slot), http.StatusOK)
+		det, _ := out["detection"].(map[string]any)
+		if det == nil || det["verdict"] != "NOT READY" {
+			t.Errorf("SoftHSM PQC verdict should be NOT READY: %v", out["detection"])
+		}
+		exp, _ := out["exposure"].(map[string]any)
+		if exp == nil || exp["summary"] == "" {
+			t.Errorf("exposure summary missing: %v", out["exposure"])
+		}
+		if out["host_openssl"] != nil {
+			t.Error("host check should be opt-in via ?host=true")
+		}
+	})
+
 	t.Run("prometheus metrics", func(t *testing.T) {
 		// Ensure at least one scan has been observed.
 		getJSON(t, fmt.Sprintf("%s/api/v1/slots/%d/scan", ts.URL, slot), http.StatusOK)
@@ -262,6 +277,9 @@ func TestAPIEndpoints(t *testing.T) {
 			"hsmdoctor_scans_total{",
 			"hsmdoctor_build_info{",
 			"hsmdoctor_certificate_min_days_to_expiry{",
+			`hsmdoctor_pqc_family_advertised{family="ML-DSA"`,
+			"hsmdoctor_pqc_quantum_vulnerable_keys{",
+			"hsmdoctor_pqc_hndl_exposed_keys{",
 		} {
 			if !bytes.Contains([]byte(body), []byte(want)) {
 				t.Errorf("metrics output missing %q", want)
