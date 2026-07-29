@@ -243,16 +243,22 @@ func (s *Server) persistScan(rep *report.Report, source string) {
 		log.Printf("warning: encoding drift diff: %v", err)
 		return
 	}
-	if _, err := s.store.InsertDriftEvent(&store.DriftEvent{
+	event := &store.DriftEvent{
 		HSMID:      hsmID,
 		DetectedAt: time.Now().UTC(),
 		OldScanID:  prev.ID,
 		NewScanID:  newID,
 		Changes:    d.Count(),
 		Diff:       diffBlob,
-	}); err != nil {
+	}
+	if _, err := s.store.InsertDriftEvent(event); err != nil {
 		log.Printf("warning: persisting drift event: %v", err)
 		return
 	}
 	log.Printf("drift detected on %s (%d changes)", t.Label, d.Count())
+	if s.webhook != nil {
+		s.webhook.notifyDrift(&store.HSM{
+			ID: hsmID, Serial: t.SerialNumber, Label: t.Label, Source: source,
+		}, event)
+	}
 }

@@ -33,11 +33,20 @@ type Server struct {
 	enrollToken string
 	// auth guards the API when non-nil.
 	auth *AuthConfig
+	// webhook receives drift notifications when non-nil.
+	webhook *webhook
 }
 
 // SetAuth enables API authentication.
 func (s *Server) SetAuth(cfg *AuthConfig) {
 	s.auth = cfg
+}
+
+// SetWebhook enables drift notifications to the given URL.
+func (s *Server) SetWebhook(url string) {
+	if url != "" {
+		s.webhook = newWebhook(url)
+	}
 }
 
 // New loads the PKCS#11 module and prepares a local-mode server. A nil

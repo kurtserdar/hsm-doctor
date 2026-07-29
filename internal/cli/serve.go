@@ -6,6 +6,7 @@ import (
 	"github.com/kurtserdar/hsm-doctor/internal/server"
 	"github.com/kurtserdar/hsm-doctor/internal/store"
 	"github.com/kurtserdar/hsm-doctor/internal/version"
+	"github.com/robfig/cron/v3"
 	"github.com/spf13/cobra"
 )
 
@@ -13,6 +14,7 @@ func newServeCmd() *cobra.Command {
 	var conn connFlags
 	var listen, rulesPath, dbPath string
 	var authPath, tlsCert, tlsKey string
+	var webhookURL, schedule string
 	var noDB bool
 
 	cmd := &cobra.Command{
@@ -63,6 +65,30 @@ request and never logged. Think twice before exposing it beyond localhost.`,
 			if err := applyAuth(srv, authPath); err != nil {
 				return err
 			}
+			srv.SetWebhook(webhookURL)
+
+			if schedule != "" {
+				c := cron.New()
+				_, err := c.AddFunc(schedule, func() {
+					slots, err := srv.TokenSlots()
+					if err != nil {
+						fmt.Fprintf(cmd.ErrOrStderr(), "scheduled scan: %v\n", err)
+						return
+					}
+					for _, id := range slots {
+						if _, err := srv.ScanSlot(id); err != nil {
+							fmt.Fprintf(cmd.ErrOrStderr(), "scheduled scan of slot %d: %v\n", id, err)
+						}
+					}
+				})
+				if err != nil {
+					return fmt.Errorf("invalid --schedule expression: %w", err)
+				}
+				c.Start()
+				defer c.Stop()
+				fmt.Fprintf(cmd.ErrOrStderr(), "Scheduled scans enabled: %q\n", schedule)
+			}
+
 			return srv.ListenAndServe(listen, tlsCert, tlsKey)
 		},
 	}
@@ -78,6 +104,8 @@ request and never logged. Think twice before exposing it beyond localhost.`,
 	cmd.Flags().StringVar(&authPath, "auth-config", "", "YAML file with API bearer tokens and roles (default: no authentication)")
 	cmd.Flags().StringVar(&tlsCert, "tls-cert", "", "TLS certificate file (requires --tls-key)")
 	cmd.Flags().StringVar(&tlsKey, "tls-key", "", "TLS private key file (requires --tls-cert)")
+	cmd.Flags().StringVar(&webhookURL, "webhook-url", "", "POST drift notifications to this URL")
+	cmd.Flags().StringVar(&schedule, "schedule", "", `cron expression for automatic scans of all tokens (e.g. "0 */6 * * *")`)
 	return cmd
 }
 

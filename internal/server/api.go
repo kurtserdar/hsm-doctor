@@ -116,16 +116,45 @@ func (s *Server) handleScan(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}
-	inv, err := inventory.Collect(s.client, slot, s.pin)
+	rep, err := s.ScanSlot(slot)
 	if err != nil {
 		writeError(w, http.StatusBadGateway, err)
 		return
+	}
+	writeJSON(w, http.StatusOK, rep)
+}
+
+// ScanSlot runs a full scan of one slot: inventory, policy evaluation,
+// persistence, drift detection and metrics. Used by the API handler and
+// the scheduler.
+func (s *Server) ScanSlot(slot uint) (*report.Report, error) {
+	inv, err := inventory.Collect(s.client, slot, s.pin)
+	if err != nil {
+		return nil, err
 	}
 	res := policy.Evaluate(inv, s.rules, time.Now())
 	rep := report.New(s.version, inv, res)
 	s.persistScan(rep, "local")
 	s.metrics.observeScan(rep)
-	writeJSON(w, http.StatusOK, rep)
+	return rep, nil
+}
+
+// TokenSlots lists the IDs of slots holding an initialized token.
+func (s *Server) TokenSlots() ([]uint, error) {
+	if s.client == nil {
+		return nil, errNoLocalModule
+	}
+	slots, err := s.client.Slots()
+	if err != nil {
+		return nil, err
+	}
+	var ids []uint
+	for _, sl := range slots {
+		if sl.TokenPresent && sl.Token != nil && sl.Token.Initialized {
+			ids = append(ids, sl.ID)
+		}
+	}
+	return ids, nil
 }
 
 func (s *Server) handleCerts(w http.ResponseWriter, r *http.Request) {

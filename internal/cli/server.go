@@ -12,7 +12,7 @@ import (
 
 func newServerCmd() *cobra.Command {
 	var listen, dbPath, enrollToken, enrollTokenEnv string
-	var authPath, tlsCert, tlsKey string
+	var authPath, tlsCert, tlsKey, webhookURL string
 
 	cmd := &cobra.Command{
 		Use:   "server",
@@ -52,6 +52,7 @@ on other hosts, front it with TLS and change --listen deliberately.`,
 			if err := applyAuth(srv, authPath); err != nil {
 				return err
 			}
+			srv.SetWebhook(webhookURL)
 			if authPath == "" {
 				fmt.Fprintln(cmd.ErrOrStderr(), "Warning: API authentication is disabled; use --auth-config before exposing this server.")
 			}
@@ -65,6 +66,7 @@ on other hosts, front it with TLS and change --listen deliberately.`,
 	cmd.Flags().StringVar(&authPath, "auth-config", "", "YAML file with API bearer tokens and roles (default: no authentication)")
 	cmd.Flags().StringVar(&tlsCert, "tls-cert", "", "TLS certificate file (requires --tls-key)")
 	cmd.Flags().StringVar(&tlsKey, "tls-key", "", "TLS private key file (requires --tls-cert)")
+	cmd.Flags().StringVar(&webhookURL, "webhook-url", "", "POST drift notifications to this URL")
 	return cmd
 }
 
