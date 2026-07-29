@@ -42,21 +42,21 @@ type Object struct {
 	KeyBits uint   `json:"key_bits,omitempty"`
 	Curve   string `json:"curve,omitempty"`
 
-	Token             *bool `json:"token,omitempty"`
-	Private           *bool `json:"private,omitempty"`
-	Modifiable        *bool `json:"modifiable,omitempty"`
-	Local             *bool `json:"local,omitempty"`
-	Sensitive         *bool `json:"sensitive,omitempty"`
-	Extractable       *bool `json:"extractable,omitempty"`
-	AlwaysSensitive   *bool `json:"always_sensitive,omitempty"`
-	NeverExtractable  *bool `json:"never_extractable,omitempty"`
-	Sign              *bool `json:"sign,omitempty"`
-	Verify            *bool `json:"verify,omitempty"`
-	Encrypt           *bool `json:"encrypt,omitempty"`
-	Decrypt           *bool `json:"decrypt,omitempty"`
-	Wrap              *bool `json:"wrap,omitempty"`
-	Unwrap            *bool `json:"unwrap,omitempty"`
-	Derive            *bool `json:"derive,omitempty"`
+	Token            *bool `json:"token,omitempty"`
+	Private          *bool `json:"private,omitempty"`
+	Modifiable       *bool `json:"modifiable,omitempty"`
+	Local            *bool `json:"local,omitempty"`
+	Sensitive        *bool `json:"sensitive,omitempty"`
+	Extractable      *bool `json:"extractable,omitempty"`
+	AlwaysSensitive  *bool `json:"always_sensitive,omitempty"`
+	NeverExtractable *bool `json:"never_extractable,omitempty"`
+	Sign             *bool `json:"sign,omitempty"`
+	Verify           *bool `json:"verify,omitempty"`
+	Encrypt          *bool `json:"encrypt,omitempty"`
+	Decrypt          *bool `json:"decrypt,omitempty"`
+	Wrap             *bool `json:"wrap,omitempty"`
+	Unwrap           *bool `json:"unwrap,omitempty"`
+	Derive           *bool `json:"derive,omitempty"`
 
 	Certificate *CertInfo `json:"certificate,omitempty"`
 }

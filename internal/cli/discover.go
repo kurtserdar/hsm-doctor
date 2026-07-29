@@ -10,9 +10,9 @@ import (
 )
 
 type discoverResult struct {
-	Module     p11.ModuleInfo            `json:"module"`
-	Slots      []p11.SlotInfo            `json:"slots"`
-	Mechanisms map[uint][]p11.Mechanism  `json:"mechanisms,omitempty"`
+	Module     p11.ModuleInfo           `json:"module"`
+	Slots      []p11.SlotInfo           `json:"slots"`
+	Mechanisms map[uint][]p11.Mechanism `json:"mechanisms,omitempty"`
 }
 
 func newDiscoverCmd() *cobra.Command {
