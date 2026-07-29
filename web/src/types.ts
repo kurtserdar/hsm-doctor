@@ -94,6 +94,7 @@ export interface Finding {
 export interface ScanReport {
   tool: string;
   version: string;
+  rule_packs?: string[];
   score: number;
   counts: {
     private_keys: number;

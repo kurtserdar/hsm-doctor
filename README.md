@@ -121,8 +121,18 @@ without a PIN work but only see public objects.
 
 Ten built-in rules cover extractable/non-sensitive private keys, weak RSA
 sizes, expired and expiring certificates, duplicate labels, orphan objects,
-role-mixing keys and legacy mechanisms. Rules are plain YAML and fully
-customizable — see [docs/rules.md](docs/rules.md):
+role-mixing keys and legacy mechanisms. Beyond the default set, curated
+**policy packs** ship in the binary and combine freely:
+
+```sh
+hsmdoctor packs                              # list built-in packs
+hsmdoctor scan --pack nist --pack strict ... # combine packs (and/or your own file)
+```
+
+`nist` (SP 800-57/800-131A aligned), `cabf` (CA/Browser Forum BR inspired),
+`strict` (attribute hygiene) and `pqc-migration` (score-neutral post-quantum
+advisories). Rules are plain YAML and fully customizable — see
+[docs/rules.md](docs/rules.md):
 
 ```yaml
 rules:

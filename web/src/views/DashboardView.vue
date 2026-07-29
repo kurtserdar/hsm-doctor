@@ -71,7 +71,12 @@ function scoreClass(score: number): string {
     </div>
 
     <div class="card">
-      <h2 style="margin-top: 0; font-size: 1rem">Findings</h2>
+      <h2 style="margin-top: 0; font-size: 1rem">
+        Findings
+        <span v-if="report.rule_packs?.length" class="muted" style="font-weight: 400; font-size: 0.8rem">
+          — rule packs: {{ report.rule_packs.join(", ") }}
+        </span>
+      </h2>
       <p v-if="!(report.findings ?? []).length" class="muted">
         No findings — every object passed the rule set.
       </p>
