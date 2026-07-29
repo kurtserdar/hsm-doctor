@@ -135,7 +135,9 @@ func CollectReports(modulePath, pin string, slot *uint, rules *policy.Config, ve
 			continue
 		}
 		res := policy.Evaluate(inv, rules, time.Now())
-		reports = append(reports, report.New(version, inv, res))
+		rep := report.New(version, inv, res)
+		rep.RulePacks = rules.SourcePacks
+		reports = append(reports, rep)
 	}
 	return reports, errors.Join(errs...)
 }

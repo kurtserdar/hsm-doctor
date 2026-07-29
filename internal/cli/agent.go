@@ -16,6 +16,7 @@ import (
 func newAgentCmd() *cobra.Command {
 	var conn connFlags
 	var serverURL, name, enrollToken, enrollTokenEnv, tokenFile, rulesPath string
+	var packNames []string
 	var interval time.Duration
 	var slotSet bool
 	var slot uint
@@ -55,7 +56,7 @@ enrollment token and stores its permanent token in --token-file.`,
 			}
 			client := &agent.Client{ServerURL: strings.TrimRight(serverURL, "/"), Token: token}
 
-			cfg, err := loadRules(rulesPath)
+			cfg, err := resolveRuleConfig(rulesPath, packNames)
 			if err != nil {
 				return err
 			}
@@ -100,7 +101,8 @@ enrollment token and stores its permanent token in --token-file.`,
 	cmd.Flags().StringVar(&tokenFile, "token-file", "", "file storing the permanent agent token (default: ~/.local/share/hsmdoctor/agent.token)")
 	cmd.Flags().DurationVar(&interval, "interval", 15*time.Minute, "time between scans")
 	cmd.Flags().BoolVar(&once, "once", false, "scan and push once, then exit (for cron)")
-	cmd.Flags().StringVar(&rulesPath, "rules", "", "path to a custom rules YAML file (default: built-in rules)")
+	cmd.Flags().StringVar(&rulesPath, "rules", "", "path to a custom rules YAML file replacing all packs")
+	cmd.Flags().StringArrayVar(&packNames, "pack", nil, "policy pack to apply (embedded name or file path; repeatable)")
 	return cmd
 }
 

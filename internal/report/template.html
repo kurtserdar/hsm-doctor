@@ -68,6 +68,7 @@
       <dt>Device</dt><dd>{{.Manufacturer}} {{.Model}} · serial {{.SerialNumber}} · fw {{.FirmwareVersion}}</dd>
       {{end}}
       <dt>Slot / scanned</dt><dd>{{.Inventory.Slot.ID}} · {{datetime .Inventory.ScannedAt}}{{if not .Inventory.LoggedIn}} · <strong>no login — private objects not visible</strong>{{end}}</dd>
+      {{if .RulePacks}}<dt>Rule packs</dt><dd>{{range $i, $p := .RulePacks}}{{if $i}}, {{end}}{{$p}}{{end}}</dd>{{end}}
     </dl>
   </div>
 

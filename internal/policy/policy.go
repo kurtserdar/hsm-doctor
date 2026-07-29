@@ -144,6 +144,10 @@ type Config struct {
 	Pack    *PackMeta `yaml:"pack,omitempty" json:"pack,omitempty"`
 	Rules   []Rule    `yaml:"rules" json:"rules"`
 	Scoring *Scoring  `yaml:"scoring,omitempty" json:"scoring,omitempty"`
+
+	// SourcePacks records which pack names produced this configuration
+	// (filled by the loader, not part of the YAML format).
+	SourcePacks []string `yaml:"-" json:"-"`
 }
 
 // Merge combines several packs into one configuration. Rule IDs must be

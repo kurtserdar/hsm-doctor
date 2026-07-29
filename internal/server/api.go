@@ -135,6 +135,7 @@ func (s *Server) ScanSlot(slot uint) (*report.Report, error) {
 	}
 	res := policy.Evaluate(inv, s.rules, time.Now())
 	rep := report.New(s.version, inv, res)
+	rep.RulePacks = s.rules.SourcePacks
 	s.persistScan(rep, "local")
 	s.metrics.observeScan(rep)
 	return rep, nil

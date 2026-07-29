@@ -13,6 +13,7 @@ import (
 func newServeCmd() *cobra.Command {
 	var conn connFlags
 	var listen, rulesPath, dbPath string
+	var packNames []string
 	var authPath, tlsCert, tlsKey string
 	var webhookURL, schedule string
 	var noDB bool
@@ -27,7 +28,7 @@ The server is meant for local, single-operator use: it binds to loopback by
 default and the PIN is taken once at startup (prefer --pin-env), never per
 request and never logged. Think twice before exposing it beyond localhost.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := loadRules(rulesPath)
+			cfg, err := resolveRuleConfig(rulesPath, packNames)
 			if err != nil {
 				return err
 			}
@@ -98,7 +99,8 @@ request and never logged. Think twice before exposing it beyond localhost.`,
 	cmd.Flags().StringVar(&conn.pin, "pin", "", "user PIN (WARNING: visible in shell history; prefer --pin-env)")
 	cmd.Flags().StringVar(&conn.pinEnv, "pin-env", "", "name of the environment variable holding the user PIN")
 	cmd.Flags().StringVar(&listen, "listen", "127.0.0.1:8080", "listen address")
-	cmd.Flags().StringVar(&rulesPath, "rules", "", "path to a custom rules YAML file (default: built-in rules)")
+	cmd.Flags().StringVar(&rulesPath, "rules", "", "path to a custom rules YAML file replacing all packs")
+	cmd.Flags().StringArrayVar(&packNames, "pack", nil, "policy pack to apply (embedded name or file path; repeatable)")
 	cmd.Flags().StringVar(&dbPath, "db", "", "scan history database path (default: ~/.local/share/hsmdoctor/hsmdoctor.db)")
 	cmd.Flags().BoolVar(&noDB, "no-db", false, "disable scan history persistence")
 	cmd.Flags().StringVar(&authPath, "auth-config", "", "YAML file with API bearer tokens and roles (default: no authentication)")

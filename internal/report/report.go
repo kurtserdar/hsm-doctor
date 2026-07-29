@@ -24,6 +24,7 @@ type PQCSummary struct {
 type Report struct {
 	Tool      string               `json:"tool"`
 	Version   string               `json:"version"`
+	RulePacks []string             `json:"rule_packs,omitempty"`
 	Score     int                  `json:"score"`
 	Counts    inventory.Counts     `json:"counts"`
 	Findings  []policy.Finding     `json:"findings"`
@@ -82,7 +83,11 @@ func (r *Report) Text(w io.Writer) error {
 	if inv.LoggedIn {
 		login = "yes"
 	}
-	fmt.Fprintf(w, "Scanned:  %s (logged in: %s)\n\n", inv.ScannedAt.Format("2006-01-02 15:04:05 MST"), login)
+	fmt.Fprintf(w, "Scanned:  %s (logged in: %s)\n", inv.ScannedAt.Format("2006-01-02 15:04:05 MST"), login)
+	if len(r.RulePacks) > 0 {
+		fmt.Fprintf(w, "Rules:    %s\n", strings.Join(r.RulePacks, ", "))
+	}
+	fmt.Fprintln(w)
 
 	fmt.Fprintf(w, "Health Score: %d/100\n\n", r.Score)
 

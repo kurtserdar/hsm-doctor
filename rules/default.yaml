@@ -1,8 +1,12 @@
 # HSM Doctor default security posture rules.
 #
-# Customize by copying this file and passing it to scan via --rules.
+# Customize by copying this file and passing it to scan via --rules, or
+# combine it with other packs via repeated --pack flags.
 # Every field under "match" must hold for a rule to fire (logical AND).
 # See docs/rules.md for the full condition reference.
+pack:
+  name: default
+  description: Balanced baseline covering the most common HSM misconfigurations.
 
 scoring:
   critical: 25

@@ -10,13 +10,13 @@ import (
 	"github.com/kurtserdar/hsm-doctor/internal/policy"
 	"github.com/kurtserdar/hsm-doctor/internal/report"
 	"github.com/kurtserdar/hsm-doctor/internal/version"
-	"github.com/kurtserdar/hsm-doctor/rules"
 	"github.com/spf13/cobra"
 )
 
 func newScanCmd() *cobra.Command {
 	var conn connFlags
 	var rulesPath, format, outPath, failOn string
+	var packNames []string
 
 	cmd := &cobra.Command{
 		Use:   "scan",
@@ -26,7 +26,7 @@ security posture rules and reports findings with a health score.
 
 Only object metadata is read; private key material never leaves the HSM.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := loadRules(rulesPath)
+			cfg, err := resolveRuleConfig(rulesPath, packNames)
 			if err != nil {
 				return err
 			}
@@ -43,6 +43,7 @@ Only object metadata is read; private key material never leaves the HSM.`,
 			}
 			res := policy.Evaluate(inv, cfg, time.Now())
 			rep := report.New(version.Version, inv, res)
+			rep.RulePacks = cfg.SourcePacks
 
 			out, closeOut, err := openOutput(outPath)
 			if err != nil {
@@ -67,23 +68,12 @@ Only object metadata is read; private key material never leaves the HSM.`,
 		},
 	}
 	conn.register(cmd, true)
-	cmd.Flags().StringVar(&rulesPath, "rules", "", "path to a custom rules YAML file (default: built-in rules)")
+	cmd.Flags().StringVar(&rulesPath, "rules", "", "path to a custom rules YAML file replacing all packs")
+	cmd.Flags().StringArrayVar(&packNames, "pack", nil, "policy pack to apply (embedded name or file path; repeatable, see 'hsmdoctor packs')")
 	cmd.Flags().StringVar(&format, "format", "text", "output format: text, json or html")
 	cmd.Flags().StringVar(&outPath, "out", "-", "output file ('-' for stdout)")
 	cmd.Flags().StringVar(&failOn, "fail-on", "", "exit non-zero if findings at or above this severity exist (critical, high, medium, low)")
 	return cmd
-}
-
-// loadRules returns the built-in rule set or a custom file.
-func loadRules(path string) (*policy.Config, error) {
-	data := rules.Default
-	if path != "" {
-		var err error
-		if data, err = os.ReadFile(path); err != nil {
-			return nil, fmt.Errorf("reading rules file: %w", err)
-		}
-	}
-	return policy.Load(data)
 }
 
 // openOutput opens the report destination ('-' means stdout).
