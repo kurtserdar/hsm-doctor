@@ -1,10 +1,12 @@
 import { reactive } from "vue";
-import { discover } from "./api";
+import { discover, serverInfo } from "./api";
 import type { ModuleInfo, SlotInfo } from "./types";
 
-// Minimal shared state: the discovered module, its slots and the slot the
-// user is working with. Small enough that a store library is not needed.
+// Minimal shared state: server mode, the discovered module, its slots and
+// the slot the user is working with. Small enough that a store library is
+// not needed.
 export const store = reactive({
+  mode: "" as "" | "local" | "central",
   module: null as ModuleInfo | null,
   slots: [] as SlotInfo[],
   selectedSlot: null as number | null,
@@ -15,6 +17,11 @@ export const store = reactive({
     this.loading = true;
     this.error = "";
     try {
+      const info = await serverInfo();
+      this.mode = info.mode;
+      if (info.mode !== "local") {
+        return;
+      }
       const res = await discover();
       this.module = res.module;
       this.slots = res.slots;

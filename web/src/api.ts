@@ -2,7 +2,11 @@ import type {
   BenchResult,
   CertsResponse,
   DiscoverResponse,
+  DriftEvent,
+  HSMSummary,
   ScanReport,
+  ScanSummary,
+  ServerInfo,
   TestResult,
 } from "./types";
 
@@ -17,6 +21,26 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new Error(message);
   }
   return body as T;
+}
+
+export function serverInfo(): Promise<ServerInfo> {
+  return request("/api/v1/info");
+}
+
+export function fleet(): Promise<HSMSummary[]> {
+  return request("/api/v1/hsms");
+}
+
+export function hsmScans(id: number, limit = 50): Promise<ScanSummary[]> {
+  return request(`/api/v1/hsms/${id}/scans?limit=${limit}`);
+}
+
+export function hsmScan(id: number, scanID: number): Promise<ScanSummary> {
+  return request(`/api/v1/hsms/${id}/scans/${scanID}`);
+}
+
+export function hsmDrift(id: number, limit = 20): Promise<DriftEvent[]> {
+  return request(`/api/v1/hsms/${id}/drift?limit=${limit}`);
 }
 
 export function discover(withMechanisms = false): Promise<DiscoverResponse> {

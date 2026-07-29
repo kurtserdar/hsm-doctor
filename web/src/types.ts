@@ -149,3 +149,62 @@ export interface BenchResult {
   options: { duration_ns: number; max_ops: number; sessions: number };
   measurements: BenchMeasurement[];
 }
+
+export interface ServerInfo {
+  tool: string;
+  version: string;
+  mode: "local" | "central";
+  module?: ModuleInfo;
+}
+
+export interface HSMSummary {
+  id: number;
+  serial: string;
+  label: string;
+  model: string;
+  manufacturer: string;
+  firmware: string;
+  module_path: string;
+  slot_id: number;
+  source: string;
+  first_seen: string;
+  last_seen: string;
+  latest_score?: number;
+  latest_scan_at?: string;
+  latest_scan_id?: number;
+}
+
+export interface ScanSummary {
+  id: number;
+  hsm_id: number;
+  taken_at: string;
+  score: number;
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+  private_keys: number;
+  public_keys: number;
+  secret_keys: number;
+  certificates: number;
+  report?: ScanReport;
+}
+
+export interface DriftDiff {
+  token_changes?: { field: string; old: string; new: string }[];
+  mechanisms_added?: string[];
+  mechanisms_removed?: string[];
+  objects_added?: string[];
+  objects_removed?: string[];
+  object_changes?: { object: string; field: string; old: string; new: string }[];
+}
+
+export interface DriftEvent {
+  id: number;
+  hsm_id: number;
+  detected_at: string;
+  old_scan_id: number;
+  new_scan_id: number;
+  changes: number;
+  diff: DriftDiff;
+}

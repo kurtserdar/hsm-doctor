@@ -1,13 +1,18 @@
 <script setup lang="ts">
 import { computed, onMounted } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { store } from "./store";
 
 const route = useRoute();
+const router = useRouter();
 const title = computed(() => (route.meta.title as string) ?? "HSM Doctor");
 
-onMounted(() => {
-  void store.load();
+onMounted(async () => {
+  await store.load();
+  // Central mode has no local token pages; land on the fleet view.
+  if (store.mode === "central" && route.path === "/") {
+    void router.replace("/fleet");
+  }
 });
 </script>
 
@@ -18,11 +23,14 @@ onMounted(() => {
       <small>health · posture · diagnostics</small>
     </div>
     <nav>
-      <RouterLink to="/">Dashboard</RouterLink>
-      <RouterLink to="/inventory">Inventory</RouterLink>
-      <RouterLink to="/certificates">Certificates</RouterLink>
-      <RouterLink to="/tests">Functional Tests</RouterLink>
-      <RouterLink to="/bench">Performance</RouterLink>
+      <template v-if="store.mode !== 'central'">
+        <RouterLink to="/">Dashboard</RouterLink>
+        <RouterLink to="/inventory">Inventory</RouterLink>
+        <RouterLink to="/certificates">Certificates</RouterLink>
+        <RouterLink to="/tests">Functional Tests</RouterLink>
+        <RouterLink to="/bench">Performance</RouterLink>
+      </template>
+      <RouterLink to="/fleet">Fleet</RouterLink>
     </nav>
   </aside>
   <main>
@@ -35,7 +43,7 @@ onMounted(() => {
           {{ store.module.cryptoki_version }}
         </div>
       </div>
-      <div>
+      <div v-if="store.mode === 'local'">
         <label class="muted" style="font-size: 0.75rem; display: block">
           Token
         </label>
