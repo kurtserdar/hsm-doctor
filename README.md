@@ -23,25 +23,32 @@ questions an HSM administrator actually asks:
 **Metadata only, by design:** private key material is never read, and
 functional tests use ephemeral session objects that leave no trace on the token.
 
-## Features (v0.1)
+## Features
 
 | Command | What it does |
 |---|---|
 | `hsmdoctor discover` | Module, slot, token and mechanism discovery |
 | `hsmdoctor scan` | Key/certificate inventory + security posture rules + health score; text, JSON or single-file HTML report |
+| `hsmdoctor certs` | Certificate expiry monitor with cron/CI-friendly exit codes |
 | `hsmdoctor test` | Safe functional test profiles (key generation, sign/verify, AES-GCM) with ephemeral session objects |
+| `hsmdoctor bench` | Performance measurement with strictly bounded load (duration + op budget caps) |
 | `hsmdoctor snapshot` | Record the full metadata state of a token as JSON |
 | `hsmdoctor diff` | Compare two snapshots and report drift: new/removed objects, attribute flips, mechanism and firmware changes |
+| `hsmdoctor serve` | Local web interface + REST API for everything above |
 
 ## Install
 
-Binaries require cgo (the PKCS#11 wrapper uses dlopen), so build with a C
-compiler present:
+Pre-built binaries for Linux, macOS and Windows are on the
+[releases page](https://github.com/kurtserdar/hsm-doctor/releases).
+
+Building from source requires cgo (the PKCS#11 wrapper uses dlopen), so a C
+compiler must be present:
 
 ```sh
 git clone https://github.com/kurtserdar/hsm-doctor.git
 cd hsm-doctor
-make build          # produces ./hsmdoctor
+make build          # CLI only
+make ui build       # CLI + embedded web interface (requires Node.js)
 ```
 
 or
@@ -160,10 +167,40 @@ AES-GCM encrypt/decrypt          PASS
 Steps whose mechanisms the token does not advertise are reported as
 `NOT SUPPORTED` instead of failing.
 
+## Performance testing
+
+```sh
+hsmdoctor bench --module ... --slot ... --sessions 4
+```
+
+```
+RSA-2048 sign (SHA256-RSA)       6415.2 ops/sec  (5000 ops in 779ms)
+ECDSA P-256 sign                47109.4 ops/sec  (5000 ops in 106ms)
+AES-256-GCM encrypt (1 KiB)     56305.7 ops/sec  (5000 ops in 89ms)
+```
+
+Every run is capped by both duration and an absolute operation budget per
+primitive, so a benchmark cannot overload a token indefinitely. Still, avoid
+benchmarking production HSMs serving live traffic.
+
+## Web interface & REST API
+
+```sh
+export HSM_PIN=123456
+hsmdoctor serve --module /usr/lib/softhsm/libsofthsm2.so --pin-env HSM_PIN
+# → http://127.0.0.1:8080
+```
+
+The embedded web interface (Vue 3) covers dashboard with health score and
+findings, inventory browsing, certificate expiry, functional tests and
+benchmarks. Everything is also available as a JSON API under `/api/v1` —
+see [docs/api.md](docs/api.md) for endpoints and the security model. The
+server binds to loopback by default and is designed for local,
+single-operator use.
+
 ## Roadmap
 
-- **v0.2** — certificate expiration monitoring, performance testing (rate-limited by default), REST API, local web UI
-- **v0.3** — central server mode, agent architecture, multi-HSM dashboard, Prometheus metrics
+- **v0.3** — central server mode, agent architecture, multi-HSM dashboard, Prometheus metrics, authentication/RBAC for the API
 - **v1.0** — vendor plugins (Luna, nShield, ...) for HA/appliance/partition health, PQC readiness checks (ML-DSA, ML-KEM), PKCS#11 call tracing, policy packs
 
 ## Development
