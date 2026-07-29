@@ -100,12 +100,15 @@ func runPrimitive(client *p11.Client, slotID uint, pin string, prim primitive, a
 	}
 	m.Supported = true
 
-	// The op budget is shared across workers; the deadline bounds the run
-	// even when the budget is not exhausted.
+	// The op budget is shared across workers. Each worker's duration
+	// window starts after its own setup (key generation), so slow setup
+	// on a loaded machine cannot eat the whole measurement window.
 	var budget atomic.Int64
 	budget.Store(int64(opts.MaxOps))
 	var done atomic.Int64
-	deadline := time.Now().Add(opts.Duration)
+	// measureStart records when the first worker began measuring, so the
+	// reported rate excludes setup time.
+	var measureStart atomic.Int64
 
 	var wg sync.WaitGroup
 	errCh := make(chan error, opts.Sessions)
@@ -114,13 +117,17 @@ func runPrimitive(client *p11.Client, slotID uint, pin string, prim primitive, a
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if err := benchWorker(client, slotID, pin, prim, &budget, &done, deadline); err != nil {
+			if err := benchWorker(client, slotID, pin, prim, &budget, &done, &measureStart, opts.Duration); err != nil {
 				errCh <- err
 			}
 		}()
 	}
 	wg.Wait()
-	m.Elapsed = time.Since(start)
+	if s := measureStart.Load(); s != 0 {
+		m.Elapsed = time.Since(time.Unix(0, s))
+	} else {
+		m.Elapsed = time.Since(start)
+	}
 	close(errCh)
 	if err := <-errCh; err != nil {
 		m.Error = err.Error()
@@ -134,8 +141,9 @@ func runPrimitive(client *p11.Client, slotID uint, pin string, prim primitive, a
 }
 
 // benchWorker opens its own session, sets up its own ephemeral objects and
-// loops the operation until the shared budget or the deadline is exhausted.
-func benchWorker(client *p11.Client, slotID uint, pin string, prim primitive, budget, done *atomic.Int64, deadline time.Time) error {
+// loops the operation until the shared budget or its duration window is
+// exhausted.
+func benchWorker(client *p11.Client, slotID uint, pin string, prim primitive, budget, done, measureStart *atomic.Int64, duration time.Duration) error {
 	sess, err := client.OpenSession(slotID, pin, false)
 	if err != nil {
 		return err
@@ -147,6 +155,10 @@ func benchWorker(client *p11.Client, slotID uint, pin string, prim primitive, bu
 		return fmt.Errorf("%s setup: %w", prim.name, err)
 	}
 	defer cleanup()
+
+	now := time.Now()
+	measureStart.CompareAndSwap(0, now.UnixNano())
+	deadline := now.Add(duration)
 
 	for time.Now().Before(deadline) {
 		if budget.Add(-1) < 0 {
