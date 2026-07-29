@@ -38,6 +38,15 @@ type SlotInfo struct {
 	Token        *TokenInfo `json:"token,omitempty"`
 }
 
+// TokenLabel returns the token's label, or a placeholder when the slot has
+// no token.
+func (s SlotInfo) TokenLabel() string {
+	if s.Token != nil {
+		return s.Token.Label
+	}
+	return "(no token)"
+}
+
 // Mechanism describes a single mechanism supported by a token.
 type Mechanism struct {
 	Code       uint     `json:"code"`

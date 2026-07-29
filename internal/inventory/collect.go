@@ -25,6 +25,11 @@ var keyTypeNames = map[uint]string{
 	pkcs11.CKK_SHA256_HMAC:    "SHA256-HMAC",
 	pkcs11.CKK_SHA384_HMAC:    "SHA384-HMAC",
 	pkcs11.CKK_SHA512_HMAC:    "SHA512-HMAC",
+	// PKCS#11 3.2 post-quantum key types (values from the OASIS 3.02
+	// header; not present in the miekg v2.40 constant set).
+	0x49: "ML-KEM",
+	0x4a: "ML-DSA",
+	0x4b: "SLH-DSA",
 }
 
 func keyTypeName(code uint) string {
