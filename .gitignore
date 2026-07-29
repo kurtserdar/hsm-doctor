@@ -39,6 +39,9 @@ softhsm2.conf.local
 .DS_Store
 Thumbs.db
 
+# --- Local agent/tool state ---
+.claude/
+
 # --- Environment / secrets ---
 .env
 .env.*
