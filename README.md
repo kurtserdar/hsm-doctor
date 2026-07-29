@@ -35,6 +35,7 @@ functional tests use ephemeral session objects that leave no trace on the token.
 | `hsmdoctor snapshot` | Record the full metadata state of a token as JSON |
 | `hsmdoctor diff` | Compare two snapshots and report drift: new/removed objects, attribute flips, mechanism and firmware changes |
 | `hsmdoctor pqc` | Post-quantum readiness: ML-KEM/ML-DSA/SLH-DSA support matrix, quantum-vulnerable inventory exposure, host OpenSSL check |
+| `hsmdoctor vendor` | Appliance-level health via vendor providers: device, HA, partitions, tamper, backup (SoftHSM stable; Luna/nShield/CloudHSM experimental) |
 | `hsmdoctor serve` | Local web interface + REST API with scan history, automatic drift detection, Prometheus metrics and cron-scheduled scans |
 | `hsmdoctor server` | Central fleet server: collects reports pushed by agents, stores history, detects drift, serves the fleet dashboard |
 | `hsmdoctor agent` | Runs where the vendor PKCS#11 client lives; scans on an interval and pushes reports to the central server |
@@ -222,6 +223,23 @@ Optional hardening: `--auth-config` (bearer tokens with admin/viewer
 roles), `--tls-cert`/`--tls-key`, `--webhook-url` for drift notifications
 and `--schedule "0 */6 * * *"` for automatic scans.
 
+## Vendor appliance health
+
+PKCS#11 cannot report device resources, HA state, partition utilization or
+tamper status. Vendor providers collect these through vendor tooling and
+fold the findings into the health score:
+
+```sh
+hsmdoctor vendor --list
+hsmdoctor scan --module ... --slot ... --vendor-config vendor.yaml
+```
+
+The **SoftHSM** reference provider is stable and doubles as a template;
+**Luna**, **nShield** and **CloudHSM** ship as clearly-labeled experimental
+skeletons built against public documentation. See
+[docs/vendors.md](docs/vendors.md) for configuration and for writing your
+own provider.
+
 ## Post-quantum readiness
 
 ```sh
@@ -274,8 +292,8 @@ authentication, webhooks and systemd units.
 
 ## Roadmap
 
-- **v0.4** — PostgreSQL backend option, mTLS for agents, OIDC/SSO, e-mail notifications
-- **v1.0** — vendor plugins (Luna, nShield, ...) for HA/appliance/partition health, PQC readiness checks (ML-DSA, ML-KEM), PKCS#11 call tracing, policy packs
+- **Next** — PostgreSQL backend option, mTLS for agents, OIDC/SSO, e-mail notifications, hardening of the experimental vendor providers against real hardware
+- **v1.0** — validated vendor plugins, PKCS#11 call tracing (Flight Recorder), and a stable plugin API
 
 ## Development
 
