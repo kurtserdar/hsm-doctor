@@ -73,27 +73,21 @@ jobs:
 
   # Positive-path PQC test against Kryoptic (a PKCS#11 3.2 soft token with
   # real ML-KEM/ML-DSA support). Non-blocking while the ecosystem matures.
+  # Runs in a Fedora container because the pqc feature needs an OpenSSL 3.5+
+  # libcrypto, which Fedora ships (same approach as Kryoptic's own CI).
   pqc-kryoptic:
     name: PQC positive path (Kryoptic)
     runs-on: ubuntu-latest
+    container: quay.io/fedora/fedora:latest
     continue-on-error: true
     steps:
+      - name: Install dependencies
+        run: |
+          dnf -y install git cargo clang-devel openssl-devel sqlite-devel \
+            pkgconf-pkg-config opensc golang gcc
+
       - name: Check out source
         uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.24"
-          check-latest: true
-
-      - name: Install build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libsqlite3-dev pkg-config opensc
-
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
 
       - name: Cache Kryoptic build
         uses: actions/cache@v4
@@ -101,29 +95,22 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            ~/kryoptic/target
-          key: kryoptic-${{ runner.os }}-v1
+            kryoptic-src/target
+          key: kryoptic-fedora-v1
 
       - name: Build Kryoptic
         run: |
-          if [ ! -d "$HOME/kryoptic/.git" ]; then
-            git clone --depth 1 https://github.com/latchset/kryoptic "$HOME/kryoptic"
+          if [ ! -d kryoptic-src/.git ]; then
+            git clone --depth 1 https://github.com/latchset/kryoptic kryoptic-src
           fi
-          cd "$HOME/kryoptic"
-          # Drop the default "dynamic" feature: the pqc feature needs an
-          # OpenSSL 3.5+ libcrypto, so build against the vendored one
-          # instead of whatever the runner image ships.
-          cargo build --release --no-default-features --features standard,pqc
+          cd kryoptic-src
+          cargo build --release --no-default-features --features standard,pqc,openssl-sys
           test -f target/release/libkryoptic_pkcs11.so
 
-      - name: Initialize PQC token
+      - name: Initialize PQC token and run positive-path test
         run: |
-          export KRYOPTIC_CONF="$HOME/kryoptic-token.sql"
-          MODULE="$HOME/kryoptic/target/release/libkryoptic_pkcs11.so"
-          pkcs11-tool --module "$MODULE" --init-token --label PQC-CI --so-pin 12345678
-          pkcs11-tool --module "$MODULE" --login --login-type so --so-pin 12345678 --init-pin --pin 123456
-          echo "KRYOPTIC_CONF=$KRYOPTIC_CONF" >> "$GITHUB_ENV"
-          echo "HSMDOCTOR_PQC_MODULE=$MODULE" >> "$GITHUB_ENV"
-
-      - name: Run positive-path PQC test
-        run: go test -tags=integration -v -run TestPositivePathAgainstPQCModule ./internal/pqc/
+          export KRYOPTIC_CONF="$PWD/kryoptic-token.sql"
+          export HSMDOCTOR_PQC_MODULE="$PWD/kryoptic-src/target/release/libkryoptic_pkcs11.so"
+          pkcs11-tool --module "$HSMDOCTOR_PQC_MODULE" --init-token --label PQC-CI --so-pin 12345678
+          pkcs11-tool --module "$HSMDOCTOR_PQC_MODULE" --login --login-type so --so-pin 12345678 --init-pin --pin 123456
+          go test -tags=integration -v -run TestPositivePathAgainstPQCModule ./internal/pqc/
