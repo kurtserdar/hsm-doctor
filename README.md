@@ -34,6 +34,7 @@ functional tests use ephemeral session objects that leave no trace on the token.
 | `hsmdoctor bench` | Performance measurement with strictly bounded load (duration + op budget caps) |
 | `hsmdoctor snapshot` | Record the full metadata state of a token as JSON |
 | `hsmdoctor diff` | Compare two snapshots and report drift: new/removed objects, attribute flips, mechanism and firmware changes |
+| `hsmdoctor pqc` | Post-quantum readiness: ML-KEM/ML-DSA/SLH-DSA support matrix, quantum-vulnerable inventory exposure, host OpenSSL check |
 | `hsmdoctor serve` | Local web interface + REST API with scan history, automatic drift detection, Prometheus metrics and cron-scheduled scans |
 | `hsmdoctor server` | Central fleet server: collects reports pushed by agents, stores history, detects drift, serves the fleet dashboard |
 | `hsmdoctor agent` | Runs where the vendor PKCS#11 client lives; scans on an interval and pushes reports to the central server |
@@ -210,6 +211,35 @@ as a JSON API under `/api/v1` — see [docs/api.md](docs/api.md).
 Optional hardening: `--auth-config` (bearer tokens with admin/viewer
 roles), `--tls-cert`/`--tls-key`, `--webhook-url` for drift notifications
 and `--schedule "0 */6 * * *"` for automatic scans.
+
+## Post-quantum readiness
+
+```sh
+hsmdoctor pqc --uri "pkcs11:token=PROD?module-path=/usr/lib/libpkcs11.so" --pin-env HSM_PIN --test
+```
+
+```
+FAMILY     STANDARD   ADVERTISED   MECHANISMS
+ML-KEM     FIPS 203   YES          CKM_ML_KEM_KEY_PAIR_GEN, CKM_ML_KEM
+ML-DSA     FIPS 204   YES          CKM_ML_DSA_KEY_PAIR_GEN, CKM_ML_DSA
+SLH-DSA    FIPS 205   no
+
+Quantum exposure:
+  Private keys:      14 total, 14 classical, 0 post-quantum
+  HNDL exposure:     3 classical decrypt/unwrap key(s)
+  Summary:           14 of 14 private keys (100%) use quantum-vulnerable
+                     algorithms; 3 of them can decrypt or unwrap and are
+                     exposed to harvest-now-decrypt-later attacks. ...
+
+Verdict: READY
+```
+
+Detection uses the PKCS#11 3.2 mechanism assignments; `--test` proves
+advertised families with ephemeral session objects (ML-DSA/SLH-DSA
+keygen+sign+verify per parameter set). Quantum-vulnerable inventory
+exposure — with special attention to decrypt/unwrap keys threatened by
+harvest-now-decrypt-later — also appears as an informational block in
+every scan report and as Prometheus series.
 
 ## Fleet monitoring (central mode)
 

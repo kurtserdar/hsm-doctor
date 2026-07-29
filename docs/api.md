@@ -34,6 +34,7 @@ Local scan endpoints (available in `serve` mode; return 503 in central mode):
 | GET | `/api/v1/slots/{slot}/snapshot` | Snapshot JSON (same format as `hsmdoctor snapshot`) |
 | POST | `/api/v1/slots/{slot}/test` | Run a functional test profile: `{"profile":"sign-verify"}` |
 | POST | `/api/v1/slots/{slot}/bench` | Bounded benchmark: `{"duration_ms":3000,"max_ops":5000,"sessions":1}` |
+| GET | `/api/v1/slots/{slot}/pqc` | PQC readiness (`?test=true` functional probes, `?host=true` server-host OpenSSL check) |
 | POST | `/api/v1/diff` | Compare two snapshots: `{"old":<snapshot>,"new":<snapshot>}` |
 
 History and fleet endpoints (need persistence; both modes):
