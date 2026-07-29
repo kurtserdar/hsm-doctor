@@ -1,0 +1,151 @@
+// Type mirrors of the Go API JSON payloads.
+
+export interface ModuleInfo {
+  path: string;
+  cryptoki_version: string;
+  manufacturer: string;
+  description: string;
+  library_version: string;
+}
+
+export interface TokenInfo {
+  label: string;
+  manufacturer: string;
+  model: string;
+  serial_number: string;
+  hardware_version: string;
+  firmware_version: string;
+  initialized: boolean;
+  login_required: boolean;
+}
+
+export interface SlotInfo {
+  id: number;
+  description: string;
+  manufacturer: string;
+  token_present: boolean;
+  token?: TokenInfo;
+}
+
+export interface Mechanism {
+  code: number;
+  name: string;
+  min_key_size?: number;
+  max_key_size?: number;
+  flags?: string[];
+  hardware: boolean;
+}
+
+export interface DiscoverResponse {
+  module: ModuleInfo;
+  slots: SlotInfo[];
+  mechanisms?: Record<number, Mechanism[]>;
+}
+
+export interface CertInfo {
+  subject: string;
+  issuer: string;
+  serial_number: string;
+  not_before: string;
+  not_after: string;
+  signature_algorithm: string;
+  public_key_algorithm: string;
+  is_ca: boolean;
+}
+
+export interface InventoryObject {
+  class: string;
+  label?: string;
+  id?: string;
+  key_type?: string;
+  key_bits?: number;
+  curve?: string;
+  sensitive?: boolean;
+  extractable?: boolean;
+  sign?: boolean;
+  verify?: boolean;
+  encrypt?: boolean;
+  decrypt?: boolean;
+  wrap?: boolean;
+  unwrap?: boolean;
+  derive?: boolean;
+  certificate?: CertInfo;
+}
+
+export interface Inventory {
+  scanned_at: string;
+  module: ModuleInfo;
+  slot: SlotInfo;
+  mechanisms: Mechanism[];
+  logged_in: boolean;
+  objects: InventoryObject[] | null;
+}
+
+export type Severity = "critical" | "high" | "medium" | "low";
+
+export interface Finding {
+  rule_id: string;
+  title: string;
+  severity: Severity;
+  object?: string;
+  detail?: string;
+}
+
+export interface ScanReport {
+  tool: string;
+  version: string;
+  score: number;
+  counts: {
+    private_keys: number;
+    public_keys: number;
+    secret_keys: number;
+    certificates: number;
+  };
+  findings: Finding[] | null;
+  inventory: Inventory;
+}
+
+export type CertStatus = "ok" | "expiring" | "expired";
+
+export interface CertEntry {
+  label?: string;
+  id?: string;
+  subject: string;
+  issuer: string;
+  not_after: string;
+  is_ca: boolean;
+  status: CertStatus;
+  days_left: number;
+}
+
+export interface CertsResponse {
+  certificates: CertEntry[] | null;
+  counts: { ok: number; expiring: number; expired: number };
+  warn_days: number;
+}
+
+export interface TestStep {
+  name: string;
+  status: "PASS" | "FAIL" | "NOT SUPPORTED";
+  detail?: string;
+  duration_ns?: number;
+}
+
+export interface TestResult {
+  profile: string;
+  steps: TestStep[];
+}
+
+export interface BenchMeasurement {
+  name: string;
+  supported: boolean;
+  ops: number;
+  elapsed_ns: number;
+  ops_per_sec: number;
+  error?: string;
+}
+
+export interface BenchResult {
+  options: { duration_ns: number; max_ops: number; sessions: number };
+  measurements: BenchMeasurement[];
+}

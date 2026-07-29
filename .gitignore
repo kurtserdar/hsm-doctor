@@ -39,6 +39,10 @@ softhsm2.conf.local
 .DS_Store
 Thumbs.db
 
+# --- Web UI ---
+/web/node_modules/
+/web/dist/
+
 # --- Local agent/tool state ---
 .claude/
 
