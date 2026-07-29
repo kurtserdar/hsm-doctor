@@ -1,0 +1,45 @@
+# --- Build artifacts ---
+/hsmdoctor
+/bin/
+/dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# --- Test & coverage output ---
+*.test
+*.out
+coverage.html
+coverage.txt
+
+# --- Go workspace files ---
+go.work
+go.work.sum
+
+# --- Local scan output (never commit real HSM data) ---
+*.snapshot.json
+/reports/
+*.report.html
+*.report.json
+
+# --- SoftHSM local test tokens ---
+/testdata/softhsm-tokens/
+softhsm2.conf.local
+
+# --- Editor / IDE ---
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# --- OS noise ---
+.DS_Store
+Thumbs.db
+
+# --- Environment / secrets ---
+.env
+.env.*
+*.pin
