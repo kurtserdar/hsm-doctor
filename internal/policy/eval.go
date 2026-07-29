@@ -24,6 +24,27 @@ type Finding struct {
 type Result struct {
 	Findings []Finding `json:"findings"`
 	Score    int       `json:"score"`
+	scoring  Scoring
+}
+
+// AddFindings merges extra findings (e.g. from a vendor provider) into the
+// result, re-sorts by severity and recomputes the score with the same
+// penalties used for the rule set.
+func (r *Result) AddFindings(extra ...Finding) {
+	if len(extra) == 0 {
+		return
+	}
+	r.Findings = append(r.Findings, extra...)
+	sort.SliceStable(r.Findings, func(i, j int) bool {
+		return r.Findings[i].Severity.Rank() < r.Findings[j].Severity.Rank()
+	})
+	r.Score = 100
+	for _, f := range r.Findings {
+		r.Score -= r.scoring.penalty(f.Severity)
+	}
+	if r.Score < 0 {
+		r.Score = 0
+	}
 }
 
 // CountBySeverity tallies findings per severity.
@@ -125,10 +146,10 @@ func Evaluate(inv *inventory.Inventory, cfg *Config, now time.Time) *Result {
 		return res.Findings[i].Severity.Rank() < res.Findings[j].Severity.Rank()
 	})
 
-	scoring := cfg.scoring()
+	res.scoring = cfg.scoring()
 	res.Score = 100
 	for _, fd := range res.Findings {
-		res.Score -= scoring.penalty(fd.Severity)
+		res.Score -= res.scoring.penalty(fd.Severity)
 	}
 	if res.Score < 0 {
 		res.Score = 0

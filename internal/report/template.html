@@ -133,6 +133,20 @@
     </div>
   </div>
 
+  {{with .Vendor}}
+  <h2>Vendor appliance{{if .Experimental}} <span class="badge medium">experimental</span>{{end}}</h2>
+  <div class="card">
+    <p style="margin-top:0"><strong>{{.Provider}}</strong></p>
+    <dl class="grid">
+      {{with .Device}}{{if .DiskPercent}}<div><dt>Disk</dt><dd>{{printf "%.0f" .DiskPercent}}%</dd></div>{{end}}{{end}}
+      {{if .Tamper}}<div><dt>Tamper</dt><dd>{{if .Tamper.Tampered}}<strong>TAMPERED</strong>{{else}}clear{{end}}</dd></div>{{end}}
+      {{if .Partitions}}<div><dt>Partitions</dt><dd>{{len .Partitions}}</dd></div>{{end}}
+      {{if .HA}}<div><dt>HA members</dt><dd>{{len .HA.Members}}</dd></div>{{end}}
+    </dl>
+    {{if .Experimental}}<p class="muted" style="font-size:.8rem;margin-bottom:0">Experimental provider — not validated on real hardware.</p>{{end}}
+  </div>
+  {{end}}
+
   {{with .PQC}}
   <h2>PQC Readiness</h2>
   <div class="card">

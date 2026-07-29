@@ -15,7 +15,7 @@ import (
 
 func newScanCmd() *cobra.Command {
 	var conn connFlags
-	var rulesPath, format, outPath, failOn string
+	var rulesPath, format, outPath, failOn, vendorConfig string
 	var packNames []string
 
 	cmd := &cobra.Command{
@@ -45,6 +45,16 @@ Only object metadata is read; private key material never leaves the HSM.`,
 			rep := report.New(version.Version, inv, res)
 			rep.RulePacks = cfg.SourcePacks
 
+			vcfg, err := loadVendorConfig(vendorConfig)
+			if err != nil {
+				return err
+			}
+			if v := collectVendor(cmd.Context(), cmd.ErrOrStderr(), vcfg, inv.Module, inv.Slot.Token); v != nil {
+				rep.Vendor = v
+				res.AddFindings(v.Findings...)
+				rep.Score = res.Score
+			}
+
 			out, closeOut, err := openOutput(outPath)
 			if err != nil {
 				return err
@@ -73,6 +83,7 @@ Only object metadata is read; private key material never leaves the HSM.`,
 	cmd.Flags().StringVar(&format, "format", "text", "output format: text, json or html")
 	cmd.Flags().StringVar(&outPath, "out", "-", "output file ('-' for stdout)")
 	cmd.Flags().StringVar(&failOn, "fail-on", "", "exit non-zero if findings at or above this severity exist (critical, high, medium, low)")
+	cmd.Flags().StringVar(&vendorConfig, "vendor-config", "", "vendor configuration file enabling appliance-level checks")
 	return cmd
 }
 

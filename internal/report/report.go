@@ -11,6 +11,7 @@ import (
 	"github.com/kurtserdar/hsm-doctor/internal/inventory"
 	"github.com/kurtserdar/hsm-doctor/internal/policy"
 	"github.com/kurtserdar/hsm-doctor/internal/pqc"
+	"github.com/kurtserdar/hsm-doctor/internal/vendors"
 )
 
 // PQCSummary is the score-neutral post-quantum block embedded in reports.
@@ -29,6 +30,7 @@ type Report struct {
 	Counts    inventory.Counts     `json:"counts"`
 	Findings  []policy.Finding     `json:"findings"`
 	PQC       *PQCSummary          `json:"pqc,omitempty"`
+	Vendor    *vendor.Info         `json:"vendor,omitempty"`
 	Inventory *inventory.Inventory `json:"inventory"`
 }
 
@@ -123,6 +125,36 @@ func (r *Report) Text(w io.Writer) error {
 	fmt.Fprintf(w, "  Secret keys:    %d\n", c.SecretKeys)
 	fmt.Fprintf(w, "  Certificates:   %d\n", c.Certificates)
 	fmt.Fprintf(w, "  Mechanisms:     %d\n", len(inv.Mechanisms))
+
+	if v := r.Vendor; v != nil {
+		fmt.Fprintf(w, "\nVENDOR: %s", v.Provider)
+		if v.Experimental {
+			fmt.Fprint(w, " (experimental — not validated on real hardware)")
+		}
+		fmt.Fprintln(w)
+		if v.Device != nil && v.Device.DiskPercent != nil {
+			fmt.Fprintf(w, "  Disk usage:     %.0f%%\n", *v.Device.DiskPercent)
+		}
+		if v.HA != nil {
+			up := 0
+			for _, m := range v.HA.Members {
+				if m.Up {
+					up++
+				}
+			}
+			fmt.Fprintf(w, "  HA members up:  %d/%d\n", up, len(v.HA.Members))
+		}
+		if v.Tamper != nil {
+			state := "clear"
+			if v.Tamper.Tampered {
+				state = "TAMPERED"
+			}
+			fmt.Fprintf(w, "  Tamper:         %s\n", state)
+		}
+		if len(v.Partitions) > 0 {
+			fmt.Fprintf(w, "  Partitions:     %d\n", len(v.Partitions))
+		}
+	}
 
 	if p := r.PQC; p != nil {
 		fmt.Fprintf(w, "\nPQC READINESS: %s", p.Verdict)

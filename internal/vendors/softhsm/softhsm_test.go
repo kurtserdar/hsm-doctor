@@ -8,7 +8,7 @@ import (
 
 	"github.com/kurtserdar/hsm-doctor/internal/p11"
 	"github.com/kurtserdar/hsm-doctor/internal/policy"
-	"github.com/kurtserdar/hsm-doctor/internal/vendor"
+	"github.com/kurtserdar/hsm-doctor/internal/vendors"
 )
 
 // fakeRunner returns canned command output.
