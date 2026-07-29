@@ -31,6 +31,13 @@ type Server struct {
 	metrics *metrics
 	// enrollToken enables agent enrollment when non-empty (central mode).
 	enrollToken string
+	// auth guards the API when non-nil.
+	auth *AuthConfig
+}
+
+// SetAuth enables API authentication.
+func (s *Server) SetAuth(cfg *AuthConfig) {
+	s.auth = cfg
 }
 
 // New loads the PKCS#11 module and prepares a local-mode server. A nil
@@ -75,7 +82,7 @@ func (s *Server) Handler() http.Handler {
 	s.registerIngestAPI(mux)
 	mux.Handle("GET /metrics", s.metrics.handler())
 	registerUI(mux)
-	return logRequests(mux)
+	return logRequests(s.authMiddleware(mux))
 }
 
 // errNoLocalModule is returned by local-scan endpoints in central mode.
@@ -90,14 +97,19 @@ func (s *Server) requireClient(w http.ResponseWriter) bool {
 	return true
 }
 
-// ListenAndServe runs the server until the process exits.
-func (s *Server) ListenAndServe(addr string) error {
+// ListenAndServe runs the server until the process exits. When certFile
+// and keyFile are both set, the server speaks TLS.
+func (s *Server) ListenAndServe(addr, certFile, keyFile string) error {
 	srv := &http.Server{
 		Addr:              addr,
 		Handler:           s.Handler(),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
-	log.Printf("hsmdoctor serve listening on http://%s", addr)
+	if certFile != "" && keyFile != "" {
+		log.Printf("hsmdoctor listening on https://%s", addr)
+		return srv.ListenAndServeTLS(certFile, keyFile)
+	}
+	log.Printf("hsmdoctor listening on http://%s", addr)
 	return srv.ListenAndServe()
 }
 

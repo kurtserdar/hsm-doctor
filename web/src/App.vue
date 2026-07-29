@@ -1,11 +1,19 @@
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { setAuthToken } from "./api";
 import { store } from "./store";
 
 const route = useRoute();
 const router = useRouter();
 const title = computed(() => (route.meta.title as string) ?? "HSM Doctor");
+const tokenInput = ref("");
+
+function submitToken() {
+  setAuthToken(tokenInput.value.trim());
+  tokenInput.value = "";
+  window.location.reload();
+}
 
 onMounted(async () => {
   await store.load();
@@ -59,6 +67,22 @@ onMounted(async () => {
       </div>
     </div>
     <div v-if="store.error" class="error">{{ store.error }}</div>
-    <RouterView />
+    <div v-if="store.authRequired" class="card" style="max-width: 26rem">
+      <h2 style="margin-top: 0; font-size: 1rem">API token required</h2>
+      <p class="muted" style="font-size: 0.85rem">
+        This server requires a bearer token. Paste a token from the server's
+        auth configuration.
+      </p>
+      <form @submit.prevent="submitToken">
+        <input
+          v-model="tokenInput"
+          type="password"
+          placeholder="API token"
+          style="width: 100%; margin-bottom: 0.75rem"
+        />
+        <button class="primary" type="submit">Connect</button>
+      </form>
+    </div>
+    <RouterView v-if="!store.authRequired" />
   </main>
 </template>

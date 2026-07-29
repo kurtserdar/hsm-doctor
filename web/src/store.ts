@@ -1,5 +1,5 @@
 import { reactive } from "vue";
-import { discover, serverInfo } from "./api";
+import { ApiError, discover, serverInfo } from "./api";
 import type { ModuleInfo, SlotInfo } from "./types";
 
 // Minimal shared state: server mode, the discovered module, its slots and
@@ -12,10 +12,12 @@ export const store = reactive({
   selectedSlot: null as number | null,
   loading: false,
   error: "",
+  authRequired: false,
 
   async load() {
     this.loading = true;
     this.error = "";
+    this.authRequired = false;
     try {
       const info = await serverInfo();
       this.mode = info.mode;
@@ -30,6 +32,10 @@ export const store = reactive({
         this.selectedSlot = withToken[0].id;
       }
     } catch (e) {
+      if (e instanceof ApiError && e.status === 401) {
+        this.authRequired = true;
+        return;
+      }
       this.error = e instanceof Error ? e.message : String(e);
     } finally {
       this.loading = false;

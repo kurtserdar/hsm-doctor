@@ -10,15 +10,36 @@ import type {
   TestResult,
 } from "./types";
 
+// ApiError carries the HTTP status so callers can react to 401 separately.
+export class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
+const TOKEN_KEY = "hsmdoctor_token";
+let authToken = localStorage.getItem(TOKEN_KEY) ?? "";
+
+export function setAuthToken(token: string): void {
+  authToken = token;
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const resp = await fetch(path, init);
+  const headers = new Headers(init?.headers);
+  if (authToken) {
+    headers.set("Authorization", `Bearer ${authToken}`);
+  }
+  const resp = await fetch(path, { ...init, headers });
   const body = await resp.json().catch(() => null);
   if (!resp.ok) {
     const message =
       body && typeof body.error === "string"
         ? body.error
         : `${resp.status} ${resp.statusText}`;
-    throw new Error(message);
+    throw new ApiError(message, resp.status);
   }
   return body as T;
 }

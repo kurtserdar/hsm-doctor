@@ -12,6 +12,7 @@ import (
 
 func newServerCmd() *cobra.Command {
 	var listen, dbPath, enrollToken, enrollTokenEnv string
+	var authPath, tlsCert, tlsKey string
 
 	cmd := &cobra.Command{
 		Use:   "server",
@@ -48,14 +49,40 @@ on other hosts, front it with TLS and change --listen deliberately.`,
 
 			srv := server.NewCentral(version.Version, db, enrollToken)
 			defer srv.Close()
-			return srv.ListenAndServe(listen)
+			if err := applyAuth(srv, authPath); err != nil {
+				return err
+			}
+			if authPath == "" {
+				fmt.Fprintln(cmd.ErrOrStderr(), "Warning: API authentication is disabled; use --auth-config before exposing this server.")
+			}
+			return srv.ListenAndServe(listen, tlsCert, tlsKey)
 		},
 	}
 	cmd.Flags().StringVar(&listen, "listen", "127.0.0.1:8080", "listen address")
 	cmd.Flags().StringVar(&dbPath, "db", "", "fleet database path (default: ~/.local/share/hsmdoctor/hsmdoctor.db)")
 	cmd.Flags().StringVar(&enrollToken, "enroll-token", "", "shared token agents use to enroll (WARNING: visible in process list; prefer --enroll-token-env)")
 	cmd.Flags().StringVar(&enrollTokenEnv, "enroll-token-env", "", "name of the environment variable holding the enrollment token")
+	cmd.Flags().StringVar(&authPath, "auth-config", "", "YAML file with API bearer tokens and roles (default: no authentication)")
+	cmd.Flags().StringVar(&tlsCert, "tls-cert", "", "TLS certificate file (requires --tls-key)")
+	cmd.Flags().StringVar(&tlsKey, "tls-key", "", "TLS private key file (requires --tls-cert)")
 	return cmd
+}
+
+// applyAuth loads and installs the auth configuration when a path is given.
+func applyAuth(srv *server.Server, path string) error {
+	if path == "" {
+		return nil
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("reading auth config: %w", err)
+	}
+	cfg, err := server.LoadAuthConfig(data)
+	if err != nil {
+		return err
+	}
+	srv.SetAuth(cfg)
+	return nil
 }
 
 func init() {

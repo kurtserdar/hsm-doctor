@@ -12,6 +12,7 @@ import (
 func newServeCmd() *cobra.Command {
 	var conn connFlags
 	var listen, rulesPath, dbPath string
+	var authPath, tlsCert, tlsKey string
 	var noDB bool
 
 	cmd := &cobra.Command{
@@ -59,7 +60,10 @@ request and never logged. Think twice before exposing it beyond localhost.`,
 				return err
 			}
 			defer srv.Close()
-			return srv.ListenAndServe(listen)
+			if err := applyAuth(srv, authPath); err != nil {
+				return err
+			}
+			return srv.ListenAndServe(listen, tlsCert, tlsKey)
 		},
 	}
 	// serve needs the module but not a fixed slot: slots are chosen per API call.
@@ -71,6 +75,9 @@ request and never logged. Think twice before exposing it beyond localhost.`,
 	cmd.Flags().StringVar(&rulesPath, "rules", "", "path to a custom rules YAML file (default: built-in rules)")
 	cmd.Flags().StringVar(&dbPath, "db", "", "scan history database path (default: ~/.local/share/hsmdoctor/hsmdoctor.db)")
 	cmd.Flags().BoolVar(&noDB, "no-db", false, "disable scan history persistence")
+	cmd.Flags().StringVar(&authPath, "auth-config", "", "YAML file with API bearer tokens and roles (default: no authentication)")
+	cmd.Flags().StringVar(&tlsCert, "tls-cert", "", "TLS certificate file (requires --tls-key)")
+	cmd.Flags().StringVar(&tlsKey, "tls-key", "", "TLS private key file (requires --tls-cert)")
 	return cmd
 }
 
