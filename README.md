@@ -36,6 +36,7 @@ functional tests use ephemeral session objects that leave no trace on the token.
 | `hsmdoctor diff` | Compare two snapshots and report drift: new/removed objects, attribute flips, mechanism and firmware changes |
 | `hsmdoctor pqc` | Post-quantum readiness: ML-KEM/ML-DSA/SLH-DSA support matrix, quantum-vulnerable inventory exposure, host OpenSSL check |
 | `hsmdoctor vendor` | Appliance-level health via vendor providers: device, HA, partitions, tamper, backup (SoftHSM stable; Luna/nShield/CloudHSM experimental) |
+| `hsmdoctor trace` | Analyze PKCS#11 call traces from the Flight Recorder shim: session/operation leaks, ordering bugs, errors, performance |
 | `hsmdoctor serve` | Local web interface + REST API with scan history, automatic drift detection, Prometheus metrics and cron-scheduled scans |
 | `hsmdoctor server` | Central fleet server: collects reports pushed by agents, stores history, detects drift, serves the fleet dashboard |
 | `hsmdoctor agent` | Runs where the vendor PKCS#11 client lives; scans on an interval and pushes reports to the central server |
@@ -223,6 +224,25 @@ Optional hardening: `--auth-config` (bearer tokens with admin/viewer
 roles), `--tls-cert`/`--tls-key`, `--webhook-url` for drift notifications
 and `--schedule "0 */6 * * *"` for automatic scans.
 
+## PKCS#11 Flight Recorder
+
+A shim library sits between an application and its PKCS#11 module and records
+every call as a trace, which the analyzer inspects for leaks, ordering bugs,
+errors and slow calls:
+
+```sh
+make shim                                             # build hsmdoctor-trace.so
+export HSMDOCTOR_TRACE_MODULE=/usr/lib/libpkcs11.so   # the real module
+export HSMDOCTOR_TRACE_OUT=/tmp/trace.jsonl
+myapp --pkcs11-module ./hsmdoctor-trace.so ...        # run any PKCS#11 app
+hsmdoctor trace analyze /tmp/trace.jsonl
+```
+
+The shim **cannot leak secrets by construction**: its C layer forwards
+buffer pointers straight to the real module and passes only metadata
+(names, handles, mechanism codes, buffer lengths, return codes, timings) to
+the trace. See [docs/trace.md](docs/trace.md).
+
 ## Vendor appliance health
 
 PKCS#11 cannot report device resources, HA state, partition utilization or
@@ -293,7 +313,7 @@ authentication, webhooks and systemd units.
 ## Roadmap
 
 - **Next** — PostgreSQL backend option, mTLS for agents, OIDC/SSO, e-mail notifications, hardening of the experimental vendor providers against real hardware
-- **v1.0** — validated vendor plugins, PKCS#11 call tracing (Flight Recorder), and a stable plugin API
+- **v1.0** — validated vendor plugins, broader Flight Recorder coverage with simulator replay, and a stable plugin API
 
 ## Development
 

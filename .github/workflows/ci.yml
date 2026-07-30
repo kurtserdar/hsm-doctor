@@ -71,6 +71,28 @@ jobs:
       - name: Integration tests (SoftHSM)
         run: go test -tags=integration -v ./...
 
+      - name: Flight Recorder shim end-to-end
+        run: |
+          make shim
+          export HSMDOCTOR_TRACE_MODULE=/usr/lib/softhsm/libsofthsm2.so
+          export SOFTHSM2_CONF="$PWD/ci-softhsm.conf"
+          mkdir -p ci-tokens
+          printf 'directories.tokendir = %s/ci-tokens\n' "$PWD" > "$SOFTHSM2_CONF"
+          softhsm2-util --init-token --free --label CI --so-pin 12345678 --pin 123456
+          export HSMDOCTOR_TRACE_OUT="$PWD/ci-trace.jsonl"
+          # Drive the real module through the shim.
+          pkcs11-tool --module ./hsmdoctor-trace.so --list-token-slots
+          pkcs11-tool --module ./hsmdoctor-trace.so --login --pin 123456 \
+            --keypairgen --key-type rsa:2048 --label ci-key --id 01
+          go build -o hsmdoctor ./cmd/hsmdoctor
+          ./hsmdoctor trace analyze "$HSMDOCTOR_TRACE_OUT"
+          # The trace must contain calls and must never contain the PIN.
+          test -s "$HSMDOCTOR_TRACE_OUT"
+          if grep -q 123456 "$HSMDOCTOR_TRACE_OUT"; then
+            echo "PIN leaked into trace!" >&2
+            exit 1
+          fi
+
   # Positive-path PQC test against Kryoptic (a PKCS#11 3.2 soft token with
   # real ML-KEM/ML-DSA support). Non-blocking while the ecosystem matures.
   # Runs in a Fedora container because the pqc feature needs an OpenSSL 3.5+
