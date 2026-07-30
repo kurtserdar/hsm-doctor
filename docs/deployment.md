@@ -252,3 +252,48 @@ Useful alerts: `hsmdoctor_health_score < 70`,
 
 Delivery is retried three times with backoff; failures are logged and
 never block scanning.
+
+## E-mail notifications
+
+Where the webhook targets machines, e-mail targets people. `--notify-config`
+points at a YAML file with SMTP settings and recipients; the server then
+e-mails **drift alerts** (same events as the webhook) and **certificate
+expiry reminders**.
+
+```yaml
+# notify.yaml (chmod 600)
+smtp:
+  host: smtp.example.com
+  port: 587
+  username: hsmdoctor
+  password: "${SMTP_PASSWORD}"
+  from: hsmdoctor@example.com
+  to: [hsm-team@example.com, oncall@example.com]
+  tls: starttls          # starttls (587), implicit (465) or none (localhost relay)
+
+# Optional — both default to true:
+drift: true
+cert_expiry: true
+cert_warn_days: [30, 14, 1]   # e-mail once as a cert crosses each threshold
+```
+
+```sh
+hsmdoctor server --notify-config notify.yaml ... \
+  --schedule "0 8 * * *"     # a daily scan drives the expiry reminders
+```
+
+- **Certificate reminders** are deduplicated per certificate and threshold
+  using a `notifications` table in the store, so a daily scan does not resend
+  the same warning — an operator gets one mail as a certificate first enters
+  the 30-, 14- and 1-day windows. Persistence (`--db`, not `--no-db`) is
+  required for this dedup; without it drift mail still works but reminders
+  could repeat.
+- Reminders ride the scheduled scans, so pair `--notify-config` with
+  `--schedule` (or an agent interval) to see them.
+- E-mail and the webhook are independent channels — enable either or both.
+- Delivery failures are logged and never block scanning. Keep the SMTP
+  password in the file (chmod 600) or an environment variable, not on the
+  command line.
+
+Works with any SMTP server or relay (corporate smarthost, Gmail with an app
+password, Amazon SES SMTP endpoint, ...).

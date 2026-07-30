@@ -307,6 +307,10 @@ hsmdoctor agent --server https://doctor.example.com:8443 \
   --module /usr/lib/libCryptoki2_64.so --pin-env HSM_PIN --interval 15m
 ```
 
+Alerts reach both machines and people: `--webhook-url` POSTs on drift, and
+`--notify-config` e-mails drift alerts and certificate-expiry reminders over
+SMTP (reminders deduplicated per certificate and threshold).
+
 The server persists history to SQLite by default, or to PostgreSQL when
 `--db` (or `HSMDOCTOR_DB`) is a `postgres://` DSN — recommended for fleets:
 
@@ -324,11 +328,12 @@ agents presenting a certificate signed by your CA (a transport factor on top
 of the bearer token), with `--tls-client-cert`/`--server-ca` on the agent.
 
 See [docs/deployment.md](docs/deployment.md) for the full setup including
-storage backends, authentication, mutual TLS, webhooks and systemd units.
+storage backends, authentication, mutual TLS, webhooks, e-mail notifications
+and systemd units.
 
 ## Roadmap
 
-- **Next** — e-mail notifications, hardening of the experimental vendor providers against real hardware, broader Flight Recorder coverage
+- **Next** — hardening of the experimental vendor providers against real hardware, broader Flight Recorder coverage with simulator replay
 - **v1.0** — validated vendor plugins, broader Flight Recorder coverage with simulator replay, and a stable plugin API
 
 ## Development
