@@ -1,5 +1,6 @@
 # HSM Doctor
 
+[![Version](https://img.shields.io/badge/version-v1.0.0-brightgreen.svg)](https://github.com/kurtserdar/hsm-doctor/releases/tag/v1.0.0)
 [![Release](https://img.shields.io/github/v/release/kurtserdar/hsm-doctor?sort=semver&label=release)](https://github.com/kurtserdar/hsm-doctor/releases/latest)
 [![CI](https://github.com/kurtserdar/hsm-doctor/actions/workflows/ci.yml/badge.svg)](https://github.com/kurtserdar/hsm-doctor/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
