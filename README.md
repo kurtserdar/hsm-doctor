@@ -57,8 +57,8 @@ list of posture findings.*
 
 ## Screenshots
 
-A tour of HSM Doctor — the embedded web interface, vendor appliance health
-and the PKCS#11 Flight Recorder. Click any image to enlarge.
+A tour of HSM Doctor — the command line and the embedded web interface.
+Click any image to enlarge.
 
 | | |
 |:---:|:---:|
@@ -81,6 +81,11 @@ error codes, ordering issues and slow calls from a secret-safe call trace,
 with a per-function timing table:
 
 [![Flight Recorder trace analyze](docs/images/trace.png)](docs/images/trace.png)
+
+**Discover** — enumerate the module, its slots and tokens (and, with
+`--mechanisms`, every supported mechanism):
+
+[![Discover](docs/images/discover.png)](docs/images/discover.png)
 
 The CLI produces the same assessments as text, JSON or a single-file HTML
 report — see the [`scan` report above](#hsm-doctor).
