@@ -1,0 +1,385 @@
+# Command reference
+
+Generated from `hsmdoctor --help`. Every command supports `--help` for full details.
+
+```
+  agent       Continuously scan local tokens and push reports to a central server
+  bench       Measure token performance with strictly bounded load
+  certs       List certificates on a token with their expiry status
+  completion  Generate the autocompletion script for the specified shell
+  diff        Compare two snapshots and report drift
+  discover    Discover slots, tokens and mechanisms of a PKCS#11 module
+  help        Help about any command
+  packs       List the built-in policy packs
+  pqc         Assess post-quantum readiness of a token
+  scan        Scan a token: inventory, security posture and health score
+  serve       Serve the local web interface and REST API
+  server      Run the central server collecting reports from agents
+  snapshot    Record the current state of a token for later drift detection
+  test        Run a safe functional test profile against a token
+  trace       Work with PKCS#11 call traces from the Flight Recorder shim
+  vendor      Collect vendor appliance health for a token
+  version     Print version information
+```
+
+## hsmdoctor discover
+
+```
+Loads a PKCS#11 library, lists its slots and tokens, and optionally the
+mechanisms supported by each token. No login is required.
+
+Usage:
+  hsmdoctor discover [flags]
+
+Flags:
+  -h, --help            help for discover
+      --json            output as JSON
+      --mechanisms      list mechanisms supported by each token
+      --module string   path to the PKCS#11 library
+      --uri string      RFC 7512 PKCS#11 URI, e.g. "pkcs11:token=PROD?module-path=/usr/lib/libpkcs11.so"
+```
+
+## hsmdoctor scan
+
+```
+Collects the metadata inventory of a token, evaluates it against the
+security posture rules and reports findings with a health score.
+
+Only object metadata is read; private key material never leaves the HSM.
+
+Usage:
+  hsmdoctor scan [flags]
+
+Flags:
+      --fail-on string         exit non-zero if findings at or above this severity exist (critical, high, medium, low)
+      --format string          output format: text, json or html (default "text")
+  -h, --help                   help for scan
+      --module string          path to the PKCS#11 library
+      --out string             output file ('-' for stdout) (default "-")
+      --pack stringArray       policy pack to apply (embedded name or file path; repeatable, see 'hsmdoctor packs')
+      --pin string             user PIN (WARNING: visible in shell history; prefer --pin-env)
+      --pin-env string         name of the environment variable holding the user PIN
+      --rules string           path to a custom rules YAML file replacing all packs
+      --slot uint              slot ID to operate on
+      --uri string             RFC 7512 PKCS#11 URI, e.g. "pkcs11:token=PROD?module-path=/usr/lib/libpkcs11.so"
+      --vendor-config string   vendor configuration file enabling appliance-level checks
+```
+
+## hsmdoctor certs
+
+```
+Lists every X.509 certificate stored on the token together with its
+expiry status, most urgent first. Designed for cron and CI usage via
+--fail-on.
+
+Usage:
+  hsmdoctor certs [flags]
+
+Flags:
+      --fail-on string   exit non-zero on: expired (only expired) or expiring (expired + expiring)
+  -h, --help             help for certs
+      --json             output as JSON
+      --module string    path to the PKCS#11 library
+      --pin string       user PIN (WARNING: visible in shell history; prefer --pin-env)
+      --pin-env string   name of the environment variable holding the user PIN
+      --slot uint        slot ID to operate on
+      --uri string       RFC 7512 PKCS#11 URI, e.g. "pkcs11:token=PROD?module-path=/usr/lib/libpkcs11.so"
+      --warn-days int    days before expiry to flag a certificate as expiring (default 30)
+```
+
+## hsmdoctor test
+
+```
+Runs a functional test profile (key generation, signing, encryption)
+using ephemeral session objects only. Nothing is persisted on the token and
+all created objects are destroyed when the test finishes.
+
+Usage:
+  hsmdoctor test [flags]
+
+Flags:
+  -h, --help             help for test
+      --json             output as JSON
+      --module string    path to the PKCS#11 library
+      --pin string       user PIN (WARNING: visible in shell history; prefer --pin-env)
+      --pin-env string   name of the environment variable holding the user PIN
+      --profile string   test profile to run (available: key-wrapping, sign-verify) (default "sign-verify")
+      --slot uint        slot ID to operate on
+      --uri string       RFC 7512 PKCS#11 URI, e.g. "pkcs11:token=PROD?module-path=/usr/lib/libpkcs11.so"
+```
+
+## hsmdoctor bench
+
+```
+Measures signing and encryption throughput using ephemeral session
+objects. Every run is capped by both duration and an absolute operation
+budget per primitive, so a benchmark cannot overload a token indefinitely.
+
+Avoid running benchmarks against production HSMs serving live traffic.
+
+Usage:
+  hsmdoctor bench [flags]
+
+Flags:
+      --duration duration   max duration per primitive (capped at 1m0s) (default 3s)
+  -h, --help                help for bench
+      --json                output as JSON
+      --max-ops int         max operations per primitive (capped at 1000000) (default 5000)
+      --module string       path to the PKCS#11 library
+      --pin string          user PIN (WARNING: visible in shell history; prefer --pin-env)
+      --pin-env string      name of the environment variable holding the user PIN
+      --sessions int        concurrent sessions (capped at 32) (default 1)
+      --slot uint           slot ID to operate on
+      --uri string          RFC 7512 PKCS#11 URI, e.g. "pkcs11:token=PROD?module-path=/usr/lib/libpkcs11.so"
+```
+
+## hsmdoctor pqc
+
+```
+Checks which NIST post-quantum families (ML-KEM, ML-DSA, SLH-DSA) the
+token advertises, how exposed the current inventory is to a future quantum
+adversary, and whether the host OpenSSL installation is PQC-capable.
+
+With --test, advertised families are functionally probed using ephemeral
+session objects that leave no trace on the token.
+
+Usage:
+  hsmdoctor pqc [flags]
+
+Flags:
+  -h, --help             help for pqc
+      --json             output as JSON
+      --module string    path to the PKCS#11 library
+      --no-host          skip the host OpenSSL capability check
+      --pin string       user PIN (WARNING: visible in shell history; prefer --pin-env)
+      --pin-env string   name of the environment variable holding the user PIN
+      --slot uint        slot ID to operate on
+      --test             functionally probe advertised families with ephemeral session objects
+      --uri string       RFC 7512 PKCS#11 URI, e.g. "pkcs11:token=PROD?module-path=/usr/lib/libpkcs11.so"
+```
+
+## hsmdoctor snapshot
+
+```
+Collects the metadata inventory of a token and writes it to a JSON file.
+Compare two snapshots later with "hsmdoctor diff" to detect drift.
+
+Usage:
+  hsmdoctor snapshot [flags]
+
+Flags:
+  -h, --help             help for snapshot
+      --module string    path to the PKCS#11 library
+      --out string       output file ('-' for stdout) (default "-")
+      --pin string       user PIN (WARNING: visible in shell history; prefer --pin-env)
+      --pin-env string   name of the environment variable holding the user PIN
+      --slot uint        slot ID to operate on
+      --uri string       RFC 7512 PKCS#11 URI, e.g. "pkcs11:token=PROD?module-path=/usr/lib/libpkcs11.so"
+```
+
+## hsmdoctor diff
+
+```
+Compare two snapshots and report drift
+
+Usage:
+  hsmdoctor diff <old-snapshot.json> <new-snapshot.json> [flags]
+
+Flags:
+      --exit-code   exit non-zero when drift is detected (for scripting)
+  -h, --help        help for diff
+      --json        output as JSON
+```
+
+## hsmdoctor vendor
+
+```
+Detects the HSM vendor behind a token and collects appliance-level
+health that PKCS#11 cannot expose: device resources, HA status, partition
+utilization, tamper and backup state.
+
+Some providers are experimental and have not been validated against real
+hardware; their output is labeled accordingly. List providers with --list.
+
+Usage:
+  hsmdoctor vendor [flags]
+
+Flags:
+  -h, --help                   help for vendor
+      --json                   output as JSON
+      --list                   list available vendor providers and exit
+      --module string          path to the PKCS#11 library
+      --pin string             user PIN (WARNING: visible in shell history; prefer --pin-env)
+      --pin-env string         name of the environment variable holding the user PIN
+      --slot uint              slot ID to operate on
+      --uri string             RFC 7512 PKCS#11 URI, e.g. "pkcs11:token=PROD?module-path=/usr/lib/libpkcs11.so"
+      --vendor-config string   vendor configuration file
+```
+
+## hsmdoctor trace
+
+```
+Analyze PKCS#11 call traces produced by the HSM Doctor Flight Recorder
+shim (see docs/trace.md). Traces are metadata only — no PINs, key material
+or plaintext are ever recorded.
+
+Usage:
+  hsmdoctor trace [command]
+
+Available Commands:
+  analyze     Analyze a trace for leaks, ordering issues and errors
+  summary     Show per-function call counts and timing
+
+Flags:
+  -h, --help   help for trace
+
+Use "hsmdoctor trace [command] --help" for more information about a command.
+```
+
+## hsmdoctor packs
+
+```
+List the built-in policy packs
+
+Usage:
+  hsmdoctor packs [flags]
+
+Flags:
+  -h, --help   help for packs
+```
+
+## hsmdoctor serve
+
+```
+Starts a local HTTP server exposing HSM Doctor's functionality as a
+REST API under /api/v1 plus the embedded web interface.
+
+The server is meant for local, single-operator use: it binds to loopback by
+default and the PIN is taken once at startup (prefer --pin-env), never per
+request and never logged. Think twice before exposing it beyond localhost.
+
+Usage:
+  hsmdoctor serve [flags]
+
+Flags:
+      --auth-config string     YAML file with API bearer tokens and roles (default: no authentication)
+      --client-ca string       require client certificates signed by this CA (mutual TLS; requires --tls-cert/--tls-key)
+      --db string              SQLite path or postgres:// DSN (default: ~/.local/share/hsmdoctor/hsmdoctor.db; or HSMDOCTOR_DB)
+  -h, --help                   help for serve
+      --listen string          listen address (default "127.0.0.1:8080")
+      --module string          path to the PKCS#11 library (required)
+      --no-db                  disable scan history persistence
+      --notify-config string   e-mail notification config file (SMTP + recipients)
+      --pack stringArray       policy pack to apply (embedded name or file path; repeatable)
+      --pin string             user PIN (WARNING: visible in shell history; prefer --pin-env)
+      --pin-env string         name of the environment variable holding the user PIN
+      --rules string           path to a custom rules YAML file replacing all packs
+      --schedule string        cron expression for automatic scans of all tokens (e.g. "0 */6 * * *")
+      --tls-cert string        TLS certificate file (requires --tls-key)
+      --tls-key string         TLS private key file (requires --tls-cert)
+      --vendor-config string   vendor configuration file enabling appliance-level checks
+      --webhook-url string     POST drift notifications to this URL
+```
+
+## hsmdoctor server
+
+```
+Runs HSM Doctor in central mode: no local PKCS#11 module is loaded.
+Agents enrolled with the shared enrollment token push their scan reports
+here; the server stores history, detects drift and serves the fleet
+dashboard, REST API and Prometheus metrics.
+
+The default listen address is loopback. When exposing the server to agents
+on other hosts, front it with TLS and change --listen deliberately.
+
+Usage:
+  hsmdoctor server [flags]
+
+Flags:
+      --auth-config string        YAML file with API bearer tokens and roles (default: no authentication)
+      --client-ca string          require agent/client certificates signed by this CA (mutual TLS; requires --tls-cert/--tls-key)
+      --db string                 SQLite path or postgres:// DSN (default: ~/.local/share/hsmdoctor/hsmdoctor.db; or HSMDOCTOR_DB)
+      --enroll-token string       shared token agents use to enroll (WARNING: visible in process list; prefer --enroll-token-env)
+      --enroll-token-env string   name of the environment variable holding the enrollment token
+  -h, --help                      help for server
+      --listen string             listen address (default "127.0.0.1:8080")
+      --notify-config string      e-mail notification config file (SMTP + recipients)
+      --tls-cert string           TLS certificate file (requires --tls-key)
+      --tls-key string            TLS private key file (requires --tls-cert)
+      --webhook-url string        POST drift notifications to this URL
+```
+
+## hsmdoctor agent
+
+```
+Runs on a host with the vendor PKCS#11 client installed. Scans all
+token-bearing slots (or one specific --slot) on an interval and pushes the
+reports to a central HSM Doctor server.
+
+The PIN never leaves this host; only finished reports (metadata, findings,
+scores) are transmitted. On first run the agent enrolls using the shared
+enrollment token and stores its permanent token in --token-file.
+
+Usage:
+  hsmdoctor agent [flags]
+
+Flags:
+      --enroll-token string       enrollment token for first registration (prefer --enroll-token-env)
+      --enroll-token-env string   name of the environment variable holding the enrollment token
+  -h, --help                      help for agent
+      --interval duration         time between scans (default 15m0s)
+      --module string             path to the PKCS#11 library (required)
+      --name string               agent name (default: hostname)
+      --once                      scan and push once, then exit (for cron)
+      --pack stringArray          policy pack to apply (embedded name or file path; repeatable)
+      --pin string                user PIN (WARNING: visible in shell history; prefer --pin-env)
+      --pin-env string            name of the environment variable holding the user PIN
+      --rules string              path to a custom rules YAML file replacing all packs
+      --server string             central server base URL, e.g. https://hsmdoctor.example.com (required)
+      --server-ca string          trust this CA for the server's certificate instead of the system roots
+      --slot uint                 scan only this slot (default: all slots with tokens)
+      --tls-client-cert string    client certificate for mutual TLS to the server
+      --tls-client-key string     client private key for mutual TLS (requires --tls-client-cert)
+      --token-file string         file storing the permanent agent token (default: ~/.local/share/hsmdoctor/agent.token)
+      --vendor-config string      vendor configuration file enabling appliance-level checks
+```
+
+## hsmdoctor version
+
+```
+Print version information
+
+Usage:
+  hsmdoctor version [flags]
+
+Flags:
+  -h, --help   help for version
+```
+
+## hsmdoctor trace analyze
+
+```
+Analyze a trace for leaks, ordering issues and errors
+
+Usage:
+  hsmdoctor trace analyze [trace.jsonl] [flags]
+
+Flags:
+      --fail-on-error   exit non-zero when error-level findings exist
+  -h, --help            help for analyze
+      --json            output as JSON
+```
+
+## hsmdoctor trace summary
+
+```
+Show per-function call counts and timing
+
+Usage:
+  hsmdoctor trace summary [trace.jsonl] [flags]
+
+Flags:
+  -h, --help   help for summary
+      --json   output as JSON
+```
+

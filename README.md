@@ -331,15 +331,34 @@ See [docs/deployment.md](docs/deployment.md) for the full setup including
 storage backends, authentication, mutual TLS, webhooks, e-mail notifications
 and systemd units.
 
+## Documentation
+
+Full documentation lives in [docs/](docs/) — start with the
+[documentation index](docs/README.md). Highlights: the
+[command reference](docs/cli.md), the [deployment guide](docs/deployment.md),
+[policy rules](docs/rules.md), the [REST API](docs/api.md),
+[vendor providers](docs/vendors.md), the [Flight Recorder](docs/trace.md) and
+the [architecture overview](docs/architecture.md).
+
+## Stability
+
+From 1.0, HSM Doctor follows [Semantic Versioning](https://semver.org). CLI
+flags, JSON output, the trace format and config file formats are stable
+within a major version; the Luna/nShield/CloudHSM vendor providers and the
+Flight Recorder's function coverage are explicitly experimental. See the
+[compatibility policy](docs/compatibility.md).
+
 ## Roadmap
 
-- **Next** — hardening of the experimental vendor providers against real hardware, broader Flight Recorder coverage with simulator replay
-- **v1.0** — validated vendor plugins, broader Flight Recorder coverage with simulator replay, and a stable plugin API
+- **Beyond 1.0** — validating the experimental vendor providers against real hardware, broader Flight Recorder coverage with simulator replay, and a stable vendor plugin API.
 
-## Development
+## Contributing
 
-See [docs/testing.md](docs/testing.md). Every push runs unit tests plus
-SoftHSM-backed integration tests in CI.
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for build
+and test instructions and [docs/testing.md](docs/testing.md) for the test
+layers. Report security issues privately per [SECURITY.md](SECURITY.md). Every
+push runs unit, integration, PostgreSQL, Flight Recorder and post-quantum
+tests plus `govulncheck` in CI.
 
 ## License
 
