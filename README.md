@@ -259,6 +259,11 @@ as a JSON API under `/api/v1` — see [docs/api.md](docs/api.md).
 *The inventory view lists every key and certificate with its type, size and
 capability flags — filterable by object class.*
 
+![HSM Doctor certificates view](docs/images/certificates.png)
+
+*The certificates view tracks expiry across the token, flagging what is ok,
+expiring within the warning window, or already expired.*
+
 Optional hardening: `--auth-config` (bearer tokens with admin/viewer
 roles), `--tls-cert`/`--tls-key`, `--webhook-url` for drift notifications
 and `--schedule "0 */6 * * *"` for automatic scans.
@@ -350,6 +355,11 @@ hsmdoctor agent --server https://doctor.example.com:8443 \
   --enroll-token-env HSMDOCTOR_ENROLL \
   --module /usr/lib/libCryptoki2_64.so --pin-env HSM_PIN --interval 15m
 ```
+
+![HSM Doctor fleet view](docs/images/fleet.png)
+
+*The fleet view rolls every enrolled HSM into one table — latest health
+score, serial, model, firmware and when each was last seen.*
 
 Alerts reach both machines and people: `--webhook-url` POSTs on drift, and
 `--notify-config` e-mails drift alerts and certificate-expiry reminders over
