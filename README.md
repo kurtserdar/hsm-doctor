@@ -304,6 +304,12 @@ hsmdoctor vendor --list
 hsmdoctor scan --module ... --slot ... --vendor-config vendor.yaml
 ```
 
+With `--vendor-config`, the vendor findings also surface as a card on the
+web dashboard (here the SoftHSM reference provider reporting token-store disk
+usage and partitions):
+
+![HSM Doctor vendor appliance card](docs/images/vendor.png)
+
 The **SoftHSM** reference provider is stable and doubles as a template;
 **Luna**, **nShield** and **CloudHSM** ship as clearly-labeled experimental
 skeletons built against public documentation. See
