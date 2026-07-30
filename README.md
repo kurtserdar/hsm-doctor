@@ -307,12 +307,19 @@ hsmdoctor agent --server https://doctor.example.com:8443 \
   --module /usr/lib/libCryptoki2_64.so --pin-env HSM_PIN --interval 15m
 ```
 
+The server persists history to SQLite by default, or to PostgreSQL when
+`--db` (or `HSMDOCTOR_DB`) is a `postgres://` DSN — recommended for fleets:
+
+```sh
+hsmdoctor server --db "postgres://hsmdoctor:***@db:5432/hsmdoctor?sslmode=require" ...
+```
+
 See [docs/deployment.md](docs/deployment.md) for the full setup including
-authentication, webhooks and systemd units.
+storage backends, authentication, webhooks and systemd units.
 
 ## Roadmap
 
-- **Next** — PostgreSQL backend option, mTLS for agents, OIDC/SSO, e-mail notifications, hardening of the experimental vendor providers against real hardware
+- **Next** — mTLS for agents, OIDC/SSO, e-mail notifications, hardening of the experimental vendor providers against real hardware
 - **v1.0** — validated vendor plugins, broader Flight Recorder coverage with simulator replay, and a stable plugin API
 
 ## Development

@@ -35,17 +35,15 @@ on other hosts, front it with TLS and change --listen deliberately.`,
 				fmt.Fprintln(cmd.ErrOrStderr(), "Warning: no enrollment token configured; new agents cannot enroll.")
 			}
 
-			if dbPath == "" {
-				var err error
-				if dbPath, err = store.DefaultPath(); err != nil {
-					return err
-				}
-			}
-			db, err := store.Open(dbPath)
+			resolved, err := resolveDBPath(dbPath)
 			if err != nil {
 				return err
 			}
-			fmt.Fprintf(cmd.ErrOrStderr(), "Fleet database: %s\n", dbPath)
+			db, err := store.Open(resolved)
+			if err != nil {
+				return err
+			}
+			fmt.Fprintf(cmd.ErrOrStderr(), "Fleet database: %s\n", store.Redact(resolved))
 
 			srv := server.NewCentral(version.Version, db, enrollToken)
 			defer srv.Close()
@@ -60,7 +58,7 @@ on other hosts, front it with TLS and change --listen deliberately.`,
 		},
 	}
 	cmd.Flags().StringVar(&listen, "listen", "127.0.0.1:8080", "listen address")
-	cmd.Flags().StringVar(&dbPath, "db", "", "fleet database path (default: ~/.local/share/hsmdoctor/hsmdoctor.db)")
+	cmd.Flags().StringVar(&dbPath, "db", "", "SQLite path or postgres:// DSN (default: ~/.local/share/hsmdoctor/hsmdoctor.db; or HSMDOCTOR_DB)")
 	cmd.Flags().StringVar(&enrollToken, "enroll-token", "", "shared token agents use to enroll (WARNING: visible in process list; prefer --enroll-token-env)")
 	cmd.Flags().StringVar(&enrollTokenEnv, "enroll-token-env", "", "name of the environment variable holding the enrollment token")
 	cmd.Flags().StringVar(&authPath, "auth-config", "", "YAML file with API bearer tokens and roles (default: no authentication)")

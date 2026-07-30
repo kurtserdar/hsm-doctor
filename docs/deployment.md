@@ -93,6 +93,36 @@ WantedBy=multi-user.target
 A matching `hsmdoctor-server.service` runs `hsmdoctor server ...` on the
 central host.
 
+## Storage backend
+
+`serve` and `server` persist scan history, drift events and agents. The
+`--db` value selects the backend by its form:
+
+- **SQLite** (default) — a file path. Zero setup; ideal for a single host.
+  Defaults to `~/.local/share/hsmdoctor/hsmdoctor.db`.
+- **PostgreSQL** — a `postgres://` (or `postgresql://`) DSN. Recommended for
+  a central server serving a fleet, or when you want managed backups and
+  concurrent access.
+
+```sh
+# SQLite (default)
+hsmdoctor server --db /var/lib/hsmdoctor/fleet.db ...
+
+# PostgreSQL
+hsmdoctor server \
+  --db "postgres://hsmdoctor:secret@db.example.com:5432/hsmdoctor?sslmode=require" ...
+```
+
+The schema is created and migrated automatically on first connect (under a
+PostgreSQL advisory lock, so multiple servers can start against one
+database safely). Both backends implement the exact same behavior — the
+same conformance test suite runs against both in CI.
+
+Keep a password-bearing DSN out of the process list by setting
+`HSMDOCTOR_DB` (in a systemd `EnvironmentFile`, for example) instead of
+passing `--db`; the flag takes precedence when both are set. The DSN's
+password is redacted in log output.
+
 ## Prometheus
 
 Scrape `/metrics` on the local server or the central server (fleet-wide

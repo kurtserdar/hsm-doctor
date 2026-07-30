@@ -1,6 +1,9 @@
 package store
 
-import "strings"
+import (
+	"net/url"
+	"strings"
+)
 
 // Open connects to the store described by dsn and applies pending
 // migrations. A "postgres://" or "postgresql://" DSN selects the PostgreSQL
@@ -15,4 +18,22 @@ func Open(dsn string) (Store, error) {
 // isPostgresDSN reports whether dsn addresses a PostgreSQL server.
 func isPostgresDSN(dsn string) bool {
 	return strings.HasPrefix(dsn, "postgres://") || strings.HasPrefix(dsn, "postgresql://")
+}
+
+// Redact hides the password in a PostgreSQL DSN so it is safe to log. SQLite
+// paths are returned unchanged.
+func Redact(dsn string) string {
+	if !isPostgresDSN(dsn) {
+		return dsn
+	}
+	u, err := url.Parse(dsn)
+	if err != nil {
+		return "postgres://[unparseable DSN]"
+	}
+	if u.User != nil {
+		if _, hasPw := u.User.Password(); hasPw {
+			u.User = url.UserPassword(u.User.Username(), "****")
+		}
+	}
+	return u.String()
 }

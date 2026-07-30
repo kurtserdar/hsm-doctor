@@ -42,17 +42,16 @@ request and never logged. Think twice before exposing it beyond localhost.`,
 
 			var st store.Store
 			if !noDB {
-				if dbPath == "" {
-					if dbPath, err = store.DefaultPath(); err != nil {
-						return err
-					}
+				resolved, err := resolveDBPath(dbPath)
+				if err != nil {
+					return err
 				}
-				db, err := store.Open(dbPath)
+				db, err := store.Open(resolved)
 				if err != nil {
 					return err
 				}
 				st = db
-				fmt.Fprintf(cmd.ErrOrStderr(), "Scan history database: %s\n", dbPath)
+				fmt.Fprintf(cmd.ErrOrStderr(), "Scan history database: %s\n", store.Redact(resolved))
 			}
 
 			srv, err := server.New(conn.module, pin, cfg, version.Version, st)
@@ -107,7 +106,7 @@ request and never logged. Think twice before exposing it beyond localhost.`,
 	cmd.Flags().StringVar(&listen, "listen", "127.0.0.1:8080", "listen address")
 	cmd.Flags().StringVar(&rulesPath, "rules", "", "path to a custom rules YAML file replacing all packs")
 	cmd.Flags().StringArrayVar(&packNames, "pack", nil, "policy pack to apply (embedded name or file path; repeatable)")
-	cmd.Flags().StringVar(&dbPath, "db", "", "scan history database path (default: ~/.local/share/hsmdoctor/hsmdoctor.db)")
+	cmd.Flags().StringVar(&dbPath, "db", "", "SQLite path or postgres:// DSN (default: ~/.local/share/hsmdoctor/hsmdoctor.db; or HSMDOCTOR_DB)")
 	cmd.Flags().BoolVar(&noDB, "no-db", false, "disable scan history persistence")
 	cmd.Flags().StringVar(&authPath, "auth-config", "", "YAML file with API bearer tokens and roles (default: no authentication)")
 	cmd.Flags().StringVar(&tlsCert, "tls-cert", "", "TLS certificate file (requires --tls-key)")
