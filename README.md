@@ -245,6 +245,8 @@ hsmdoctor serve --module /usr/lib/softhsm/libsofthsm2.so --pin-env HSM_PIN
 # → http://127.0.0.1:8080
 ```
 
+![HSM Doctor web dashboard](docs/images/dashboard.png)
+
 The embedded web interface (Vue 3) covers dashboard with health score and
 findings, inventory browsing, certificate expiry, functional tests,
 benchmarks and the fleet view with score history and drift feeds. Scans are
