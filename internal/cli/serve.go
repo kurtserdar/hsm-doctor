@@ -15,7 +15,7 @@ func newServeCmd() *cobra.Command {
 	var listen, rulesPath, dbPath string
 	var packNames []string
 	var authPath, tlsCert, tlsKey string
-	var webhookURL, schedule string
+	var webhookURL, schedule, vendorConfig string
 	var noDB bool
 
 	cmd := &cobra.Command{
@@ -68,6 +68,12 @@ request and never logged. Think twice before exposing it beyond localhost.`,
 			}
 			srv.SetWebhook(webhookURL)
 
+			if vcfg, err := loadVendorConfig(vendorConfig); err != nil {
+				return err
+			} else if vcfg != nil {
+				srv.SetVendorConfig(vcfg)
+			}
+
 			if schedule != "" {
 				c := cron.New()
 				_, err := c.AddFunc(schedule, func() {
@@ -108,6 +114,7 @@ request and never logged. Think twice before exposing it beyond localhost.`,
 	cmd.Flags().StringVar(&tlsKey, "tls-key", "", "TLS private key file (requires --tls-cert)")
 	cmd.Flags().StringVar(&webhookURL, "webhook-url", "", "POST drift notifications to this URL")
 	cmd.Flags().StringVar(&schedule, "schedule", "", `cron expression for automatic scans of all tokens (e.g. "0 */6 * * *")`)
+	cmd.Flags().StringVar(&vendorConfig, "vendor-config", "", "vendor configuration file enabling appliance-level checks")
 	return cmd
 }
 

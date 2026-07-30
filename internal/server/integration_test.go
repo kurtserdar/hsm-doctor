@@ -17,6 +17,8 @@ import (
 	"github.com/kurtserdar/hsm-doctor/internal/server"
 	"github.com/kurtserdar/hsm-doctor/internal/store"
 	"github.com/kurtserdar/hsm-doctor/internal/testutil"
+	"github.com/kurtserdar/hsm-doctor/internal/vendors"
+	_ "github.com/kurtserdar/hsm-doctor/internal/vendors/softhsm"
 	"github.com/kurtserdar/hsm-doctor/rules"
 )
 
@@ -50,6 +52,9 @@ func newTestServer(t *testing.T) (*httptest.Server, uint) {
 	if err != nil {
 		t.Fatalf("server.New: %v", err)
 	}
+	// The SoftHSM provider needs no settings; an empty file enables vendor
+	// collection so the scan picks it up automatically.
+	srv.SetVendorConfig(&vendor.File{})
 	t.Cleanup(srv.Close)
 
 	ts := httptest.NewServer(srv.Handler())
@@ -261,6 +266,19 @@ func TestAPIEndpoints(t *testing.T) {
 		}
 		if out["host_openssl"] != nil {
 			t.Error("host check should be opt-in via ?host=true")
+		}
+	})
+
+	t.Run("vendor data in scan and metrics", func(t *testing.T) {
+		out := getJSON(t, fmt.Sprintf("%s/api/v1/slots/%d/scan", ts.URL, slot), http.StatusOK)
+		v, ok := out["vendor"].(map[string]any)
+		if !ok || v["provider"] != "softhsm" {
+			t.Fatalf("scan should include the softhsm vendor section: %v", out["vendor"])
+		}
+
+		body := getJSONRaw(t, ts.URL+"/metrics")
+		if !bytes.Contains([]byte(body), []byte(`hsmdoctor_vendor_disk_percent{`)) {
+			t.Error("metrics should expose vendor disk gauge")
 		}
 	})
 

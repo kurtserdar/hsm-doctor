@@ -1,9 +1,11 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -16,6 +18,7 @@ import (
 	"github.com/kurtserdar/hsm-doctor/internal/policy"
 	"github.com/kurtserdar/hsm-doctor/internal/report"
 	"github.com/kurtserdar/hsm-doctor/internal/snapshot"
+	"github.com/kurtserdar/hsm-doctor/internal/vendors"
 )
 
 func (s *Server) registerAPI(mux *http.ServeMux) {
@@ -136,6 +139,19 @@ func (s *Server) ScanSlot(slot uint) (*report.Report, error) {
 	res := policy.Evaluate(inv, s.rules, time.Now())
 	rep := report.New(s.version, inv, res)
 	rep.RulePacks = s.rules.SourcePacks
+
+	if s.vendorCfg != nil {
+		if provider := vendor.Detect(inv.Module, inv.Slot.Token); provider != nil {
+			if info, err := provider.Collect(context.Background(), s.vendorCfg.For(provider.Name())); err != nil {
+				log.Printf("warning: vendor provider %q: %v", provider.Name(), err)
+			} else {
+				rep.Vendor = info
+				res.AddFindings(info.Findings...)
+				rep.Score = res.Score
+			}
+		}
+	}
+
 	s.persistScan(rep, "local")
 	s.metrics.observeScan(rep)
 	return rep, nil

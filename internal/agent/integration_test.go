@@ -62,7 +62,7 @@ func TestAgentEnrollAndPush(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	reports, err := agent.CollectReports(testutil.ModulePath(t), testutil.UserPIN, &slot, cfg, "test")
+	reports, err := agent.CollectReports(testutil.ModulePath(t), testutil.UserPIN, &slot, cfg, "test", nil)
 	if err != nil {
 		t.Fatalf("CollectReports: %v", err)
 	}
@@ -107,7 +107,7 @@ func TestAgentEnrollAndPush(t *testing.T) {
 	sess2.Close()
 	mod.Close()
 
-	reports2, err := agent.CollectReports(testutil.ModulePath(t), testutil.UserPIN, &slot, cfg, "test")
+	reports2, err := agent.CollectReports(testutil.ModulePath(t), testutil.UserPIN, &slot, cfg, "test", nil)
 	if err != nil {
 		t.Fatalf("second CollectReports: %v", err)
 	}

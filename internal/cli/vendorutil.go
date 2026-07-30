@@ -44,3 +44,15 @@ func loadVendorConfig(path string) (*vendor.File, error) {
 	}
 	return vendor.LoadConfigFile(path)
 }
+
+// vendorCollector builds an agent.VendorCollector from a config file, or
+// nil when no config was supplied. Errors are logged and yield no vendor
+// data, so a vendor hiccup never blocks the agent's core scan.
+func vendorCollector(warn io.Writer, cfgFile *vendor.File) func(p11.ModuleInfo, *p11.TokenInfo) *vendor.Info {
+	if cfgFile == nil {
+		return nil
+	}
+	return func(module p11.ModuleInfo, token *p11.TokenInfo) *vendor.Info {
+		return collectVendor(context.Background(), warn, cfgFile, module, token)
+	}
+}

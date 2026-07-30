@@ -16,6 +16,13 @@ the vendor configuration supplies what it needs, folds the vendor findings
 into the report and score. Without `--vendor-config`, a detected provider
 that needs settings is skipped with a note.
 
+`serve` and `agent` accept the same `--vendor-config`: the local server and
+push agents enrich every scan with vendor data, the central server stores it
+with the report, and the web UI shows a vendor card. Prometheus exposes
+`hsmdoctor_vendor_tamper`, `hsmdoctor_vendor_disk_percent`,
+`hsmdoctor_vendor_ha_members_up` and `hsmdoctor_vendor_ha_members_total`,
+labeled by serial, token label and provider.
+
 ## Provider status
 
 | Provider | Status | Transport | Notes |

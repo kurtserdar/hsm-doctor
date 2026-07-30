@@ -16,6 +16,7 @@ import (
 	"github.com/kurtserdar/hsm-doctor/internal/p11"
 	"github.com/kurtserdar/hsm-doctor/internal/policy"
 	"github.com/kurtserdar/hsm-doctor/internal/store"
+	"github.com/kurtserdar/hsm-doctor/internal/vendors"
 )
 
 // Server holds the shared state of one running instance.
@@ -35,11 +36,19 @@ type Server struct {
 	auth *AuthConfig
 	// webhook receives drift notifications when non-nil.
 	webhook *webhook
+	// vendorCfg enables vendor appliance collection during scans (local
+	// mode only).
+	vendorCfg *vendor.File
 }
 
 // SetAuth enables API authentication.
 func (s *Server) SetAuth(cfg *AuthConfig) {
 	s.auth = cfg
+}
+
+// SetVendorConfig enables vendor appliance collection during scans.
+func (s *Server) SetVendorConfig(cfg *vendor.File) {
+	s.vendorCfg = cfg
 }
 
 // SetWebhook enables drift notifications to the given URL.

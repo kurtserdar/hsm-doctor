@@ -26,6 +26,11 @@ type metrics struct {
 	pqcAdvertised *prometheus.GaugeVec
 	pqcVulnerable *prometheus.GaugeVec
 	pqcHNDL       *prometheus.GaugeVec
+
+	vendorTamper      *prometheus.GaugeVec
+	vendorDiskPercent *prometheus.GaugeVec
+	vendorHAMembersUp *prometheus.GaugeVec
+	vendorHAMembers   *prometheus.GaugeVec
 }
 
 func newMetrics(version string) *metrics {
@@ -68,9 +73,26 @@ func newMetrics(version string) *metrics {
 			Name: "hsmdoctor_pqc_hndl_exposed_keys",
 			Help: "Quantum-vulnerable private keys able to decrypt or unwrap (harvest-now-decrypt-later exposure).",
 		}, []string{"serial", "label"}),
+		vendorTamper: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "hsmdoctor_vendor_tamper",
+			Help: "1 when the vendor provider reports a tamper condition, 0 when clear.",
+		}, []string{"serial", "label", "provider"}),
+		vendorDiskPercent: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "hsmdoctor_vendor_disk_percent",
+			Help: "Appliance disk utilization percent reported by the vendor provider.",
+		}, []string{"serial", "label", "provider"}),
+		vendorHAMembersUp: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "hsmdoctor_vendor_ha_members_up",
+			Help: "Number of HA members reported up by the vendor provider.",
+		}, []string{"serial", "label", "provider"}),
+		vendorHAMembers: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "hsmdoctor_vendor_ha_members_total",
+			Help: "Total number of HA members reported by the vendor provider.",
+		}, []string{"serial", "label", "provider"}),
 	}
 	reg.MustRegister(m.healthScore, m.findings, m.objects, m.certMinDays, m.lastScanTime, m.scansTotal,
-		m.pqcAdvertised, m.pqcVulnerable, m.pqcHNDL)
+		m.pqcAdvertised, m.pqcVulnerable, m.pqcHNDL,
+		m.vendorTamper, m.vendorDiskPercent, m.vendorHAMembersUp, m.vendorHAMembers)
 
 	buildInfo := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "hsmdoctor_build_info",
@@ -135,4 +157,30 @@ func (m *metrics) observeScan(rep *report.Report) {
 	exposure := pqc.Assess(inv, det)
 	m.pqcVulnerable.WithLabelValues(serial, label).Set(float64(exposure.ClassicalPrivateKeys))
 	m.pqcHNDL.WithLabelValues(serial, label).Set(float64(exposure.HarvestNowDecryptLater))
+
+	if v := rep.Vendor; v != nil {
+		if v.Tamper != nil {
+			m.vendorTamper.WithLabelValues(serial, label, v.Provider).Set(boolGauge(v.Tamper.Tampered))
+		}
+		if v.Device != nil && v.Device.DiskPercent != nil {
+			m.vendorDiskPercent.WithLabelValues(serial, label, v.Provider).Set(*v.Device.DiskPercent)
+		}
+		if v.HA != nil {
+			up := 0
+			for _, mem := range v.HA.Members {
+				if mem.Up {
+					up++
+				}
+			}
+			m.vendorHAMembersUp.WithLabelValues(serial, label, v.Provider).Set(float64(up))
+			m.vendorHAMembers.WithLabelValues(serial, label, v.Provider).Set(float64(len(v.HA.Members)))
+		}
+	}
+}
+
+func boolGauge(v bool) float64 {
+	if v {
+		return 1
+	}
+	return 0
 }

@@ -91,10 +91,29 @@ export interface Finding {
   detail?: string;
 }
 
+export interface VendorInfo {
+  provider: string;
+  experimental?: boolean;
+  device?: {
+    cpu_percent?: number;
+    memory_percent?: number;
+    disk_percent?: number;
+    temperature_c?: number;
+  };
+  ha?: {
+    group?: string;
+    members?: { name: string; status: string; up: boolean }[];
+  };
+  partitions?: { label: string; used_objects?: number; used_storage_bytes?: number }[];
+  tamper?: { tampered: boolean; detail?: string };
+  extra?: Record<string, string>;
+}
+
 export interface ScanReport {
   tool: string;
   version: string;
   rule_packs?: string[];
+  vendor?: VendorInfo;
   score: number;
   counts: {
     private_keys: number;

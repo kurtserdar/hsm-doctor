@@ -18,6 +18,7 @@ import (
 	"github.com/kurtserdar/hsm-doctor/internal/p11"
 	"github.com/kurtserdar/hsm-doctor/internal/policy"
 	"github.com/kurtserdar/hsm-doctor/internal/report"
+	"github.com/kurtserdar/hsm-doctor/internal/vendors"
 )
 
 // Client talks to a central HSM Doctor server.
@@ -99,9 +100,14 @@ func (c *Client) Push(rep *report.Report) error {
 	return nil
 }
 
+// VendorCollector optionally enriches each report with vendor appliance
+// data. The agent package stays decoupled from concrete providers: the CLI
+// supplies this hook.
+type VendorCollector func(module p11.ModuleInfo, token *p11.TokenInfo) *vendor.Info
+
 // CollectReports scans the module and returns one report per token-bearing
-// slot. When slot is non-nil only that slot is scanned.
-func CollectReports(modulePath, pin string, slot *uint, rules *policy.Config, version string) ([]*report.Report, error) {
+// slot. When slot is non-nil only that slot is scanned. vendorFn may be nil.
+func CollectReports(modulePath, pin string, slot *uint, rules *policy.Config, version string, vendorFn VendorCollector) ([]*report.Report, error) {
 	client, err := p11.Open(modulePath)
 	if err != nil {
 		return nil, err
@@ -137,6 +143,13 @@ func CollectReports(modulePath, pin string, slot *uint, rules *policy.Config, ve
 		res := policy.Evaluate(inv, rules, time.Now())
 		rep := report.New(version, inv, res)
 		rep.RulePacks = rules.SourcePacks
+		if vendorFn != nil {
+			if vinfo := vendorFn(inv.Module, inv.Slot.Token); vinfo != nil {
+				rep.Vendor = vinfo
+				res.AddFindings(vinfo.Findings...)
+				rep.Score = res.Score
+			}
+		}
 		reports = append(reports, rep)
 	}
 	return reports, errors.Join(errs...)

@@ -70,6 +70,40 @@ function scoreClass(score: number): string {
       picture.
     </div>
 
+    <div v-if="report.vendor" class="card">
+      <h2 style="margin-top: 0; font-size: 1rem">
+        Vendor appliance — {{ report.vendor.provider }}
+        <span v-if="report.vendor.experimental" class="badge medium" style="font-weight: 400">
+          experimental
+        </span>
+      </h2>
+      <div class="grid">
+        <div v-if="report.vendor.device?.disk_percent !== undefined" class="stat">
+          <div class="value">{{ report.vendor.device.disk_percent.toFixed(0) }}%</div>
+          <div class="label">disk</div>
+        </div>
+        <div v-if="report.vendor.tamper" class="stat">
+          <div class="value">
+            <span v-if="report.vendor.tamper.tampered" class="badge expired">TAMPERED</span>
+            <span v-else class="badge ok">clear</span>
+          </div>
+          <div class="label">tamper</div>
+        </div>
+        <div v-if="report.vendor.ha" class="stat">
+          <div class="value">
+            {{ (report.vendor.ha.members ?? []).filter((m) => m.up).length }}/{{
+              (report.vendor.ha.members ?? []).length
+            }}
+          </div>
+          <div class="label">HA members up</div>
+        </div>
+        <div v-if="report.vendor.partitions?.length" class="stat">
+          <div class="value">{{ report.vendor.partitions.length }}</div>
+          <div class="label">partitions</div>
+        </div>
+      </div>
+    </div>
+
     <div class="card">
       <h2 style="margin-top: 0; font-size: 1rem">
         Findings

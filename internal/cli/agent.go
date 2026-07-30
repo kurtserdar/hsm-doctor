@@ -15,7 +15,7 @@ import (
 
 func newAgentCmd() *cobra.Command {
 	var conn connFlags
-	var serverURL, name, enrollToken, enrollTokenEnv, tokenFile, rulesPath string
+	var serverURL, name, enrollToken, enrollTokenEnv, tokenFile, rulesPath, vendorConfig string
 	var packNames []string
 	var interval time.Duration
 	var slotSet bool
@@ -65,13 +65,19 @@ enrollment token and stores its permanent token in --token-file.`,
 				return err
 			}
 
+			vcfg, err := loadVendorConfig(vendorConfig)
+			if err != nil {
+				return err
+			}
+			vendorFn := vendorCollector(cmd.ErrOrStderr(), vcfg)
+
 			var slotPtr *uint
 			if slotSet {
 				slotPtr = &slot
 			}
 
 			for {
-				pushed, err := scanAndPush(cmd, client, conn.module, pin, slotPtr, cfg)
+				pushed, err := scanAndPush(cmd, client, conn.module, pin, slotPtr, cfg, vendorFn)
 				if err != nil {
 					fmt.Fprintf(cmd.ErrOrStderr(), "Error: %v\n", err)
 					if once {
@@ -103,6 +109,7 @@ enrollment token and stores its permanent token in --token-file.`,
 	cmd.Flags().BoolVar(&once, "once", false, "scan and push once, then exit (for cron)")
 	cmd.Flags().StringVar(&rulesPath, "rules", "", "path to a custom rules YAML file replacing all packs")
 	cmd.Flags().StringArrayVar(&packNames, "pack", nil, "policy pack to apply (embedded name or file path; repeatable)")
+	cmd.Flags().StringVar(&vendorConfig, "vendor-config", "", "vendor configuration file enabling appliance-level checks")
 	return cmd
 }
 
@@ -154,8 +161,8 @@ func init() {
 	rootCmd.AddCommand(newAgentCmd())
 }
 
-func scanAndPush(cmd *cobra.Command, client *agent.Client, module, pin string, slot *uint, cfg *policy.Config) (int, error) {
-	reports, collectErr := agent.CollectReports(module, pin, slot, cfg, version.Version)
+func scanAndPush(cmd *cobra.Command, client *agent.Client, module, pin string, slot *uint, cfg *policy.Config, vendorFn agent.VendorCollector) (int, error) {
+	reports, collectErr := agent.CollectReports(module, pin, slot, cfg, version.Version, vendorFn)
 	// Push whatever was collected even when some slots failed.
 	pushed := 0
 	for _, rep := range reports {
