@@ -314,6 +314,11 @@ The server persists history to SQLite by default, or to PostgreSQL when
 hsmdoctor server --db "postgres://hsmdoctor:***@db:5432/hsmdoctor?sslmode=require" ...
 ```
 
+Human operators can sign in with **OIDC Single Sign-On** (Keycloak, Okta,
+Azure AD, ...): the server runs the authorization-code flow and maps group
+claims to admin/viewer, while static tokens keep working for automation.
+Configure it in the `--auth-config` file.
+
 Optionally require **mutual TLS**: `--client-ca` on the server accepts only
 agents presenting a certificate signed by your CA (a transport factor on top
 of the bearer token), with `--tls-client-cert`/`--server-ca` on the agent.
@@ -323,7 +328,7 @@ storage backends, authentication, mutual TLS, webhooks and systemd units.
 
 ## Roadmap
 
-- **Next** — mTLS for agents, OIDC/SSO, e-mail notifications, hardening of the experimental vendor providers against real hardware
+- **Next** — e-mail notifications, hardening of the experimental vendor providers against real hardware, broader Flight Recorder coverage
 - **v1.0** — validated vendor plugins, broader Flight Recorder coverage with simulator replay, and a stable plugin API
 
 ## Development

@@ -180,6 +180,42 @@ Keep a password-bearing DSN out of the process list by setting
 passing `--db`; the flag takes precedence when both are set. The DSN's
 password is redacted in log output.
 
+## Authentication and Single Sign-On
+
+`--auth-config` points at a YAML file with static bearer tokens, an OIDC
+Single Sign-On section, or both. Static tokens suit automation and CI; OIDC
+gives human operators an interactive login through your identity provider
+(Keycloak, Okta, Azure AD, Google, ...).
+
+```yaml
+# auth.yaml (chmod 600)
+tokens:
+  - name: ci
+    token: c1f0e5b2a99d47d0b5b7e2f4a1c39e58   # >= 16 chars
+    role: admin      # or viewer
+
+oidc:
+  issuer: https://keycloak.example.com/realms/corp
+  client_id: hsmdoctor
+  client_secret: "${OIDC_SECRET}"           # from your IdP
+  redirect_url: https://doctor.example.com:8443/auth/callback
+  groups_claim: groups                       # default "groups"
+  admin_groups: [hsm-admins]                 # matching group → admin; others → viewer
+  # cookie_key: optional 32+ byte key; random per start (sessions reset on restart) if unset
+```
+
+- Register `redirect_url` as an allowed redirect URI in the IdP and grant
+  the client the `openid`, `profile`, `email` and `groups` scopes.
+- Users in an `admin_groups` group get the admin role; any other
+  authenticated user is a viewer (read-only). Static tokens keep their
+  configured role and keep working alongside SSO — so scripts are unaffected.
+- The web UI shows a **Sign in with SSO** button when OIDC is configured,
+  with an API-token fallback. Login is `/auth/login`, logout `/auth/logout`.
+- Sessions are signed HttpOnly/SameSite cookies scoped to the ID token's
+  lifetime; set `cookie_key` to keep sessions valid across restarts.
+- Agent ingest endpoints are never gated by user auth — agents authenticate
+  with their own tokens (and optionally mTLS).
+
 ## Prometheus
 
 Scrape `/metrics` on the local server or the central server (fleet-wide
