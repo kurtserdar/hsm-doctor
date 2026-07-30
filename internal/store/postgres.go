@@ -65,6 +65,16 @@ CREATE TABLE agents (
     last_seen   TIMESTAMPTZ NOT NULL
 );
 CREATE INDEX idx_agents_token ON agents(token_hash);
+
+CREATE TABLE notifications (
+    id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    hsm_id      BIGINT NOT NULL,
+    kind        TEXT NOT NULL,
+    ref         TEXT NOT NULL,
+    threshold   INTEGER NOT NULL,
+    notified_at TIMESTAMPTZ NOT NULL,
+    UNIQUE (hsm_id, kind, ref, threshold)
+);
 `,
 }
 
@@ -328,6 +338,22 @@ func (s *PG) ListAgents() ([]Agent, error) {
 		out = append(out, a)
 	}
 	return out, rows.Err()
+}
+
+func (s *PG) MarkNotified(hsmID int64, kind, ref string, threshold int) (bool, error) {
+	res, err := s.db.Exec(`
+INSERT INTO notifications (hsm_id, kind, ref, threshold, notified_at)
+VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (hsm_id, kind, ref, threshold) DO NOTHING`,
+		hsmID, kind, ref, threshold, time.Now().UTC())
+	if err != nil {
+		return false, fmt.Errorf("recording notification: %w", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	return n > 0, nil
 }
 
 func (s *PG) InsertDriftEvent(e *DriftEvent) (int64, error) {

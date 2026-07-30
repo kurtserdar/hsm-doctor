@@ -18,6 +18,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/kurtserdar/hsm-doctor/internal/notify"
 	"github.com/kurtserdar/hsm-doctor/internal/p11"
 	"github.com/kurtserdar/hsm-doctor/internal/policy"
 	"github.com/kurtserdar/hsm-doctor/internal/store"
@@ -43,6 +44,8 @@ type Server struct {
 	oidc *oidcProvider
 	// webhook receives drift notifications when non-nil.
 	webhook *webhook
+	// notifier sends alert e-mails when non-nil.
+	notifier *notify.Notifier
 	// vendorCfg enables vendor appliance collection during scans (local
 	// mode only).
 	vendorCfg *vendor.File
@@ -73,6 +76,11 @@ func (s *Server) SetWebhook(url string) {
 	if url != "" {
 		s.webhook = newWebhook(url)
 	}
+}
+
+// SetNotifier enables e-mail notifications.
+func (s *Server) SetNotifier(n *notify.Notifier) {
+	s.notifier = n
 }
 
 // New loads the PKCS#11 module and prepares a local-mode server. A nil

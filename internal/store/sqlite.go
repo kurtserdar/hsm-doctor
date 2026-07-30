@@ -68,6 +68,17 @@ CREATE TABLE agents (
 );
 CREATE INDEX idx_agents_token ON agents(token_hash);
 `,
+	`
+CREATE TABLE notifications (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    hsm_id      INTEGER NOT NULL,
+    kind        TEXT NOT NULL,
+    ref         TEXT NOT NULL,
+    threshold   INTEGER NOT NULL,
+    notified_at TIMESTAMP NOT NULL,
+    UNIQUE (hsm_id, kind, ref, threshold)
+);
+`,
 }
 
 // DB is the SQLite-backed Store.
@@ -343,6 +354,22 @@ func (s *DB) ListAgents() ([]Agent, error) {
 		out = append(out, a)
 	}
 	return out, rows.Err()
+}
+
+func (s *DB) MarkNotified(hsmID int64, kind, ref string, threshold int) (bool, error) {
+	res, err := s.db.Exec(`
+INSERT INTO notifications (hsm_id, kind, ref, threshold, notified_at)
+VALUES (?, ?, ?, ?, ?)
+ON CONFLICT (hsm_id, kind, ref, threshold) DO NOTHING`,
+		hsmID, kind, ref, threshold, time.Now().UTC())
+	if err != nil {
+		return false, fmt.Errorf("recording notification: %w", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	return n > 0, nil
 }
 
 func (s *DB) InsertDriftEvent(e *DriftEvent) (int64, error) {

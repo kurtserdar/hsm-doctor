@@ -152,6 +152,29 @@ func runConformance(t *testing.T, fresh freshFunc) {
 		}
 	})
 
+	t.Run("MarkNotifiedDedup", func(t *testing.T) {
+		db := newDB(t)
+		hsmID, err := db.UpsertHSM(&HSM{Serial: "S1", Source: "local"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		// First time for a (cert, threshold) → true (send).
+		first, err := db.MarkNotified(hsmID, "cert-expiry", "cert-01", 14)
+		if err != nil || !first {
+			t.Fatalf("first MarkNotified should return true: %v, %v", first, err)
+		}
+		// Same tuple again → false (already sent).
+		again, err := db.MarkNotified(hsmID, "cert-expiry", "cert-01", 14)
+		if err != nil || again {
+			t.Errorf("repeat MarkNotified should return false: %v, %v", again, err)
+		}
+		// A different threshold for the same cert is a distinct notification.
+		other, err := db.MarkNotified(hsmID, "cert-expiry", "cert-01", 1)
+		if err != nil || !other {
+			t.Errorf("new threshold should return true: %v, %v", other, err)
+		}
+	})
+
 	t.Run("GetHSMNotFound", func(t *testing.T) {
 		db := newDB(t)
 		h, err := db.GetHSM(999)

@@ -15,7 +15,7 @@ func newServeCmd() *cobra.Command {
 	var listen, rulesPath, dbPath string
 	var packNames []string
 	var authPath, tlsCert, tlsKey, clientCA string
-	var webhookURL, schedule, vendorConfig string
+	var webhookURL, schedule, vendorConfig, notifyConfig string
 	var noDB bool
 
 	cmd := &cobra.Command{
@@ -67,6 +67,10 @@ request and never logged. Think twice before exposing it beyond localhost.`,
 			}
 			srv.SetWebhook(webhookURL)
 
+			if err := applyNotify(srv, notifyConfig, st); err != nil {
+				return err
+			}
+
 			if vcfg, err := loadVendorConfig(vendorConfig); err != nil {
 				return err
 			} else if vcfg != nil {
@@ -115,6 +119,7 @@ request and never logged. Think twice before exposing it beyond localhost.`,
 	cmd.Flags().StringVar(&tlsKey, "tls-key", "", "TLS private key file (requires --tls-cert)")
 	cmd.Flags().StringVar(&clientCA, "client-ca", "", "require client certificates signed by this CA (mutual TLS; requires --tls-cert/--tls-key)")
 	cmd.Flags().StringVar(&webhookURL, "webhook-url", "", "POST drift notifications to this URL")
+	cmd.Flags().StringVar(&notifyConfig, "notify-config", "", "e-mail notification config file (SMTP + recipients)")
 	cmd.Flags().StringVar(&schedule, "schedule", "", `cron expression for automatic scans of all tokens (e.g. "0 */6 * * *")`)
 	cmd.Flags().StringVar(&vendorConfig, "vendor-config", "", "vendor configuration file enabling appliance-level checks")
 	return cmd

@@ -9,6 +9,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/kurtserdar/hsm-doctor/internal/certmon"
+	"github.com/kurtserdar/hsm-doctor/internal/inventory"
+	"github.com/kurtserdar/hsm-doctor/internal/notify"
 	"github.com/kurtserdar/hsm-doctor/internal/policy"
 	"github.com/kurtserdar/hsm-doctor/internal/report"
 	"github.com/kurtserdar/hsm-doctor/internal/snapshot"
@@ -188,6 +191,8 @@ func (s *Server) persistScan(rep *report.Report, source string) {
 		return
 	}
 
+	s.notifyCertExpiry(hsmID, inv)
+
 	prev, err := s.store.LatestScan(hsmID)
 	if err != nil {
 		log.Printf("warning: loading previous scan: %v", err)
@@ -261,4 +266,57 @@ func (s *Server) persistScan(rep *report.Report, source string) {
 			ID: hsmID, Serial: t.SerialNumber, Label: t.Label, Source: source,
 		}, event)
 	}
+	if s.notifier != nil {
+		s.notifier.NotifyDrift(notify.DriftInfo{
+			HSMID: hsmID, Serial: t.SerialNumber, Label: t.Label, Source: source,
+			Changes: d.Count(), Summary: driftSummary(d),
+		})
+	}
+}
+
+// notifyCertExpiry classifies the token's certificates and asks the notifier
+// to e-mail reminders for those within a warning window (deduplicated per
+// certificate and threshold by the store ledger).
+func (s *Server) notifyCertExpiry(hsmID int64, inv *inventory.Inventory) {
+	if s.notifier == nil {
+		return
+	}
+	entries := certmon.Classify(inv, time.Now(), s.notifier.MaxWarnDays())
+	var certs []notify.CertInfo
+	for _, e := range entries {
+		if e.Status == certmon.StatusOK {
+			continue
+		}
+		certs = append(certs, notify.CertInfo{
+			Label: e.Label, Subject: e.Subject, DaysLeft: e.DaysLeft, NotAfter: e.NotAfter,
+		})
+	}
+	if len(certs) > 0 {
+		s.notifier.NotifyCertExpiry(hsmID, inv.Slot.TokenLabel(), certs)
+	}
+}
+
+// driftSummary renders a short, human-readable list of the drift changes for
+// an e-mail body.
+func driftSummary(d *snapshot.Diff) []string {
+	var out []string
+	for _, c := range d.TokenChanges {
+		out = append(out, fmt.Sprintf("%s changed %s -> %s", c.Field, c.Old, c.New))
+	}
+	for _, m := range d.MechanismsAdded {
+		out = append(out, "mechanism "+m+" now available")
+	}
+	for _, m := range d.MechanismsRemoved {
+		out = append(out, "mechanism "+m+" no longer available")
+	}
+	for _, o := range d.ObjectsAdded {
+		out = append(out, o+" added")
+	}
+	for _, o := range d.ObjectsRemoved {
+		out = append(out, o+" removed")
+	}
+	for _, c := range d.ObjectChanges {
+		out = append(out, fmt.Sprintf("%s: %s changed %s -> %s", c.Object, c.Field, c.Old, c.New))
+	}
+	return out
 }

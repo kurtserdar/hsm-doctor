@@ -98,6 +98,12 @@ type Store interface {
 	InsertDriftEvent(e *DriftEvent) (int64, error)
 	ListDriftEvents(hsmID int64, limit int) ([]DriftEvent, error)
 
+	// MarkNotified records that a notification for (hsmID, kind, ref,
+	// threshold) has been sent. It returns true when this is the first time
+	// (so the caller should send) and false when it was already recorded
+	// (deduplicated). Used to email each certificate/threshold once.
+	MarkNotified(hsmID int64, kind, ref string, threshold int) (bool, error)
+
 	// UpsertAgent registers an agent or rotates its token hash on re-enroll.
 	UpsertAgent(name, tokenHash string) (int64, error)
 	// GetAgentByTokenHash resolves a pushed bearer token; nil when unknown.
