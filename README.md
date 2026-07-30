@@ -57,7 +57,8 @@ list of posture findings.*
 
 ## Screenshots
 
-A tour of the embedded web interface — click any image to enlarge.
+A tour of HSM Doctor — the embedded web interface, vendor appliance health
+and the PKCS#11 Flight Recorder. Click any image to enlarge.
 
 | | |
 |:---:|:---:|
@@ -69,6 +70,17 @@ A tour of the embedded web interface — click any image to enlarge.
 model, firmware and last-seen time:
 
 [![Fleet](docs/images/fleet.png)](docs/images/fleet.png)
+
+**Vendor appliance health** — appliance-level status folded into the dashboard
+(here the SoftHSM reference provider: token-store disk usage and partitions):
+
+[![Vendor appliance health](docs/images/vendor.png)](docs/images/vendor.png)
+
+**PKCS#11 Flight Recorder** — `trace analyze` surfaces session/object leaks,
+error codes, ordering issues and slow calls from a secret-safe call trace,
+with a per-function timing table:
+
+[![Flight Recorder trace analyze](docs/images/trace.png)](docs/images/trace.png)
 
 The CLI produces the same assessments as text, JSON or a single-file HTML
 report — see the [`scan` report above](#hsm-doctor).
@@ -288,11 +300,6 @@ myapp --pkcs11-module ./hsmdoctor-trace.so ...        # run any PKCS#11 app
 hsmdoctor trace analyze /tmp/trace.jsonl
 ```
 
-![HSM Doctor trace analyze output](docs/images/trace.png)
-
-The analyzer flags session and object leaks, error return codes, ordering
-problems and slow calls, alongside a per-function call/timing table.
-
 The shim **cannot leak secrets by construction**: its C layer forwards
 buffer pointers straight to the real module and passes only metadata
 (names, handles, mechanism codes, buffer lengths, return codes, timings) to
@@ -308,12 +315,6 @@ fold the findings into the health score:
 hsmdoctor vendor --list
 hsmdoctor scan --module ... --slot ... --vendor-config vendor.yaml
 ```
-
-With `--vendor-config`, the vendor findings also surface as a card on the
-web dashboard (here the SoftHSM reference provider reporting token-store disk
-usage and partitions):
-
-![HSM Doctor vendor appliance card](docs/images/vendor.png)
 
 The **SoftHSM** reference provider is stable and doubles as a template;
 **Luna**, **nShield** and **CloudHSM** ship as clearly-labeled experimental
