@@ -7,11 +7,14 @@ package agent
 
 import (
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/kurtserdar/hsm-doctor/internal/inventory"
@@ -33,6 +36,57 @@ func (c *Client) httpClient() *http.Client {
 		return c.HTTP
 	}
 	return &http.Client{Timeout: 30 * time.Second}
+}
+
+// TLSOptions configures the agent's transport security toward the server.
+type TLSOptions struct {
+	// ClientCertFile and ClientKeyFile present a client certificate for
+	// mutual TLS.
+	ClientCertFile string
+	ClientKeyFile  string
+	// ServerCAFile trusts a private server CA instead of the system roots.
+	ServerCAFile string
+}
+
+// set reports whether any TLS option is configured.
+func (o TLSOptions) set() bool {
+	return o.ClientCertFile != "" || o.ServerCAFile != ""
+}
+
+// NewHTTPClient builds an *http.Client honoring the TLS options. A zero-value
+// TLSOptions yields a plain client with the default timeout.
+func NewHTTPClient(opts TLSOptions) (*http.Client, error) {
+	if !opts.set() {
+		return &http.Client{Timeout: 30 * time.Second}, nil
+	}
+	tlsCfg := &tls.Config{MinVersion: tls.VersionTLS12}
+
+	if opts.ClientCertFile != "" || opts.ClientKeyFile != "" {
+		if opts.ClientCertFile == "" || opts.ClientKeyFile == "" {
+			return nil, fmt.Errorf("both --tls-client-cert and --tls-client-key are required for mutual TLS")
+		}
+		cert, err := tls.LoadX509KeyPair(opts.ClientCertFile, opts.ClientKeyFile)
+		if err != nil {
+			return nil, fmt.Errorf("loading client certificate: %w", err)
+		}
+		tlsCfg.Certificates = []tls.Certificate{cert}
+	}
+	if opts.ServerCAFile != "" {
+		pem, err := os.ReadFile(opts.ServerCAFile)
+		if err != nil {
+			return nil, fmt.Errorf("reading server CA: %w", err)
+		}
+		pool := x509.NewCertPool()
+		if !pool.AppendCertsFromPEM(pem) {
+			return nil, fmt.Errorf("no certificates found in %s", opts.ServerCAFile)
+		}
+		tlsCfg.RootCAs = pool
+	}
+
+	return &http.Client{
+		Timeout:   30 * time.Second,
+		Transport: &http.Transport{TLSClientConfig: tlsCfg},
+	}, nil
 }
 
 // apiError extracts the JSON error envelope from a failed response.

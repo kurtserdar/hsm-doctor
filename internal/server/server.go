@@ -8,9 +8,13 @@
 package server
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/kurtserdar/hsm-doctor/internal/p11"
@@ -115,20 +119,64 @@ func (s *Server) requireClient(w http.ResponseWriter) bool {
 	return true
 }
 
-// ListenAndServe runs the server until the process exits. When certFile
-// and keyFile are both set, the server speaks TLS.
-func (s *Server) ListenAndServe(addr, certFile, keyFile string) error {
+// TLSOptions configures the server's transport security.
+type TLSOptions struct {
+	CertFile string
+	KeyFile  string
+	// ClientCAFile, when set, enables mutual TLS: clients must present a
+	// certificate signed by this CA. Requires CertFile and KeyFile.
+	ClientCAFile string
+}
+
+// enabled reports whether server TLS is configured.
+func (o TLSOptions) enabled() bool { return o.CertFile != "" && o.KeyFile != "" }
+
+// ListenAndServe runs the server until the process exits. It speaks TLS when
+// TLSOptions has a cert and key, and requires client certificates (mTLS)
+// when ClientCAFile is also set.
+func (s *Server) ListenAndServe(addr string, opts TLSOptions) error {
 	srv := &http.Server{
 		Addr:              addr,
 		Handler:           s.Handler(),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
-	if certFile != "" && keyFile != "" {
+
+	if opts.ClientCAFile != "" {
+		if !opts.enabled() {
+			return errors.New("--client-ca requires --tls-cert and --tls-key")
+		}
+		pool, err := loadCertPool(opts.ClientCAFile)
+		if err != nil {
+			return err
+		}
+		srv.TLSConfig = &tls.Config{
+			MinVersion: tls.VersionTLS12,
+			ClientCAs:  pool,
+			ClientAuth: tls.RequireAndVerifyClientCert,
+		}
+		log.Printf("hsmdoctor listening on https://%s (mutual TLS)", addr)
+		return srv.ListenAndServeTLS(opts.CertFile, opts.KeyFile)
+	}
+
+	if opts.enabled() {
 		log.Printf("hsmdoctor listening on https://%s", addr)
-		return srv.ListenAndServeTLS(certFile, keyFile)
+		return srv.ListenAndServeTLS(opts.CertFile, opts.KeyFile)
 	}
 	log.Printf("hsmdoctor listening on http://%s", addr)
 	return srv.ListenAndServe()
+}
+
+// loadCertPool reads a PEM file of trusted CA certificates.
+func loadCertPool(path string) (*x509.CertPool, error) {
+	pem, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("reading client CA: %w", err)
+	}
+	pool := x509.NewCertPool()
+	if !pool.AppendCertsFromPEM(pem) {
+		return nil, fmt.Errorf("no certificates found in %s", path)
+	}
+	return pool, nil
 }
 
 // logRequests writes one line per request: method, path, status, duration.

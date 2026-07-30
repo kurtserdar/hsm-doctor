@@ -12,7 +12,7 @@ import (
 
 func newServerCmd() *cobra.Command {
 	var listen, dbPath, enrollToken, enrollTokenEnv string
-	var authPath, tlsCert, tlsKey, webhookURL string
+	var authPath, tlsCert, tlsKey, clientCA, webhookURL string
 
 	cmd := &cobra.Command{
 		Use:   "server",
@@ -54,7 +54,9 @@ on other hosts, front it with TLS and change --listen deliberately.`,
 			if authPath == "" {
 				fmt.Fprintln(cmd.ErrOrStderr(), "Warning: API authentication is disabled; use --auth-config before exposing this server.")
 			}
-			return srv.ListenAndServe(listen, tlsCert, tlsKey)
+			return srv.ListenAndServe(listen, server.TLSOptions{
+				CertFile: tlsCert, KeyFile: tlsKey, ClientCAFile: clientCA,
+			})
 		},
 	}
 	cmd.Flags().StringVar(&listen, "listen", "127.0.0.1:8080", "listen address")
@@ -64,6 +66,7 @@ on other hosts, front it with TLS and change --listen deliberately.`,
 	cmd.Flags().StringVar(&authPath, "auth-config", "", "YAML file with API bearer tokens and roles (default: no authentication)")
 	cmd.Flags().StringVar(&tlsCert, "tls-cert", "", "TLS certificate file (requires --tls-key)")
 	cmd.Flags().StringVar(&tlsKey, "tls-key", "", "TLS private key file (requires --tls-cert)")
+	cmd.Flags().StringVar(&clientCA, "client-ca", "", "require agent/client certificates signed by this CA (mutual TLS; requires --tls-cert/--tls-key)")
 	cmd.Flags().StringVar(&webhookURL, "webhook-url", "", "POST drift notifications to this URL")
 	return cmd
 }

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -16,6 +17,7 @@ import (
 func newAgentCmd() *cobra.Command {
 	var conn connFlags
 	var serverURL, name, enrollToken, enrollTokenEnv, tokenFile, rulesPath, vendorConfig string
+	var clientCert, clientKey, serverCA string
 	var packNames []string
 	var interval time.Duration
 	var slotSet bool
@@ -50,11 +52,18 @@ enrollment token and stores its permanent token in --token-file.`,
 				tokenFile = filepath.Join(dir, "agent.token")
 			}
 
-			token, err := loadOrEnroll(cmd, serverURL, name, enrollToken, enrollTokenEnv, tokenFile)
+			httpc, err := agent.NewHTTPClient(agent.TLSOptions{
+				ClientCertFile: clientCert, ClientKeyFile: clientKey, ServerCAFile: serverCA,
+			})
 			if err != nil {
 				return err
 			}
-			client := &agent.Client{ServerURL: strings.TrimRight(serverURL, "/"), Token: token}
+
+			token, err := loadOrEnroll(cmd, httpc, serverURL, name, enrollToken, enrollTokenEnv, tokenFile)
+			if err != nil {
+				return err
+			}
+			client := &agent.Client{ServerURL: strings.TrimRight(serverURL, "/"), Token: token, HTTP: httpc}
 
 			cfg, err := resolveRuleConfig(rulesPath, packNames)
 			if err != nil {
@@ -110,6 +119,9 @@ enrollment token and stores its permanent token in --token-file.`,
 	cmd.Flags().StringVar(&rulesPath, "rules", "", "path to a custom rules YAML file replacing all packs")
 	cmd.Flags().StringArrayVar(&packNames, "pack", nil, "policy pack to apply (embedded name or file path; repeatable)")
 	cmd.Flags().StringVar(&vendorConfig, "vendor-config", "", "vendor configuration file enabling appliance-level checks")
+	cmd.Flags().StringVar(&clientCert, "tls-client-cert", "", "client certificate for mutual TLS to the server")
+	cmd.Flags().StringVar(&clientKey, "tls-client-key", "", "client private key for mutual TLS (requires --tls-client-cert)")
+	cmd.Flags().StringVar(&serverCA, "server-ca", "", "trust this CA for the server's certificate instead of the system roots")
 	return cmd
 }
 
@@ -131,8 +143,8 @@ func dataDir() (string, error) {
 }
 
 // loadOrEnroll returns the stored agent token or performs first-time
-// enrollment and persists the result.
-func loadOrEnroll(cmd *cobra.Command, serverURL, name, enrollToken, enrollTokenEnv, tokenFile string) (string, error) {
+// enrollment (over httpc, so mTLS applies) and persists the result.
+func loadOrEnroll(cmd *cobra.Command, httpc *http.Client, serverURL, name, enrollToken, enrollTokenEnv, tokenFile string) (string, error) {
 	if data, err := os.ReadFile(tokenFile); err == nil {
 		token := strings.TrimSpace(string(data))
 		if token != "" {
@@ -146,7 +158,7 @@ func loadOrEnroll(cmd *cobra.Command, serverURL, name, enrollToken, enrollTokenE
 	if enrollToken == "" {
 		return "", fmt.Errorf("no agent token at %s and no enrollment token provided (--enroll-token-env)", tokenFile)
 	}
-	token, err := agent.Enroll(nil, strings.TrimRight(serverURL, "/"), name, enrollToken)
+	token, err := agent.Enroll(httpc, strings.TrimRight(serverURL, "/"), name, enrollToken)
 	if err != nil {
 		return "", err
 	}

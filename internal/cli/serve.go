@@ -14,7 +14,7 @@ func newServeCmd() *cobra.Command {
 	var conn connFlags
 	var listen, rulesPath, dbPath string
 	var packNames []string
-	var authPath, tlsCert, tlsKey string
+	var authPath, tlsCert, tlsKey, clientCA string
 	var webhookURL, schedule, vendorConfig string
 	var noDB bool
 
@@ -95,7 +95,9 @@ request and never logged. Think twice before exposing it beyond localhost.`,
 				fmt.Fprintf(cmd.ErrOrStderr(), "Scheduled scans enabled: %q\n", schedule)
 			}
 
-			return srv.ListenAndServe(listen, tlsCert, tlsKey)
+			return srv.ListenAndServe(listen, server.TLSOptions{
+				CertFile: tlsCert, KeyFile: tlsKey, ClientCAFile: clientCA,
+			})
 		},
 	}
 	// serve needs the module but not a fixed slot: slots are chosen per API call.
@@ -111,6 +113,7 @@ request and never logged. Think twice before exposing it beyond localhost.`,
 	cmd.Flags().StringVar(&authPath, "auth-config", "", "YAML file with API bearer tokens and roles (default: no authentication)")
 	cmd.Flags().StringVar(&tlsCert, "tls-cert", "", "TLS certificate file (requires --tls-key)")
 	cmd.Flags().StringVar(&tlsKey, "tls-key", "", "TLS private key file (requires --tls-cert)")
+	cmd.Flags().StringVar(&clientCA, "client-ca", "", "require client certificates signed by this CA (mutual TLS; requires --tls-cert/--tls-key)")
 	cmd.Flags().StringVar(&webhookURL, "webhook-url", "", "POST drift notifications to this URL")
 	cmd.Flags().StringVar(&schedule, "schedule", "", `cron expression for automatic scans of all tokens (e.g. "0 */6 * * *")`)
 	cmd.Flags().StringVar(&vendorConfig, "vendor-config", "", "vendor configuration file enabling appliance-level checks")
