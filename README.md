@@ -221,6 +221,11 @@ AES-GCM encrypt/decrypt          PASS
 Steps whose mechanisms the token does not advertise are reported as
 `NOT SUPPORTED` instead of failing.
 
+![HSM Doctor functional tests view](docs/images/tests.png)
+
+*The same profiles run from the web UI, each step timed and marked
+PASS / FAIL / NOT SUPPORTED.*
+
 ## Performance testing
 
 ```sh
@@ -232,6 +237,11 @@ RSA-2048 sign (SHA256-RSA)       6415.2 ops/sec  (5000 ops in 779ms)
 ECDSA P-256 sign                47109.4 ops/sec  (5000 ops in 106ms)
 AES-256-GCM encrypt (1 KiB)     56305.7 ops/sec  (5000 ops in 89ms)
 ```
+
+![HSM Doctor performance view](docs/images/bench.png)
+
+*Throughput per primitive from the web UI, with duration, operation-budget
+and session-count controls.*
 
 Every run is capped by both duration and an absolute operation budget per
 primitive, so a benchmark cannot overload a token indefinitely. Still, avoid
