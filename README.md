@@ -1,5 +1,6 @@
 # HSM Doctor
 
+[![Release](https://img.shields.io/github/v/release/kurtserdar/hsm-doctor?sort=semver&label=release)](https://github.com/kurtserdar/hsm-doctor/releases/latest)
 [![CI](https://github.com/kurtserdar/hsm-doctor/actions/workflows/ci.yml/badge.svg)](https://github.com/kurtserdar/hsm-doctor/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Go Reference](https://pkg.go.dev/badge/github.com/kurtserdar/hsm-doctor.svg)](https://pkg.go.dev/github.com/kurtserdar/hsm-doctor)
@@ -22,6 +23,31 @@ questions an HSM administrator actually asks:
 
 **Metadata only, by design:** private key material is never read, and
 functional tests use ephemeral session objects that leave no trace on the token.
+
+## Highlights
+
+- **Security posture scoring** — a metadata-only inventory evaluated against
+  customizable YAML rules and curated **policy packs** (`nist`, `cabf`,
+  `strict`, `pqc-migration`), producing a health score and text/JSON/HTML
+  reports.
+- **Drift detection** — snapshot a token and diff it later to catch new or
+  removed objects, attribute flips, and mechanism or firmware changes.
+- **Post-quantum readiness** — an ML-KEM/ML-DSA/SLH-DSA support matrix,
+  functional probes and quantum-exposure analysis of your existing keys.
+- **PKCS#11 Flight Recorder** — a shim records a **secret-safe** call trace
+  that the analyzer inspects for session/operation leaks, ordering bugs,
+  errors and slow calls.
+- **Vendor appliance health** — device, HA, partition and tamper status
+  through pluggable providers (SoftHSM stable; Luna/nShield/CloudHSM
+  experimental), folded into the health score.
+- **Fleet platform** — local and central servers with a web UI and REST API,
+  push agents, **SQLite or PostgreSQL** storage, Prometheus metrics, drift
+  webhooks and e-mail notifications.
+- **Enterprise-ready security** — bearer-token auth (admin/viewer), **OIDC
+  Single Sign-On** and **mutual TLS**; secrets never leave the HSM or reach
+  logs and traces.
+- **One binary, everywhere** — the CLI, embedded web UI and every feature
+  ship as a single Go binary for Linux, macOS and Windows.
 
 ## Features
 
