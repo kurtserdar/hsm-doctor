@@ -288,6 +288,11 @@ myapp --pkcs11-module ./hsmdoctor-trace.so ...        # run any PKCS#11 app
 hsmdoctor trace analyze /tmp/trace.jsonl
 ```
 
+![HSM Doctor trace analyze output](docs/images/trace.png)
+
+The analyzer flags session and object leaks, error return codes, ordering
+problems and slow calls, alongside a per-function call/timing table.
+
 The shim **cannot leak secrets by construction**: its C layer forwards
 buffer pointers straight to the real module and passes only metadata
 (names, handles, mechanism codes, buffer lengths, return codes, timings) to
