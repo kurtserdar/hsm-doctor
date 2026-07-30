@@ -111,28 +111,31 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
+      # The cargo target dir lives OUTSIDE the clone so restoring the cache
+      # never pre-creates a non-empty kryoptic-src that would break the clone.
       - name: Cache Kryoptic build
         uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            kryoptic-src/target
-          key: kryoptic-fedora-v1
+            ~/kryoptic-target
+          key: kryoptic-fedora-v2
 
       - name: Build Kryoptic
+        env:
+          CARGO_TARGET_DIR: /root/kryoptic-target
         run: |
-          if [ ! -d kryoptic-src/.git ]; then
-            git clone --depth 1 https://github.com/latchset/kryoptic kryoptic-src
-          fi
+          rm -rf kryoptic-src
+          git clone --depth 1 https://github.com/latchset/kryoptic kryoptic-src
           cd kryoptic-src
           cargo build --release --no-default-features --features standard,pqc,openssl-sys
-          test -f target/release/libkryoptic_pkcs11.so
+          test -f /root/kryoptic-target/release/libkryoptic_pkcs11.so
 
       - name: Initialize PQC token and run positive-path test
         run: |
           export KRYOPTIC_CONF="$PWD/kryoptic-token.sql"
-          export HSMDOCTOR_PQC_MODULE="$PWD/kryoptic-src/target/release/libkryoptic_pkcs11.so"
+          export HSMDOCTOR_PQC_MODULE="/root/kryoptic-target/release/libkryoptic_pkcs11.so"
           pkcs11-tool --module "$HSMDOCTOR_PQC_MODULE" --init-token --label PQC-CI --so-pin 12345678
           pkcs11-tool --module "$HSMDOCTOR_PQC_MODULE" --login --login-type so --so-pin 12345678 --init-pin --pin 123456
           go test -tags=integration -v -run TestPositivePathAgainstPQCModule ./internal/pqc/
