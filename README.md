@@ -314,8 +314,12 @@ The server persists history to SQLite by default, or to PostgreSQL when
 hsmdoctor server --db "postgres://hsmdoctor:***@db:5432/hsmdoctor?sslmode=require" ...
 ```
 
+Optionally require **mutual TLS**: `--client-ca` on the server accepts only
+agents presenting a certificate signed by your CA (a transport factor on top
+of the bearer token), with `--tls-client-cert`/`--server-ca` on the agent.
+
 See [docs/deployment.md](docs/deployment.md) for the full setup including
-storage backends, authentication, webhooks and systemd units.
+storage backends, authentication, mutual TLS, webhooks and systemd units.
 
 ## Roadmap
 

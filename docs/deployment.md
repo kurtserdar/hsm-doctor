@@ -67,6 +67,63 @@ Security properties:
 
 For cron-style operation use `--once` instead of `--interval`.
 
+### Mutual TLS (optional)
+
+Bearer tokens already authenticate agents. Mutual TLS adds a transport-layer
+factor: the server only accepts connections presenting a client certificate
+signed by a CA you control, so a stolen token cannot be replayed from an
+untrusted host. Enable it with `--client-ca` on the server and client
+certificates on the agents.
+
+Generate a CA, a server certificate and per-agent client certificates with
+openssl (there is no built-in PKI command — use your existing CA in
+production):
+
+```sh
+# 1. A private CA
+openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes \
+  -keyout ca.key -out ca.crt -days 3650 -subj "/CN=HSM Doctor CA"
+
+# 2. Server certificate (SAN must match how agents address the server)
+openssl req -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes \
+  -keyout server.key -out server.csr -subj "/CN=doctor.example.com"
+openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial \
+  -out server.crt -days 825 \
+  -extfile <(printf "subjectAltName=DNS:doctor.example.com\nextendedKeyUsage=serverAuth")
+
+# 3. One client certificate per agent
+openssl req -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes \
+  -keyout edge-01.key -out edge-01.csr -subj "/CN=edge-01"
+openssl x509 -req -in edge-01.csr -CA ca.crt -CAkey ca.key -CAcreateserial \
+  -out edge-01.crt -days 825 \
+  -extfile <(printf "extendedKeyUsage=clientAuth")
+```
+
+Server:
+
+```sh
+hsmdoctor server --listen 0.0.0.0:8443 \
+  --tls-cert server.crt --tls-key server.key \
+  --client-ca ca.crt \
+  --auth-config auth.yaml --enroll-token-env HSMDOCTOR_ENROLL
+```
+
+Agent:
+
+```sh
+hsmdoctor agent --server https://doctor.example.com:8443 \
+  --tls-client-cert edge-01.crt --tls-client-key edge-01.key \
+  --server-ca ca.crt \
+  --enroll-token-env HSMDOCTOR_ENROLL \
+  --module /usr/lib/libCryptoki2_64.so --pin-env HSM_PIN
+```
+
+`--client-ca` requires `--tls-cert`/`--tls-key` and applies to **all**
+connections, including the web UI — browser access then needs a client
+certificate imported into the browser, so mTLS deployments are typically
+API/agent-only. `--server-ca` lets an agent trust a private server CA
+without installing it system-wide.
+
 ### systemd units
 
 `/etc/systemd/system/hsmdoctor-agent.service`:
