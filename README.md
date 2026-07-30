@@ -64,7 +64,11 @@ A tour of the embedded web interface — click any image to enlarge.
 | **Dashboard** — health score and prioritized findings<br>[![Dashboard](docs/images/dashboard.png)](docs/images/dashboard.png) | **Inventory** — keys and certificates with capability flags<br>[![Inventory](docs/images/inventory.png)](docs/images/inventory.png) |
 | **Certificates** — expiry tracking across the token<br>[![Certificates](docs/images/certificates.png)](docs/images/certificates.png) | **Functional tests** — timed sign/verify, keygen and AES steps<br>[![Functional tests](docs/images/tests.png)](docs/images/tests.png) |
 | **Performance** — throughput per primitive<br>[![Performance](docs/images/bench.png)](docs/images/bench.png) | **PQC readiness** — ML-KEM/ML-DSA/SLH-DSA support and exposure<br>[![PQC readiness](docs/images/pqc.png)](docs/images/pqc.png) |
-| **Fleet** — every enrolled HSM in one table<br>[![Fleet](docs/images/fleet.png)](docs/images/fleet.png) | |
+
+**Fleet** — every enrolled HSM in one table, with latest health score, serial,
+model, firmware and last-seen time:
+
+[![Fleet](docs/images/fleet.png)](docs/images/fleet.png)
 
 The CLI produces the same assessments as text, JSON or a single-file HTML
 report — see the [`scan` report above](#hsm-doctor).
