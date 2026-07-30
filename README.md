@@ -25,6 +25,11 @@ questions an HSM administrator actually asks:
 **Metadata only, by design:** private key material is never read, and
 functional tests use ephemeral session objects that leave no trace on the token.
 
+![hsmdoctor scan report](docs/images/scan.png)
+
+*`hsmdoctor scan` turns raw token data into a health score and a prioritized
+list of posture findings.*
+
 ## Highlights
 
 - **Security posture scoring** — a metadata-only inventory evaluated against
