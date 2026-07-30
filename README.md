@@ -71,6 +71,11 @@ model, firmware and last-seen time:
 
 [![Fleet](docs/images/fleet.png)](docs/images/fleet.png)
 
+**Drift detection** — per-HSM score history and a feed of every added or
+removed object, attribute flip and firmware change between consecutive scans:
+
+[![Drift detection](docs/images/drift.png)](docs/images/drift.png)
+
 **Vendor appliance health** — appliance-level status folded into the dashboard
 (here the SoftHSM reference provider: token-store disk usage and partitions):
 
