@@ -254,6 +254,11 @@ persisted to SQLite, consecutive scans are diffed automatically, and
 `/metrics` exposes Prometheus gauges per HSM. Everything is also available
 as a JSON API under `/api/v1` — see [docs/api.md](docs/api.md).
 
+![HSM Doctor inventory view](docs/images/inventory.png)
+
+*The inventory view lists every key and certificate with its type, size and
+capability flags — filterable by object class.*
+
 Optional hardening: `--auth-config` (bearer tokens with admin/viewer
 roles), `--tls-cert`/`--tls-key`, `--webhook-url` for drift notifications
 and `--schedule "0 */6 * * *"` for automatic scans.
@@ -315,6 +320,11 @@ Quantum exposure:
 
 Verdict: READY
 ```
+
+![HSM Doctor PQC readiness view](docs/images/pqc.png)
+
+*The web view scores the same assessment: a family support matrix, quantum
+exposure of the existing keys and an optional host OpenSSL cross-check.*
 
 Detection uses the PKCS#11 3.2 mechanism assignments; `--test` proves
 advertised families with ephemeral session objects (ML-DSA/SLH-DSA
