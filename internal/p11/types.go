@@ -6,7 +6,7 @@
 // attributes are ever requested from tokens.
 package p11
 
-import "fmt"
+import "github.com/kurtserdar/hsm-doctor/internal/p11names"
 
 // ModuleInfo describes a loaded PKCS#11 library.
 type ModuleInfo struct {
@@ -57,44 +57,8 @@ type Mechanism struct {
 	Hardware   bool     `json:"hardware"`
 }
 
-// supplementalMechanismNames names mechanisms standardized after the
-// PKCS#11 v2.40 constant set the generated table is built from (values from
-// the OASIS 3.02 header). Consulted only when the generated table has no
-// entry, so a future regeneration from newer headers wins automatically.
-var supplementalMechanismNames = map[uint]string{
-	0x0000000f: "CKM_ML_KEM_KEY_PAIR_GEN",
-	0x00000017: "CKM_ML_KEM",
-	0x0000001c: "CKM_ML_DSA_KEY_PAIR_GEN",
-	0x0000001d: "CKM_ML_DSA",
-	0x0000001f: "CKM_HASH_ML_DSA",
-	0x0000002d: "CKM_SLH_DSA_KEY_PAIR_GEN",
-	0x0000002e: "CKM_SLH_DSA",
-	0x00000034: "CKM_HASH_SLH_DSA",
-}
+// MechanismName returns the canonical CKM_* name for a mechanism code.
+func MechanismName(code uint) string { return p11names.Mechanism(code) }
 
-// MechanismName returns the canonical CKM_* name for a mechanism code, or a
-// formatted fallback for vendor-defined and unknown codes.
-func MechanismName(code uint) string {
-	if name, ok := mechanismNames[code]; ok {
-		return name
-	}
-	if name, ok := supplementalMechanismNames[code]; ok {
-		return name
-	}
-	if code >= 0x80000000 {
-		return fmt.Sprintf("CKM_VENDOR_DEFINED_0x%08X", code)
-	}
-	return fmt.Sprintf("CKM_UNKNOWN_0x%08X", code)
-}
-
-// ReturnCodeName returns the canonical CKR_* name for a PKCS#11 return value,
-// or a formatted fallback for vendor-defined and unknown codes.
-func ReturnCodeName(code uint) string {
-	if name, ok := returnCodeNames[code]; ok {
-		return name
-	}
-	if code >= 0x80000000 {
-		return fmt.Sprintf("CKR_VENDOR_DEFINED_0x%08X", code)
-	}
-	return fmt.Sprintf("CKR_UNKNOWN_0x%08X", code)
-}
+// ReturnCodeName returns the canonical CKR_* name for a PKCS#11 return value.
+func ReturnCodeName(code uint) string { return p11names.ReturnCode(code) }

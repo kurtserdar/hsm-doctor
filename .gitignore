@@ -51,3 +51,7 @@ Thumbs.db
 .env.*
 *.pin
 /web/*.tsbuildinfo
+
+# --- Trace shim build output ---
+/hsmdoctor-trace.so
+/hsmdoctor-trace.h

@@ -1,18 +1,18 @@
 #!/bin/sh
-# Regenerates internal/p11/names_generated.go from the miekg/pkcs11 constant
+# Regenerates internal/p11names/names_generated.go from the miekg/pkcs11 constant
 # definitions, so mechanism and return-code names stay in sync with the
 # wrapper library version pinned in go.mod.
 set -eu
 
 PKCS11_VERSION=$(go list -m -f '{{.Version}}' github.com/miekg/pkcs11)
 CONST="$(go env GOMODCACHE)/github.com/miekg/pkcs11@${PKCS11_VERSION}/zconst.go"
-OUT="internal/p11/names_generated.go"
+OUT="internal/p11names/names_generated.go"
 
 {
   echo "// Code generated from github.com/miekg/pkcs11@${PKCS11_VERSION} zconst.go. DO NOT EDIT."
   echo "// Regenerate with: ./scripts/gen_names.sh"
   echo ""
-  echo "package p11"
+  echo "package p11names"
   echo ""
   echo "// mechanismNames maps CKM_* mechanism codes to their canonical names."
   echo "var mechanismNames = map[uint]string{"

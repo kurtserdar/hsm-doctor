@@ -1,7 +1,7 @@
 // Code generated from github.com/miekg/pkcs11@v1.1.2 zconst.go. DO NOT EDIT.
 // Regenerate with: ./scripts/gen_names.sh
 
-package p11
+package p11names
 
 // mechanismNames maps CKM_* mechanism codes to their canonical names.
 var mechanismNames = map[uint]string{
