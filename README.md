@@ -55,6 +55,20 @@ list of posture findings.*
 - **One binary, everywhere** — the CLI, embedded web UI and every feature
   ship as a single Go binary for Linux, macOS and Windows.
 
+## Screenshots
+
+A tour of the embedded web interface — click any image to enlarge.
+
+| | |
+|:---:|:---:|
+| **Dashboard** — health score and prioritized findings<br>[![Dashboard](docs/images/dashboard.png)](docs/images/dashboard.png) | **Inventory** — keys and certificates with capability flags<br>[![Inventory](docs/images/inventory.png)](docs/images/inventory.png) |
+| **Certificates** — expiry tracking across the token<br>[![Certificates](docs/images/certificates.png)](docs/images/certificates.png) | **Functional tests** — timed sign/verify, keygen and AES steps<br>[![Functional tests](docs/images/tests.png)](docs/images/tests.png) |
+| **Performance** — throughput per primitive<br>[![Performance](docs/images/bench.png)](docs/images/bench.png) | **PQC readiness** — ML-KEM/ML-DSA/SLH-DSA support and exposure<br>[![PQC readiness](docs/images/pqc.png)](docs/images/pqc.png) |
+| **Fleet** — every enrolled HSM in one table<br>[![Fleet](docs/images/fleet.png)](docs/images/fleet.png) | |
+
+The CLI produces the same assessments as text, JSON or a single-file HTML
+report — see the [`scan` report above](#hsm-doctor).
+
 ## Features
 
 | Command | What it does |
@@ -221,11 +235,6 @@ AES-GCM encrypt/decrypt          PASS
 Steps whose mechanisms the token does not advertise are reported as
 `NOT SUPPORTED` instead of failing.
 
-![HSM Doctor functional tests view](docs/images/tests.png)
-
-*The same profiles run from the web UI, each step timed and marked
-PASS / FAIL / NOT SUPPORTED.*
-
 ## Performance testing
 
 ```sh
@@ -237,11 +246,6 @@ RSA-2048 sign (SHA256-RSA)       6415.2 ops/sec  (5000 ops in 779ms)
 ECDSA P-256 sign                47109.4 ops/sec  (5000 ops in 106ms)
 AES-256-GCM encrypt (1 KiB)     56305.7 ops/sec  (5000 ops in 89ms)
 ```
-
-![HSM Doctor performance view](docs/images/bench.png)
-
-*Throughput per primitive from the web UI, with duration, operation-budget
-and session-count controls.*
 
 Every run is capped by both duration and an absolute operation budget per
 primitive, so a benchmark cannot overload a token indefinitely. Still, avoid
@@ -255,24 +259,12 @@ hsmdoctor serve --module /usr/lib/softhsm/libsofthsm2.so --pin-env HSM_PIN
 # → http://127.0.0.1:8080
 ```
 
-![HSM Doctor web dashboard](docs/images/dashboard.png)
-
 The embedded web interface (Vue 3) covers dashboard with health score and
 findings, inventory browsing, certificate expiry, functional tests,
 benchmarks and the fleet view with score history and drift feeds. Scans are
 persisted to SQLite, consecutive scans are diffed automatically, and
 `/metrics` exposes Prometheus gauges per HSM. Everything is also available
 as a JSON API under `/api/v1` — see [docs/api.md](docs/api.md).
-
-![HSM Doctor inventory view](docs/images/inventory.png)
-
-*The inventory view lists every key and certificate with its type, size and
-capability flags — filterable by object class.*
-
-![HSM Doctor certificates view](docs/images/certificates.png)
-
-*The certificates view tracks expiry across the token, flagging what is ok,
-expiring within the warning window, or already expired.*
 
 Optional hardening: `--auth-config` (bearer tokens with admin/viewer
 roles), `--tls-cert`/`--tls-key`, `--webhook-url` for drift notifications
@@ -336,11 +328,6 @@ Quantum exposure:
 Verdict: READY
 ```
 
-![HSM Doctor PQC readiness view](docs/images/pqc.png)
-
-*The web view scores the same assessment: a family support matrix, quantum
-exposure of the existing keys and an optional host OpenSSL cross-check.*
-
 Detection uses the PKCS#11 3.2 mechanism assignments; `--test` proves
 advertised families with ephemeral session objects (ML-DSA/SLH-DSA
 keygen+sign+verify per parameter set). Quantum-vulnerable inventory
@@ -365,11 +352,6 @@ hsmdoctor agent --server https://doctor.example.com:8443 \
   --enroll-token-env HSMDOCTOR_ENROLL \
   --module /usr/lib/libCryptoki2_64.so --pin-env HSM_PIN --interval 15m
 ```
-
-![HSM Doctor fleet view](docs/images/fleet.png)
-
-*The fleet view rolls every enrolled HSM into one table — latest health
-score, serial, model, firmware and when each was last seen.*
 
 Alerts reach both machines and people: `--webhook-url` POSTs on drift, and
 `--notify-config` e-mails drift alerts and certificate-expiry reminders over
