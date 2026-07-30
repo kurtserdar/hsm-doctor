@@ -4,36 +4,35 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"net/url"
-	"os"
-	"path/filepath"
 	"time"
 
-	_ "modernc.org/sqlite" // registers the "sqlite" driver
+	_ "github.com/jackc/pgx/v5/stdlib" // registers the "pgx" driver
 )
 
-// migrations are applied in order; PRAGMA user_version tracks progress.
-var migrations = []string{
+// pgMigrations mirror the SQLite schema in PostgreSQL types (IDENTITY,
+// BYTEA, TIMESTAMPTZ). The data model is identical; only the dialect
+// differs.
+var pgMigrations = []string{
 	`
 CREATE TABLE hsms (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    id            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     serial        TEXT NOT NULL,
     label         TEXT NOT NULL DEFAULT '',
     model         TEXT NOT NULL DEFAULT '',
     manufacturer  TEXT NOT NULL DEFAULT '',
     firmware      TEXT NOT NULL DEFAULT '',
     module_path   TEXT NOT NULL DEFAULT '',
-    slot_id       INTEGER NOT NULL DEFAULT 0,
+    slot_id       BIGINT NOT NULL DEFAULT 0,
     source        TEXT NOT NULL DEFAULT 'local',
-    first_seen    TIMESTAMP NOT NULL,
-    last_seen     TIMESTAMP NOT NULL,
+    first_seen    TIMESTAMPTZ NOT NULL,
+    last_seen     TIMESTAMPTZ NOT NULL,
     UNIQUE (serial, source)
 );
 
 CREATE TABLE scans (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    hsm_id        INTEGER NOT NULL REFERENCES hsms(id) ON DELETE CASCADE,
-    taken_at      TIMESTAMP NOT NULL,
+    id            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    hsm_id        BIGINT NOT NULL REFERENCES hsms(id) ON DELETE CASCADE,
+    taken_at      TIMESTAMPTZ NOT NULL,
     score         INTEGER NOT NULL,
     critical      INTEGER NOT NULL DEFAULT 0,
     high          INTEGER NOT NULL DEFAULT 0,
@@ -43,72 +42,49 @@ CREATE TABLE scans (
     public_keys   INTEGER NOT NULL DEFAULT 0,
     secret_keys   INTEGER NOT NULL DEFAULT 0,
     certificates  INTEGER NOT NULL DEFAULT 0,
-    report        BLOB NOT NULL
+    report        BYTEA NOT NULL
 );
 CREATE INDEX idx_scans_hsm_taken ON scans(hsm_id, taken_at DESC, id DESC);
 
 CREATE TABLE drift_events (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    hsm_id        INTEGER NOT NULL REFERENCES hsms(id) ON DELETE CASCADE,
-    detected_at   TIMESTAMP NOT NULL,
-    old_scan_id   INTEGER NOT NULL,
-    new_scan_id   INTEGER NOT NULL,
+    id            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    hsm_id        BIGINT NOT NULL REFERENCES hsms(id) ON DELETE CASCADE,
+    detected_at   TIMESTAMPTZ NOT NULL,
+    old_scan_id   BIGINT NOT NULL,
+    new_scan_id   BIGINT NOT NULL,
     changes       INTEGER NOT NULL,
-    diff          BLOB NOT NULL
+    diff          BYTEA NOT NULL
 );
 CREATE INDEX idx_drift_hsm ON drift_events(hsm_id, detected_at DESC, id DESC);
-`,
-	`
+
 CREATE TABLE agents (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name        TEXT NOT NULL UNIQUE,
     token_hash  TEXT NOT NULL,
-    created_at  TIMESTAMP NOT NULL,
-    last_seen   TIMESTAMP NOT NULL
+    created_at  TIMESTAMPTZ NOT NULL,
+    last_seen   TIMESTAMPTZ NOT NULL
 );
 CREATE INDEX idx_agents_token ON agents(token_hash);
 `,
 }
 
-// DB is the SQLite-backed Store.
-type DB struct {
+// PG is the PostgreSQL-backed Store.
+type PG struct {
 	db *sql.DB
 }
 
-var _ Store = (*DB)(nil)
+var _ Store = (*PG)(nil)
 
-// DefaultPath returns the default database location following the XDG
-// convention, creating parent directories as needed.
-func DefaultPath() (string, error) {
-	base := os.Getenv("XDG_DATA_HOME")
-	if base == "" {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return "", fmt.Errorf("resolving home directory: %w", err)
-		}
-		base = filepath.Join(home, ".local", "share")
-	}
-	dir := filepath.Join(base, "hsmdoctor")
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return "", fmt.Errorf("creating data directory: %w", err)
-	}
-	return filepath.Join(dir, "hsmdoctor.db"), nil
-}
-
-// openSQLite opens (creating if necessary) the SQLite database at path and
-// applies pending migrations.
-func openSQLite(path string) (*DB, error) {
-	dsn := fmt.Sprintf("file:%s?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_pragma=foreign_keys(1)",
-		url.PathEscape(path))
-	db, err := sql.Open("sqlite", dsn)
+// openPostgres connects to the server at dsn and applies pending migrations.
+func openPostgres(dsn string) (*PG, error) {
+	db, err := sql.Open("pgx", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("opening database: %w", err)
 	}
-	// SQLite handles one writer at a time; a single connection avoids
-	// SQLITE_BUSY surprises under concurrent API calls.
-	db.SetMaxOpenConns(1)
+	db.SetMaxOpenConns(10)
+	db.SetConnMaxIdleTime(5 * time.Minute)
 
-	s := &DB{db: db}
+	s := &PG{db: db}
 	if err := s.migrate(); err != nil {
 		_ = db.Close()
 		return nil, err
@@ -116,33 +92,49 @@ func openSQLite(path string) (*DB, error) {
 	return s, nil
 }
 
-func (s *DB) migrate() error {
+// migrate applies pending migrations, tracking the applied version in a
+// dedicated table (PostgreSQL has no PRAGMA user_version). The whole step
+// runs under an advisory lock so concurrent servers cannot race the schema.
+func (s *PG) migrate() error {
+	if _, err := s.db.Exec(`SELECT pg_advisory_lock(4262766)`); err != nil {
+		return fmt.Errorf("acquiring migration lock: %w", err)
+	}
+	defer func() { _, _ = s.db.Exec(`SELECT pg_advisory_unlock(4262766)`) }()
+
+	if _, err := s.db.Exec(`CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL)`); err != nil {
+		return fmt.Errorf("creating schema_version: %w", err)
+	}
 	var version int
-	if err := s.db.QueryRow("PRAGMA user_version").Scan(&version); err != nil {
+	err := s.db.QueryRow(`SELECT version FROM schema_version LIMIT 1`).Scan(&version)
+	if errors.Is(err, sql.ErrNoRows) {
+		if _, err := s.db.Exec(`INSERT INTO schema_version (version) VALUES (0)`); err != nil {
+			return fmt.Errorf("initializing schema_version: %w", err)
+		}
+		version = 0
+	} else if err != nil {
 		return fmt.Errorf("reading schema version: %w", err)
 	}
-	for i := version; i < len(migrations); i++ {
-		if _, err := s.db.Exec(migrations[i]); err != nil {
+
+	for i := version; i < len(pgMigrations); i++ {
+		if _, err := s.db.Exec(pgMigrations[i]); err != nil {
 			return fmt.Errorf("applying migration %d: %w", i+1, err)
 		}
-		if _, err := s.db.Exec(fmt.Sprintf("PRAGMA user_version = %d", i+1)); err != nil {
+		if _, err := s.db.Exec(`UPDATE schema_version SET version = $1`, i+1); err != nil {
 			return fmt.Errorf("updating schema version: %w", err)
 		}
 	}
 	return nil
 }
 
-// Close closes the database.
-func (s *DB) Close() error {
-	return s.db.Close()
-}
+// Close closes the connection pool.
+func (s *PG) Close() error { return s.db.Close() }
 
-func (s *DB) UpsertHSM(h *HSM) (int64, error) {
+func (s *PG) UpsertHSM(h *HSM) (int64, error) {
 	now := time.Now().UTC()
 	var id int64
 	err := s.db.QueryRow(`
 INSERT INTO hsms (serial, label, model, manufacturer, firmware, module_path, slot_id, source, first_seen, last_seen)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 ON CONFLICT (serial, source) DO UPDATE SET
     label = excluded.label,
     model = excluded.model,
@@ -160,15 +152,16 @@ RETURNING id`,
 	return id, nil
 }
 
-func (s *DB) ListHSMs() ([]HSMSummary, error) {
+func (s *PG) ListHSMs() ([]HSMSummary, error) {
 	rows, err := s.db.Query(`
 SELECT h.id, h.serial, h.label, h.model, h.manufacturer, h.firmware,
        h.module_path, h.slot_id, h.source, h.first_seen, h.last_seen,
        s.id, s.score, s.taken_at
 FROM hsms h
-LEFT JOIN scans s ON s.id = (
-    SELECT id FROM scans WHERE hsm_id = h.id ORDER BY taken_at DESC, id DESC LIMIT 1
-)
+LEFT JOIN LATERAL (
+    SELECT id, score, taken_at FROM scans
+    WHERE hsm_id = h.id ORDER BY taken_at DESC, id DESC LIMIT 1
+) s ON true
 ORDER BY h.label, h.serial`)
 	if err != nil {
 		return nil, fmt.Errorf("listing HSMs: %w", err)
@@ -178,8 +171,7 @@ ORDER BY h.label, h.serial`)
 	var out []HSMSummary
 	for rows.Next() {
 		var h HSMSummary
-		var scanID sql.NullInt64
-		var score sql.NullInt64
+		var scanID, score sql.NullInt64
 		var takenAt sql.NullTime
 		if err := rows.Scan(&h.ID, &h.Serial, &h.Label, &h.Model, &h.Manufacturer, &h.Firmware,
 			&h.ModulePath, &h.SlotID, &h.Source, &h.FirstSeen, &h.LastSeen,
@@ -197,11 +189,11 @@ ORDER BY h.label, h.serial`)
 	return out, rows.Err()
 }
 
-func (s *DB) GetHSM(id int64) (*HSM, error) {
+func (s *PG) GetHSM(id int64) (*HSM, error) {
 	var h HSM
 	err := s.db.QueryRow(`
 SELECT id, serial, label, model, manufacturer, firmware, module_path, slot_id, source, first_seen, last_seen
-FROM hsms WHERE id = ?`, id).Scan(
+FROM hsms WHERE id = $1`, id).Scan(
 		&h.ID, &h.Serial, &h.Label, &h.Model, &h.Manufacturer, &h.Firmware,
 		&h.ModulePath, &h.SlotID, &h.Source, &h.FirstSeen, &h.LastSeen)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -213,35 +205,28 @@ FROM hsms WHERE id = ?`, id).Scan(
 	return &h, nil
 }
 
-func (s *DB) InsertScan(rec *ScanRecord) (int64, error) {
-	res, err := s.db.Exec(`
+func (s *PG) InsertScan(rec *ScanRecord) (int64, error) {
+	var id int64
+	err := s.db.QueryRow(`
 INSERT INTO scans (hsm_id, taken_at, score, critical, high, medium, low,
                    private_keys, public_keys, secret_keys, certificates, report)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+RETURNING id`,
 		rec.HSMID, rec.TakenAt.UTC(), rec.Score, rec.Critical, rec.High, rec.Medium, rec.Low,
-		rec.PrivateKeys, rec.PublicKeys, rec.SecretKeys, rec.Certificates, []byte(rec.Report))
+		rec.PrivateKeys, rec.PublicKeys, rec.SecretKeys, rec.Certificates, []byte(rec.Report)).Scan(&id)
 	if err != nil {
 		return 0, fmt.Errorf("inserting scan: %w", err)
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
-const scanSummaryCols = `id, hsm_id, taken_at, score, critical, high, medium, low,
-       private_keys, public_keys, secret_keys, certificates`
-
-func scanSummaryRow(scanner interface{ Scan(...any) error }, rec *ScanRecord) error {
-	return scanner.Scan(&rec.ID, &rec.HSMID, &rec.TakenAt, &rec.Score,
-		&rec.Critical, &rec.High, &rec.Medium, &rec.Low,
-		&rec.PrivateKeys, &rec.PublicKeys, &rec.SecretKeys, &rec.Certificates)
-}
-
-func (s *DB) ListScans(hsmID int64, limit int) ([]ScanRecord, error) {
+func (s *PG) ListScans(hsmID int64, limit int) ([]ScanRecord, error) {
 	if limit <= 0 || limit > 1000 {
 		limit = 100
 	}
 	rows, err := s.db.Query(`
 SELECT `+scanSummaryCols+` FROM scans
-WHERE hsm_id = ? ORDER BY taken_at DESC, id DESC LIMIT ?`, hsmID, limit)
+WHERE hsm_id = $1 ORDER BY taken_at DESC, id DESC LIMIT $2`, hsmID, limit)
 	if err != nil {
 		return nil, fmt.Errorf("listing scans: %w", err)
 	}
@@ -258,11 +243,11 @@ WHERE hsm_id = ? ORDER BY taken_at DESC, id DESC LIMIT ?`, hsmID, limit)
 	return out, rows.Err()
 }
 
-func (s *DB) GetScan(hsmID, scanID int64) (*ScanRecord, error) {
+func (s *PG) GetScan(hsmID, scanID int64) (*ScanRecord, error) {
 	var rec ScanRecord
 	var report []byte
 	err := s.db.QueryRow(`
-SELECT `+scanSummaryCols+`, report FROM scans WHERE id = ? AND hsm_id = ?`, scanID, hsmID).
+SELECT `+scanSummaryCols+`, report FROM scans WHERE id = $1 AND hsm_id = $2`, scanID, hsmID).
 		Scan(&rec.ID, &rec.HSMID, &rec.TakenAt, &rec.Score,
 			&rec.Critical, &rec.High, &rec.Medium, &rec.Low,
 			&rec.PrivateKeys, &rec.PublicKeys, &rec.SecretKeys, &rec.Certificates, &report)
@@ -276,12 +261,12 @@ SELECT `+scanSummaryCols+`, report FROM scans WHERE id = ? AND hsm_id = ?`, scan
 	return &rec, nil
 }
 
-func (s *DB) LatestScan(hsmID int64) (*ScanRecord, error) {
+func (s *PG) LatestScan(hsmID int64) (*ScanRecord, error) {
 	var rec ScanRecord
 	var report []byte
 	err := s.db.QueryRow(`
 SELECT `+scanSummaryCols+`, report FROM scans
-WHERE hsm_id = ? ORDER BY taken_at DESC, id DESC LIMIT 1`, hsmID).
+WHERE hsm_id = $1 ORDER BY taken_at DESC, id DESC LIMIT 1`, hsmID).
 		Scan(&rec.ID, &rec.HSMID, &rec.TakenAt, &rec.Score,
 			&rec.Critical, &rec.High, &rec.Medium, &rec.Low,
 			&rec.PrivateKeys, &rec.PublicKeys, &rec.SecretKeys, &rec.Certificates, &report)
@@ -295,12 +280,12 @@ WHERE hsm_id = ? ORDER BY taken_at DESC, id DESC LIMIT 1`, hsmID).
 	return &rec, nil
 }
 
-func (s *DB) UpsertAgent(name, tokenHash string) (int64, error) {
+func (s *PG) UpsertAgent(name, tokenHash string) (int64, error) {
 	now := time.Now().UTC()
 	var id int64
 	err := s.db.QueryRow(`
 INSERT INTO agents (name, token_hash, created_at, last_seen)
-VALUES (?, ?, ?, ?)
+VALUES ($1, $2, $3, $4)
 ON CONFLICT (name) DO UPDATE SET token_hash = excluded.token_hash, last_seen = excluded.last_seen
 RETURNING id`, name, tokenHash, now, now).Scan(&id)
 	if err != nil {
@@ -309,10 +294,10 @@ RETURNING id`, name, tokenHash, now, now).Scan(&id)
 	return id, nil
 }
 
-func (s *DB) GetAgentByTokenHash(hash string) (*Agent, error) {
+func (s *PG) GetAgentByTokenHash(hash string) (*Agent, error) {
 	var a Agent
 	err := s.db.QueryRow(`
-SELECT id, name, token_hash, created_at, last_seen FROM agents WHERE token_hash = ?`, hash).
+SELECT id, name, token_hash, created_at, last_seen FROM agents WHERE token_hash = $1`, hash).
 		Scan(&a.ID, &a.Name, &a.TokenHash, &a.CreatedAt, &a.LastSeen)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
@@ -323,12 +308,12 @@ SELECT id, name, token_hash, created_at, last_seen FROM agents WHERE token_hash 
 	return &a, nil
 }
 
-func (s *DB) TouchAgent(id int64) error {
-	_, err := s.db.Exec(`UPDATE agents SET last_seen = ? WHERE id = ?`, time.Now().UTC(), id)
+func (s *PG) TouchAgent(id int64) error {
+	_, err := s.db.Exec(`UPDATE agents SET last_seen = $1 WHERE id = $2`, time.Now().UTC(), id)
 	return err
 }
 
-func (s *DB) ListAgents() ([]Agent, error) {
+func (s *PG) ListAgents() ([]Agent, error) {
 	rows, err := s.db.Query(`SELECT id, name, token_hash, created_at, last_seen FROM agents ORDER BY name`)
 	if err != nil {
 		return nil, fmt.Errorf("listing agents: %w", err)
@@ -345,24 +330,26 @@ func (s *DB) ListAgents() ([]Agent, error) {
 	return out, rows.Err()
 }
 
-func (s *DB) InsertDriftEvent(e *DriftEvent) (int64, error) {
-	res, err := s.db.Exec(`
+func (s *PG) InsertDriftEvent(e *DriftEvent) (int64, error) {
+	var id int64
+	err := s.db.QueryRow(`
 INSERT INTO drift_events (hsm_id, detected_at, old_scan_id, new_scan_id, changes, diff)
-VALUES (?, ?, ?, ?, ?, ?)`,
-		e.HSMID, e.DetectedAt.UTC(), e.OldScanID, e.NewScanID, e.Changes, []byte(e.Diff))
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id`,
+		e.HSMID, e.DetectedAt.UTC(), e.OldScanID, e.NewScanID, e.Changes, []byte(e.Diff)).Scan(&id)
 	if err != nil {
 		return 0, fmt.Errorf("inserting drift event: %w", err)
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
-func (s *DB) ListDriftEvents(hsmID int64, limit int) ([]DriftEvent, error) {
+func (s *PG) ListDriftEvents(hsmID int64, limit int) ([]DriftEvent, error) {
 	if limit <= 0 || limit > 1000 {
 		limit = 100
 	}
 	rows, err := s.db.Query(`
 SELECT id, hsm_id, detected_at, old_scan_id, new_scan_id, changes, diff
-FROM drift_events WHERE hsm_id = ? ORDER BY detected_at DESC, id DESC LIMIT ?`, hsmID, limit)
+FROM drift_events WHERE hsm_id = $1 ORDER BY detected_at DESC, id DESC LIMIT $2`, hsmID, limit)
 	if err != nil {
 		return nil, fmt.Errorf("listing drift events: %w", err)
 	}
