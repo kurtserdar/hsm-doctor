@@ -164,10 +164,12 @@ func (p *oidcProvider) sessionFromRequest(r *http.Request) *session {
 	return &s
 }
 
-func randToken() string {
+func randToken() (string, error) {
 	b := make([]byte, 24)
-	_, _ = rand.Read(b)
-	return base64.RawURLEncoding.EncodeToString(b)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(b), nil
 }
 
 // registerAuth wires the interactive login endpoints.
@@ -178,8 +180,18 @@ func (p *oidcProvider) registerAuth(mux *http.ServeMux) {
 }
 
 func (p *oidcProvider) handleLogin(w http.ResponseWriter, r *http.Request) {
+	state, err := randToken()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	nonce, err := randToken()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
 	verifier := oauth2.GenerateVerifier()
-	fs := flowState{State: randToken(), Nonce: randToken(), Verifier: verifier}
+	fs := flowState{State: state, Nonce: nonce, Verifier: verifier}
 	raw, _ := json.Marshal(fs)
 	http.SetCookie(w, &http.Cookie{
 		Name: flowCookie, Value: p.sign(raw), Path: "/",
@@ -236,9 +248,14 @@ func (p *oidcProvider) handleCallback(w http.ResponseWriter, r *http.Request) {
 	role := p.roleFromClaims(idToken)
 	s := session{Subject: idToken.Subject, Role: role, Expiry: idToken.Expiry.Unix()}
 	sraw, _ := json.Marshal(s)
+	// The session cookie is SameSite=Strict so it is never sent on
+	// cross-site requests — this prevents a malicious page from triggering
+	// state-changing API calls (e.g. a scan) via the operator's browser.
+	// The flow cookie stays Lax because it must survive the top-level
+	// redirect back from the identity provider.
 	http.SetCookie(w, &http.Cookie{
 		Name: sessionCookie, Value: p.sign(sraw), Path: "/",
-		HttpOnly: true, Secure: true, SameSite: http.SameSiteLaxMode,
+		HttpOnly: true, Secure: true, SameSite: http.SameSiteStrictMode,
 		Expires: idToken.Expiry,
 	})
 	// Clear the transient flow cookie.
@@ -249,7 +266,7 @@ func (p *oidcProvider) handleCallback(w http.ResponseWriter, r *http.Request) {
 func (p *oidcProvider) handleLogout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name: sessionCookie, Value: "", Path: "/", MaxAge: -1,
-		HttpOnly: true, Secure: true, SameSite: http.SameSiteLaxMode,
+		HttpOnly: true, Secure: true, SameSite: http.SameSiteStrictMode,
 	})
 	http.Redirect(w, r, "/", http.StatusFound)
 }

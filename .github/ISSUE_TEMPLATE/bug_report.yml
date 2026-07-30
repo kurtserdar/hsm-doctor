@@ -1,0 +1,52 @@
+name: Bug report
+description: Report a problem with HSM Doctor
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please do **not** include PINs, private
+        keys, passwords or other secrets in this report.
+        For security vulnerabilities, use private reporting instead — see
+        [SECURITY.md](../blob/main/SECURITY.md).
+  - type: input
+    id: version
+    attributes:
+      label: HSM Doctor version
+      description: Output of `hsmdoctor version`.
+      placeholder: "1.0.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: hsm
+    attributes:
+      label: HSM / PKCS#11 module
+      options:
+        - SoftHSM
+        - Thales Luna
+        - Entrust nShield
+        - Utimaco
+        - AWS CloudHSM
+        - Other (describe below)
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The exact command(s) you ran, with any secrets redacted.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, architecture, and how you installed HSM Doctor.

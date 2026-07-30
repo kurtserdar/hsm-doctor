@@ -21,7 +21,9 @@ func isPostgresDSN(dsn string) bool {
 }
 
 // Redact hides the password in a PostgreSQL DSN so it is safe to log. SQLite
-// paths are returned unchanged.
+// paths are returned unchanged. Both userinfo passwords
+// (postgres://user:pw@host) and query-string passwords
+// (postgres://user@host?password=pw) are masked.
 func Redact(dsn string) string {
 	if !isPostgresDSN(dsn) {
 		return dsn
@@ -35,5 +37,12 @@ func Redact(dsn string) string {
 			u.User = url.UserPassword(u.User.Username(), "****")
 		}
 	}
+	q := u.Query()
+	for _, key := range []string{"password", "sslpassword"} {
+		if q.Has(key) {
+			q.Set(key, "****")
+		}
+	}
+	u.RawQuery = q.Encode()
 	return u.String()
 }

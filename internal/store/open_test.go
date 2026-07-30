@@ -25,6 +25,15 @@ func TestRedact(t *testing.T) {
 	if !contains(got, "hsmdoctor") || !contains(got, "db.example.com") {
 		t.Errorf("redaction dropped non-secret parts: %q", got)
 	}
+	// A password in the query string must also be redacted.
+	q := Redact("postgres://user@db.example.com:5432/hsmdoctor?sslmode=require&password=hunter2")
+	if contains(q, "hunter2") {
+		t.Errorf("query-string password not redacted: %q", q)
+	}
+	if !contains(q, "sslmode=require") {
+		t.Errorf("non-secret query params dropped: %q", q)
+	}
+
 	// SQLite paths pass through unchanged.
 	if p := "/var/lib/hsmdoctor.db"; Redact(p) != p {
 		t.Errorf("SQLite path should be unchanged: %q", Redact(p))
