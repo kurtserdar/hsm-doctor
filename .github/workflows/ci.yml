@@ -32,10 +32,10 @@ jobs:
           npm ci
           npm run build
 
-      - name: Install SoftHSM2
+      - name: Install SoftHSM2 and OpenSC
         run: |
           sudo apt-get update
-          sudo apt-get install -y softhsm2
+          sudo apt-get install -y softhsm2 opensc
 
       - name: Check formatting
         run: |
