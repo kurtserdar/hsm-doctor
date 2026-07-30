@@ -3,12 +3,15 @@ module github.com/kurtserdar/hsm-doctor
 go 1.24.0
 
 require (
+	github.com/coreos/go-oidc/v3 v3.11.0
+	github.com/go-jose/go-jose/v4 v4.1.4
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/miekg/pkcs11 v1.1.2
 	github.com/prometheus/client_golang v1.22.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/crypto v0.40.0
+	golang.org/x/oauth2 v0.24.0
 	golang.org/x/sys v0.34.0
 	golang.org/x/term v0.33.0
 	gopkg.in/yaml.v3 v3.0.1

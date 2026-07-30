@@ -63,6 +63,7 @@ func (s *Server) handleInfo(w http.ResponseWriter, r *http.Request) {
 		"tool":    "hsmdoctor",
 		"version": s.version,
 		"mode":    "local",
+		"oidc":    s.oidc != nil,
 	}
 	if s.client == nil {
 		out["mode"] = "central"

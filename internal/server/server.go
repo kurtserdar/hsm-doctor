@@ -8,6 +8,7 @@
 package server
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -38,6 +39,8 @@ type Server struct {
 	enrollToken string
 	// auth guards the API when non-nil.
 	auth *AuthConfig
+	// oidc enables interactive Single Sign-On when non-nil.
+	oidc *oidcProvider
 	// webhook receives drift notifications when non-nil.
 	webhook *webhook
 	// vendorCfg enables vendor appliance collection during scans (local
@@ -45,9 +48,19 @@ type Server struct {
 	vendorCfg *vendor.File
 }
 
-// SetAuth enables API authentication.
-func (s *Server) SetAuth(cfg *AuthConfig) {
+// SetAuth enables API authentication. When the config includes an OIDC
+// section, it also performs OIDC discovery and enables Single Sign-On;
+// discovery failures are returned so startup can fail loudly.
+func (s *Server) SetAuth(cfg *AuthConfig) error {
 	s.auth = cfg
+	if cfg != nil && cfg.OIDC != nil {
+		p, err := newOIDCProvider(context.Background(), cfg.OIDC)
+		if err != nil {
+			return err
+		}
+		s.oidc = p
+	}
+	return nil
 }
 
 // SetVendorConfig enables vendor appliance collection during scans.
@@ -103,6 +116,9 @@ func (s *Server) Handler() http.Handler {
 	s.registerHistoryAPI(mux)
 	s.registerIngestAPI(mux)
 	mux.Handle("GET /metrics", s.metrics.handler())
+	if s.oidc != nil {
+		s.oidc.registerAuth(mux)
+	}
 	registerUI(mux)
 	return logRequests(s.authMiddleware(mux))
 }

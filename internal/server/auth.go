@@ -29,6 +29,9 @@ type AuthToken struct {
 // AuthConfig is the parsed authentication configuration.
 type AuthConfig struct {
 	Tokens []AuthToken `yaml:"tokens"`
+	// OIDC, when set, enables interactive Single Sign-On for the web UI and
+	// API alongside any static tokens.
+	OIDC *OIDCConfig `yaml:"oidc,omitempty"`
 }
 
 // LoadAuthConfig parses and validates an auth config document.
@@ -39,8 +42,8 @@ func LoadAuthConfig(data []byte) (*AuthConfig, error) {
 	if err := dec.Decode(&cfg); err != nil {
 		return nil, fmt.Errorf("parsing auth config: %w", err)
 	}
-	if len(cfg.Tokens) == 0 {
-		return nil, errors.New("auth config contains no tokens")
+	if len(cfg.Tokens) == 0 && cfg.OIDC == nil {
+		return nil, errors.New("auth config must define tokens, oidc, or both")
 	}
 	for i, t := range cfg.Tokens {
 		if t.Token == "" {
@@ -51,6 +54,11 @@ func LoadAuthConfig(data []byte) (*AuthConfig, error) {
 		}
 		if t.Role != RoleAdmin && t.Role != RoleViewer {
 			return nil, fmt.Errorf("auth token #%d (%s) has invalid role %q (want admin or viewer)", i+1, t.Name, t.Role)
+		}
+	}
+	if cfg.OIDC != nil {
+		if err := cfg.OIDC.validate(); err != nil {
+			return nil, err
 		}
 	}
 	return &cfg, nil
@@ -83,18 +91,30 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
 		protected := strings.HasPrefix(path, "/api/") || path == "/metrics"
-		exempt := strings.HasPrefix(path, "/api/v1/ingest/")
+		// /api/v1/info is an unauthenticated discovery endpoint (tool
+		// version, mode and whether SSO is available) so the UI can render
+		// the right sign-in options before the user authenticates.
+		exempt := strings.HasPrefix(path, "/api/v1/ingest/") || path == "/api/v1/info"
 		if !protected || exempt {
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		token, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
-		if !ok || token == "" {
-			writeError(w, http.StatusUnauthorized, errors.New("missing bearer token"))
-			return
+		// Resolve the caller's role from an OIDC session cookie first, then
+		// a static bearer token. Either source is accepted.
+		role := ""
+		if s.oidc != nil {
+			if sess := s.oidc.sessionFromRequest(r); sess != nil {
+				role = sess.Role
+			}
 		}
-		switch s.auth.roleFor(token) {
+		if role == "" {
+			if token, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer "); ok && token != "" {
+				role = s.auth.roleFor(token)
+			}
+		}
+
+		switch role {
 		case RoleAdmin:
 			next.ServeHTTP(w, r)
 		case RoleViewer:
@@ -102,9 +122,9 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 				next.ServeHTTP(w, r)
 				return
 			}
-			writeError(w, http.StatusForbidden, errors.New("viewer tokens cannot modify or execute; admin role required"))
+			writeError(w, http.StatusForbidden, errors.New("viewer role cannot modify or execute; admin role required"))
 		default:
-			writeError(w, http.StatusUnauthorized, errors.New("invalid bearer token"))
+			writeError(w, http.StatusUnauthorized, errors.New("authentication required (SSO session or bearer token)"))
 		}
 	})
 }

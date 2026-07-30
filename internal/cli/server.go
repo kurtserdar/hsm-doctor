@@ -84,8 +84,7 @@ func applyAuth(srv *server.Server, path string) error {
 	if err != nil {
 		return err
 	}
-	srv.SetAuth(cfg)
-	return nil
+	return srv.SetAuth(cfg)
 }
 
 func init() {

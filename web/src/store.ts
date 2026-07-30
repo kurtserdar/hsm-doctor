@@ -7,6 +7,7 @@ import type { ModuleInfo, SlotInfo } from "./types";
 // not needed.
 export const store = reactive({
   mode: "" as "" | "local" | "central",
+  oidc: false,
   module: null as ModuleInfo | null,
   slots: [] as SlotInfo[],
   selectedSlot: null as number | null,
@@ -19,8 +20,11 @@ export const store = reactive({
     this.error = "";
     this.authRequired = false;
     try {
+      // /info is unauthenticated, so mode and SSO availability are known
+      // even before the user signs in.
       const info = await serverInfo();
       this.mode = info.mode;
+      this.oidc = info.oidc === true;
       if (info.mode !== "local") {
         return;
       }

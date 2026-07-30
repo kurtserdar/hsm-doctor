@@ -69,20 +69,43 @@ onMounted(async () => {
     </div>
     <div v-if="store.error" class="error">{{ store.error }}</div>
     <div v-if="store.authRequired" class="card" style="max-width: 26rem">
-      <h2 style="margin-top: 0; font-size: 1rem">API token required</h2>
-      <p class="muted" style="font-size: 0.85rem">
-        This server requires a bearer token. Paste a token from the server's
-        auth configuration.
-      </p>
-      <form @submit.prevent="submitToken">
-        <input
-          v-model="tokenInput"
-          type="password"
-          placeholder="API token"
-          style="width: 100%; margin-bottom: 0.75rem"
-        />
-        <button class="primary" type="submit">Connect</button>
-      </form>
+      <h2 style="margin-top: 0; font-size: 1rem">Sign in</h2>
+      <template v-if="store.oidc">
+        <p class="muted" style="font-size: 0.85rem">
+          This server uses Single Sign-On.
+        </p>
+        <a class="primary" href="/auth/login"
+           style="display: inline-block; text-decoration: none; margin-bottom: 1rem">
+          Sign in with SSO
+        </a>
+        <details>
+          <summary class="muted" style="font-size: 0.8rem">Use an API token instead</summary>
+          <form @submit.prevent="submitToken" style="margin-top: 0.75rem">
+            <input
+              v-model="tokenInput"
+              type="password"
+              placeholder="API token"
+              style="width: 100%; margin-bottom: 0.75rem"
+            />
+            <button class="primary" type="submit">Connect</button>
+          </form>
+        </details>
+      </template>
+      <template v-else>
+        <p class="muted" style="font-size: 0.85rem">
+          This server requires a bearer token. Paste a token from the server's
+          auth configuration.
+        </p>
+        <form @submit.prevent="submitToken">
+          <input
+            v-model="tokenInput"
+            type="password"
+            placeholder="API token"
+            style="width: 100%; margin-bottom: 0.75rem"
+          />
+          <button class="primary" type="submit">Connect</button>
+        </form>
+      </template>
     </div>
     <RouterView v-if="!store.authRequired" />
   </main>

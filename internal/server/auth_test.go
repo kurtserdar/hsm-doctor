@@ -37,7 +37,9 @@ tokens:
 	if err != nil {
 		t.Fatalf("LoadAuthConfig: %v", err)
 	}
-	srv.SetAuth(cfg)
+	if err := srv.SetAuth(cfg); err != nil {
+		t.Fatalf("SetAuth: %v", err)
+	}
 
 	ts := httptest.NewServer(srv.Handler())
 	t.Cleanup(ts.Close)
@@ -121,7 +123,7 @@ func TestLoadAuthConfigValidation(t *testing.T) {
 		yaml string
 		want string
 	}{
-		{"empty", "tokens: []", "no tokens"},
+		{"empty", "tokens: []", "must define tokens, oidc, or both"},
 		{"short token", "tokens:\n  - {token: short, role: admin}", "shorter than 16"},
 		{"bad role", "tokens:\n  - {token: 0123456789abcdef, role: root}", "invalid role"},
 		{"unknown field", "tokens:\n  - {token: 0123456789abcdef, role: admin, extra: x}", "field extra not found"},

@@ -174,6 +174,7 @@ export interface ServerInfo {
   tool: string;
   version: string;
   mode: "local" | "central";
+  oidc?: boolean;
   module?: ModuleInfo;
 }
 
