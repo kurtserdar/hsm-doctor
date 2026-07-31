@@ -5,7 +5,7 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
-## [Unreleased]
+## [1.1.0] - 2026-07-31
 
 ### Added
 
@@ -15,6 +15,8 @@ under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 - Dependabot updates for Go, npm and GitHub Actions.
 - Illustrated getting-started guide ([docs/getting-started.html](docs/getting-started.html)),
   published via GitHub Pages.
+- Example central-server deployment ([deploy/](deploy/)): a Docker Compose stack
+  (PostgreSQL + fleet server) with a multi-vendor setup guide.
 - nShield: security-world "not usable" finding (`NSHIELD-002`).
 - CloudHSM: cross-availability-zone redundancy check (`CLOUDHSM-004`).
 
