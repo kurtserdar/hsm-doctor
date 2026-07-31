@@ -25,6 +25,10 @@ questions an HSM administrator actually asks:
 **Metadata only, by design:** private key material is never read, and
 functional tests use ephemeral session objects that leave no trace on the token.
 
+> 📖 **New to HSM Doctor?** Start with the
+> [getting-started guide](https://kurtserdar.github.io/hsm-doctor/getting-started.html) —
+> what it is, why it exists, install and first run.
+
 ![hsmdoctor scan report](docs/images/scan.png)
 
 *`hsmdoctor scan` turns raw token data into a health score and a prioritized
@@ -406,9 +410,9 @@ and systemd units.
 ## Documentation
 
 New to HSM Doctor? The illustrated
-[getting-started guide](docs/getting-started.html) covers what it is, why it
-exists, install and first run (a self-contained HTML page — open it in a
-browser).
+[getting-started guide](https://kurtserdar.github.io/hsm-doctor/getting-started.html)
+covers what it is, why it exists, install and first run (also in the repo as
+[docs/getting-started.html](docs/getting-started.html)).
 
 Full documentation lives in [docs/](docs/) — start with the
 [documentation index](docs/README.md). Highlights: the
