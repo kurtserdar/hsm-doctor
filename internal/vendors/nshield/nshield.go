@@ -7,6 +7,7 @@ package nshield
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/kurtserdar/hsm-doctor/internal/p11"
@@ -39,19 +40,24 @@ func (p *provider) Collect(ctx context.Context, cfg vendor.Config) (*vendor.Info
 	out, err := p.runner.Run(ctx, "enquiry")
 	if err != nil {
 		// enquiry is the fundamental tool; without it there is nothing to
-		// report, but this is a soft failure (tools may be absent).
-		return nil, err
+		// report. This is a soft failure (the tools may simply be absent) that
+		// the caller skips gracefully.
+		return nil, fmt.Errorf("nshield: running enquiry: %w", err)
 	}
 	parseEnquiry(out, info)
 
+	// nfkminfo is best-effort: a missing tool or security world must not sink
+	// the module data already gathered from enquiry.
 	if out, err := p.runner.Run(ctx, "nfkminfo"); err == nil {
 		parseNfkminfo(out, info)
 	}
 	return info, nil
 }
 
-// parseEnquiry reads module mode and version from "enquiry" output. Lines
-// look like "<key>   <value...>" with leading indentation.
+// parseEnquiry reads module mode and version from "enquiry" output. Lines look
+// like "<key>   <value...>" with leading indentation, grouped under "Server:"
+// and "Module #N:" headers. Tolerant of extra whitespace and CRLF endings
+// (strings.Fields treats \r as whitespace).
 func parseEnquiry(out string, info *vendor.Info) {
 	for _, line := range strings.Split(out, "\n") {
 		fields := strings.Fields(line)
@@ -60,11 +66,11 @@ func parseEnquiry(out string, info *vendor.Info) {
 		}
 		key := strings.ToLower(fields[0])
 		value := strings.Join(fields[1:], " ")
-		switch {
-		case strings.HasPrefix(key, "mode"):
+		switch key {
+		case "mode":
 			info.Extra["mode"] = value
-			// "maintenance" or "initialization" mode means the unit is not
-			// serving operations normally.
+			// Anything other than "operational" (maintenance, initialization,
+			// pre-maintenance, …) means the unit is not serving normally.
 			if lv := strings.ToLower(value); lv != "" && !strings.Contains(lv, "operational") {
 				info.Findings = append(info.Findings, policy.Finding{
 					RuleID:   "NSHIELD-001",
@@ -73,21 +79,52 @@ func parseEnquiry(out string, info *vendor.Info) {
 					Detail:   "enquiry reports mode: " + value,
 				})
 			}
-		case strings.HasPrefix(key, "version"):
+		case "version":
 			info.Extra["version"] = value
 		}
 	}
 }
 
-// parseNfkminfo reads the security-world state from "nfkminfo" output.
+// parseNfkminfo reads the security-world state from "nfkminfo" output. The
+// relevant line looks like:
+//
+//	state    0x37270009 Initialised Usable Recovery ...
+//
+// where flag tokens without a leading "!" are set.
 func parseNfkminfo(out string, info *vendor.Info) {
 	for _, line := range strings.Split(out, "\n") {
 		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "state ") || strings.HasPrefix(line, "State ") {
-			_, value, ok := strings.Cut(line, " ")
-			if ok {
-				info.Extra["security_world_state"] = strings.TrimSpace(value)
-			}
+		key, value, ok := strings.Cut(line, " ")
+		if !ok || !strings.EqualFold(key, "state") {
+			continue
 		}
+		state := strings.TrimSpace(value)
+		if state == "" {
+			continue
+		}
+		info.Extra["security_world_state"] = state
+		checkWorldState(state, info)
+	}
+}
+
+// checkWorldState flags a security world that is initialised but not usable —
+// a real operational problem (e.g. missing card set / recovery data).
+func checkWorldState(state string, info *vendor.Info) {
+	var initialised, usable bool
+	for _, tok := range strings.Fields(state) {
+		switch {
+		case strings.EqualFold(tok, "Initialised"), strings.EqualFold(tok, "Initialized"):
+			initialised = true
+		case strings.EqualFold(tok, "Usable"):
+			usable = true
+		}
+	}
+	if initialised && !usable {
+		info.Findings = append(info.Findings, policy.Finding{
+			RuleID:   "NSHIELD-002",
+			Title:    "Security world not usable",
+			Severity: policy.SevHigh,
+			Detail:   "nfkminfo security-world state: " + state,
+		})
 	}
 }
