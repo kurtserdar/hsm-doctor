@@ -5,6 +5,30 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [Unreleased]
+
+### Added
+
+- Docker image on GHCR with SoftHSM2 and OpenSC baked in, signed with cosign.
+- Release hardening: checksums signed with keyless cosign and a CycloneDX SBOM
+  attached to every release (see [SECURITY.md](SECURITY.md)).
+- Dependabot updates for Go, npm and GitHub Actions.
+- Illustrated getting-started guide ([docs/getting-started.html](docs/getting-started.html)),
+  published via GitHub Pages.
+- nShield: security-world "not usable" finding (`NSHIELD-002`).
+- CloudHSM: cross-availability-zone redundancy check (`CLOUDHSM-004`).
+
+### Changed
+
+- Hardened the experimental Luna/nShield/CloudHSM providers: more robust
+  parsing, graceful degradation when secondary commands fail, and fixture-based
+  tests covering error and edge cases.
+
+### Fixed
+
+- Luna: a bare `No` tamper state is no longer misread as a tamper condition
+  (previously raised a false critical finding).
+
 ## [1.0.0]
 
 First stable release. No functional change from 0.12.0 — this release marks
