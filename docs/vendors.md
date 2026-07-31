@@ -69,7 +69,7 @@ A provider is a small Go package under `internal/vendors/<name>` that
 implements the `Provider` interface and registers itself:
 
 ```go
-func init() { vendor.Register(&provider{runner: vendor.ExecRunner{}}) }
+func init() { vendor.Register(&provider{}) }
 
 type Provider interface {
     Name() string
@@ -78,9 +78,38 @@ type Provider interface {
 }
 ```
 
-Depend on `vendor.Runner` for any external command so the provider is
-testable with canned fixtures (see `softhsm` for a complete example, and the
-`_test.go` files for the fixture pattern). Return `vendor.ErrNotConfigured`
-when required settings are absent. Emit problems as `policy.Finding`s with a
-`<VENDOR>-NNN` rule ID and an appropriate severity — tamper and outages
-should be `critical`/`high` so they move the score.
+**Detect** recognizes the HSM from the module/token manufacturer, model or
+description strings. **Collect** gathers data PKCS#11 cannot expose and
+returns it as a `vendor.Info` (device resources, HA members, partitions,
+tamper and backup state, an `Extra` string map, and `Findings`). Return
+`vendor.ErrNotConfigured` when required settings are missing so the caller
+skips the provider gracefully.
+
+### Talking to the HSM
+
+Two patterns are supported, both testable without real hardware:
+
+- **External commands** — hold a `vendor.Runner` and call
+  `runner.Run(ctx, name, args...)`. In tests inject
+  `internal/vendors/vendortest.Runner`, which returns canned output per
+  command and can inject errors to exercise failure paths (`softhsm`,
+  `nshield`, `luna`, `cloudhsm`).
+- **HTTP APIs** — hold an `*http.Client` (nil → a default) and call the
+  management API; in tests point the config URL at an `httptest.Server`
+  returning real response shapes (`bouncyhsm`).
+
+### Guidance
+
+- **Degrade gracefully.** Treat one fundamental call as required (error out
+  if it fails); make secondary calls best-effort so one failure never sinks
+  the whole report.
+- **Emit findings** as `policy.Finding`s with a `<VENDOR>-NNN` rule ID and an
+  appropriate severity — tamper and outages should be `critical`/`high` so
+  they move the score. Interpret ambiguous values conservatively rather than
+  raising false criticals.
+- **Register** the package with a blank import in
+  `internal/cli/vendorutil.go` so its `init` runs.
+- **Mark experimental** (`Info.Experimental = true`) until validated against
+  real hardware.
+
+See any existing provider and its `_test.go` for a complete example.
