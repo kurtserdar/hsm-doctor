@@ -31,6 +31,7 @@ labeled by serial, token label and provider.
 | `luna` | **Experimental** | lunash over SSH | Parses `hsm show` / `partition list`; not validated on real hardware |
 | `nshield` | **Experimental** | local `enquiry` / `nfkminfo` | Module mode and security-world state |
 | `cloudhsm` | **Experimental** | AWS CLI | `cloudhsmv2 describe-clusters`; cluster/HSM/HA state |
+| `bouncyhsm` | **Experimental** | REST API (HTTP) | Software simulator; reads `/HsmInfo/Versions` and `/Stats`; always warns it is non-production (`BOUNCYHSM-001`) |
 
 Experimental providers are built against public documentation and clearly
 labeled in every output. Corrections from real hardware are very welcome.
@@ -55,6 +56,9 @@ providers:
     cluster_id: cluster-abcdef123
     region: eu-west-1
     profile: hsm-audit        # optional AWS CLI profile
+
+  bouncyhsm:
+    url: http://bouncy-host:8080   # BouncyHsm REST/management endpoint
 ```
 
 nShield needs no configuration: it runs the locally installed nShield tools.

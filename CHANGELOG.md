@@ -5,6 +5,16 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [Unreleased]
+
+### Added
+
+- `bouncyhsm` vendor provider (experimental) for
+  [BouncyHsm](https://github.com/harrison314/BouncyHsm), the software HSM /
+  PKCS#11 simulator. It reads BouncyHsm's REST API for version and object
+  statistics — the first HTTP-based vendor provider — and always flags the
+  simulator as non-production (`BOUNCYHSM-001`).
+
 ## [1.1.0] - 2026-07-31
 
 ### Added

@@ -17,3 +17,7 @@ providers:
     cluster_id: cluster-abcdef123
     region: eu-west-1
     profile: hsm-audit
+
+  # BouncyHsm software simulator — REST management API.
+  bouncyhsm:
+    url: http://bouncy-host:8080

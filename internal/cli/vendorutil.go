@@ -10,6 +10,7 @@ import (
 	"github.com/kurtserdar/hsm-doctor/internal/vendors"
 
 	// Register the built-in vendor providers.
+	_ "github.com/kurtserdar/hsm-doctor/internal/vendors/bouncyhsm"
 	_ "github.com/kurtserdar/hsm-doctor/internal/vendors/cloudhsm"
 	_ "github.com/kurtserdar/hsm-doctor/internal/vendors/luna"
 	_ "github.com/kurtserdar/hsm-doctor/internal/vendors/nshield"
