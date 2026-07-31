@@ -106,6 +106,9 @@ jobs:
     name: Publish release
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write # keyless cosign signing via GitHub OIDC
     steps:
       - name: Check out source
         uses: actions/checkout@v4
@@ -119,16 +122,36 @@ jobs:
             echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Generate SBOM (CycloneDX)
+        uses: anchore/sbom-action@v0
+        with:
+          path: "."
+          format: "cyclonedx-json"
+          output-file: "hsmdoctor.sbom.cyclonedx.json"
+          upload-artifact: false
+          upload-release-assets: false
+
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           path: dist
           merge-multiple: true
 
-      - name: Generate checksums
+      - name: Assemble checksums (binaries + SBOM)
         run: |
+          mv hsmdoctor.sbom.cyclonedx.json dist/
           cd dist
           sha256sum * > SHA256SUMS.txt
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign checksums (keyless)
+        env:
+          COSIGN_YES: "true"
+        run: |
+          cd dist
+          cosign sign-blob SHA256SUMS.txt --bundle SHA256SUMS.txt.cosign.bundle
 
       - name: Create or update release
         env:

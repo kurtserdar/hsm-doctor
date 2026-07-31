@@ -48,3 +48,21 @@ are violated are in scope:
 
 Security fixes are provided for the latest released minor version. Please
 upgrade to the most recent release before reporting.
+
+## Verifying releases
+
+Every release ships a SHA-256 checksum manifest (`SHA256SUMS.txt`), a
+CycloneDX SBOM (`hsmdoctor.sbom.cyclonedx.json`) and a keyless
+[cosign](https://github.com/sigstore/cosign) signature over the manifest
+(`SHA256SUMS.txt.cosign.bundle`). To verify a download:
+
+```sh
+# 1. Check the archive against the manifest
+sha256sum -c SHA256SUMS.txt --ignore-missing
+
+# 2. Verify the manifest signature (Sigstore keyless, no key to manage)
+cosign verify-blob SHA256SUMS.txt \
+  --bundle SHA256SUMS.txt.cosign.bundle \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-identity-regexp '^https://github.com/kurtserdar/hsm-doctor/\.github/workflows/release\.yml@refs/tags/'
+```
