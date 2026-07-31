@@ -1,0 +1,361 @@
+<style>
+  :root {
+    --bg: #f5f7f8; --surface: #ffffff; --surface-2: #f0f3f4;
+    --ink: #0f1729; --muted: #566277; --line: #e1e6ec;
+    --accent: #0d9488; --accent-ink: #0b6f66; --accent-weak: #e4f3f1;
+    --crit: #b42318; --high: #c2410c; --med: #a16207; --low: #475569; --ok: #15803d;
+    --term-bg: #0f1626; --term-ink: #e7edf6; --term-dim: #8aa0bd; --term-prompt: #2dd4bf;
+    --shadow: 0 1px 2px rgba(15,23,41,.04), 0 8px 24px -12px rgba(15,23,41,.14);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0a0f1a; --surface: #111a29; --surface-2: #0e1522;
+      --ink: #e8eef7; --muted: #94a3b8; --line: #223049;
+      --accent: #2dd4bf; --accent-ink: #5eead4; --accent-weak: #10302e;
+      --crit: #f87171; --high: #fb923c; --med: #fbbf24; --low: #94a3b8; --ok: #4ade80;
+      --term-bg: #070c15; --term-ink: #d9e3f1; --term-dim: #7f95b2; --term-prompt: #2dd4bf;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px -14px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #f5f7f8; --surface: #ffffff; --surface-2: #f0f3f4;
+    --ink: #0f1729; --muted: #566277; --line: #e1e6ec;
+    --accent: #0d9488; --accent-ink: #0b6f66; --accent-weak: #e4f3f1;
+    --crit: #b42318; --high: #c2410c; --med: #a16207; --low: #475569; --ok: #15803d;
+    --term-bg: #0f1626; --term-ink: #e7edf6; --term-dim: #8aa0bd; --term-prompt: #2dd4bf;
+    --shadow: 0 1px 2px rgba(15,23,41,.04), 0 8px 24px -12px rgba(15,23,41,.14);
+  }
+  :root[data-theme="dark"] {
+    --bg: #0a0f1a; --surface: #111a29; --surface-2: #0e1522;
+    --ink: #e8eef7; --muted: #94a3b8; --line: #223049;
+    --accent: #2dd4bf; --accent-ink: #5eead4; --accent-weak: #10302e;
+    --crit: #f87171; --high: #fb923c; --med: #fbbf24; --low: #94a3b8; --ok: #4ade80;
+    --term-bg: #070c15; --term-ink: #d9e3f1; --term-dim: #7f95b2; --term-prompt: #2dd4bf;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px -14px rgba(0,0,0,.6);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 17px; line-height: 1.65; -webkit-font-smoothing: antialiased;
+  }
+  .mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; }
+  .page { max-width: 940px; margin: 0 auto; padding: clamp(20px, 5vw, 56px) clamp(18px, 5vw, 40px) 96px; }
+  .col { max-width: 720px; }
+
+  .eyebrow {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--accent-ink); font-weight: 600; margin: 0 0 12px;
+  }
+  h1 { font-size: clamp(30px, 6vw, 46px); line-height: 1.08; letter-spacing: -.02em;
+       font-weight: 800; margin: 0 0 14px; text-wrap: balance; }
+  h2 { font-size: clamp(21px, 3.4vw, 27px); line-height: 1.2; letter-spacing: -.01em;
+       font-weight: 750; margin: 0 0 12px; text-wrap: balance; }
+  h3 { font-size: 16px; font-weight: 700; margin: 0 0 6px; }
+  p { margin: 0 0 16px; color: var(--ink); }
+  .lead { font-size: clamp(18px, 2.4vw, 21px); color: var(--muted); line-height: 1.55; }
+  .muted { color: var(--muted); }
+  strong { font-weight: 700; }
+  a { color: var(--accent-ink); text-decoration: none; border-bottom: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); }
+  a:hover { border-bottom-color: var(--accent); }
+
+  section { padding-top: clamp(40px, 7vw, 64px); }
+  section + section { border-top: 1px solid var(--line); }
+  .section-head { margin-bottom: 22px; }
+
+  code.k {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: .86em; background: var(--surface-2); border: 1px solid var(--line);
+    padding: .08em .4em; border-radius: 5px; white-space: nowrap;
+  }
+
+  .term {
+    background: var(--term-bg); color: var(--term-ink); border-radius: 12px;
+    border: 1px solid color-mix(in srgb, var(--term-ink) 12%, transparent);
+    box-shadow: var(--shadow); overflow: hidden; margin: 0 0 20px;
+  }
+  .term-bar { display: flex; align-items: center; gap: 7px; padding: 11px 14px;
+    border-bottom: 1px solid rgba(255,255,255,.07); }
+  .dot { width: 11px; height: 11px; border-radius: 50%; }
+  .dot.r { background: #ff5f57; } .dot.y { background: #febc2e; } .dot.g { background: #28c840; }
+  .term-title { margin-left: 8px; font-size: 12px; color: var(--term-dim);
+    font-family: ui-monospace, Menlo, monospace; }
+  .term pre { margin: 0; padding: 16px 18px; overflow-x: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13.5px; line-height: 1.7; }
+  .term .p { color: var(--term-prompt); user-select: none; }
+  .term .c { color: var(--term-dim); }
+  .term .out { color: var(--term-ink); }
+  .sev-crit { color: var(--crit); font-weight: 600; }
+  .sev-high { color: var(--high); font-weight: 600; }
+  .sev-med { color: var(--med); font-weight: 600; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    padding: 16px 16px 15px; box-shadow: var(--shadow); }
+  .card .tag { font-family: ui-monospace, Menlo, monospace; font-size: 11px;
+    letter-spacing: .06em; color: var(--accent-ink); text-transform: uppercase; }
+  .card h3 { margin-top: 4px; }
+  .card p { font-size: 14.5px; line-height: 1.55; color: var(--muted); margin: 0; }
+
+  .qs { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+  .qs li { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .qs .mark { color: var(--accent); font-weight: 800; font-family: ui-monospace, Menlo, monospace; }
+
+  .steps { counter-reset: s; display: grid; gap: 16px; margin: 0; padding: 0; list-style: none; }
+  .steps > li { counter-increment: s; display: grid; grid-template-columns: 34px 1fr; gap: 14px; align-items: start; }
+  .steps > li::before { content: counter(s); grid-row: 1 / span 2;
+    width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center;
+    background: var(--accent-weak); color: var(--accent-ink); font-weight: 800;
+    font-family: ui-monospace, Menlo, monospace; border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent); }
+  .steps h3 { margin: 4px 0 2px; }
+  .steps .body { min-width: 0; }
+
+  .bands { display: grid; gap: 10px; margin: 4px 0 4px; }
+  .band { display: grid; grid-template-columns: 92px 1fr; align-items: center; gap: 14px; }
+  .chip { font-family: ui-monospace, Menlo, monospace; font-size: 13px; font-weight: 700;
+    padding: 5px 10px; border-radius: 999px; text-align: center; }
+  .chip.g { color: var(--ok);   background: color-mix(in srgb, var(--ok) 14%, transparent); }
+  .chip.a { color: var(--med);  background: color-mix(in srgb, var(--med) 16%, transparent); }
+  .chip.r { color: var(--crit); background: color-mix(in srgb, var(--crit) 14%, transparent); }
+
+  .ref { width: 100%; border-collapse: collapse; font-size: 15px; }
+  .ref th, .ref td { text-align: left; padding: 11px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .ref th { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .ref td:first-child { white-space: nowrap; }
+  .ref .cmd { font-family: ui-monospace, Menlo, monospace; color: var(--accent-ink); font-size: 13.5px; }
+  .ref-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+
+  .callout { background: var(--accent-weak); border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+    border-radius: 12px; padding: 16px 18px; margin: 4px 0 0; }
+  .callout p { margin: 0; font-size: 15px; }
+  .callout strong { color: var(--accent-ink); }
+
+  .foot { margin-top: 40px; padding-top: 22px; border-top: 1px solid var(--line);
+    color: var(--muted); font-size: 14px; }
+
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .card, .qs li { transition: border-color .15s ease, transform .15s ease; }
+    .card:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+  }
+  @media (max-width: 520px) { body { font-size: 16px; } .band { grid-template-columns: 84px 1fr; } }
+</style>
+
+<div class="page">
+
+  <header class="col">
+    <p class="eyebrow">Getting Started · v1.0</p>
+    <h1>Getting started with HSM Doctor</h1>
+    <p class="lead">The vendor-neutral, open-source tool that surfaces the health, security posture
+      and PKCS#11 behavior of Hardware Security Modules in a single command. This guide answers
+      <em>what it is, why you need it, how to install it, and how to use it</em> — from scratch.</p>
+  </header>
+
+  <div class="term col" style="margin-top:28px" aria-label="Example scan output">
+    <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="term-title">hsmdoctor scan</span></div>
+    <pre><span class="p">$</span> hsmdoctor scan <span class="c">--module .../libsofthsm2.so --slot 1 --pin-env HSM_PIN</span>
+
+<span class="out">Health Score: <strong>38/100</strong></span>
+
+<span class="sev-crit">CRITICAL</span>  Extractable private key      <span class="c">legacy-signing (id 01)</span>
+<span class="sev-high">HIGH</span>      Weak RSA key (1024-bit)      <span class="c">legacy-signing (id 01)</span>
+<span class="sev-med">MEDIUM</span>    Certificate expiring soon    <span class="c">api-cert · 8 days left</span></pre>
+  </div>
+
+  <section id="what">
+    <div class="col section-head">
+      <p class="eyebrow">01 · Concept</p>
+      <h2>What is HSM Doctor?</h2>
+    </div>
+    <div class="col">
+      <p>An <strong>HSM</strong> is a device that generates and protects cryptographic keys in
+        hardware — the key material never leaves the device. Banking, PKI, code signing and TLS
+        infrastructures usually have an HSM as their root of trust.</p>
+      <p>The common language for talking to these devices is the <strong>PKCS#11</strong> (Cryptoki)
+        standard. Excellent low-level PKCS#11 tools already exist; HSM Doctor instead focuses on the
+        questions an <strong>HSM administrator actually asks</strong>. The “doctor” in the name is
+        literal: it runs a <em>check-up</em> on a token and produces a <strong>health score</strong>
+        with prioritized findings.</p>
+      <p>It ships as a single Go binary: the CLI, the embedded web interface and every feature live
+        in one file. Key material and PINs are <strong>never</strong> read, logged or written to
+        reports — by design it collects metadata only.</p>
+    </div>
+  </section>
+
+  <section id="why">
+    <div class="col section-head">
+      <p class="eyebrow">02 · Motivation</p>
+      <h2>Why use it?</h2>
+      <p class="muted">HSM Doctor turns raw token data into answers to four practical questions:</p>
+    </div>
+    <ul class="qs col">
+      <li><span class="mark">?</span><span>What keys and certificates live on this token —
+        and are they <strong>configured safely?</strong></span></li>
+      <li><span class="mark">?</span><span>Are there <strong>risks</strong> like extractable private
+        keys, weak key sizes, or expiring certificates?</span></li>
+      <li><span class="mark">?</span><span>Does this HSM still behave the way it did yesterday —
+        <strong>what changed?</strong> (drift)</span></li>
+      <li><span class="mark">?</span><span>Can my workload (signing, encryption, key generation)
+        actually <strong>run</strong> on this device?</span></li>
+    </ul>
+  </section>
+
+  <section id="concepts">
+    <div class="col section-head">
+      <p class="eyebrow">03 · Glossary</p>
+      <h2>Core concepts</h2>
+      <p class="muted">Short definitions for the terms used throughout this guide.</p>
+    </div>
+    <div class="grid">
+      <div class="card"><div class="tag">Hardware</div><h3>HSM</h3><p>A device that generates and
+        protects keys in hardware. The key never leaves it.</p></div>
+      <div class="card"><div class="tag">Standard</div><h3>PKCS#11</h3><p>The common interface for
+        talking to HSMs (Cryptoki). HSM Doctor works through it.</p></div>
+      <div class="card"><div class="tag">Structure</div><h3>Slot &amp; Token</h3><p>A slot is a bay;
+        a token is the logical key/certificate store inside it.</p></div>
+      <div class="card"><div class="tag">Test backend</div><h3>SoftHSM</h3><p>A free, software
+        PKCS#11 implementation. Ideal for trying things without a physical HSM.</p></div>
+      <div class="card"><div class="tag">Credential</div><h3>PIN</h3><p>The login secret for a token.
+        HSM Doctor never logs or traces it.</p></div>
+      <div class="card"><div class="tag">Score</div><h3>Health Score</h3><p>A 0–100 summary of the
+        token’s security posture. Higher is better.</p></div>
+      <div class="card"><div class="tag">Rules</div><h3>Posture rules</h3><p><code class="k">HSM-001…</code>
+        rules: extractable keys, weak RSA, expiring certificates, and more.</p></div>
+      <div class="card"><div class="tag">Change</div><h3>Drift</h3><p>The difference between two points
+        in time: added/removed objects, attribute flips, firmware/mechanism changes.</p></div>
+      <div class="card"><div class="tag">Future</div><h3>PQC</h3><p>Post-quantum readiness:
+        ML-KEM / ML-DSA / SLH-DSA support plus exposure analysis of existing keys.</p></div>
+      <div class="card"><div class="tag">Observability</div><h3>Flight Recorder</h3><p>A shim that
+        safely records PKCS#11 calls, plus leak/error/performance analysis.</p></div>
+      <div class="card"><div class="tag">Scale</div><h3>Fleet</h3><p>Central monitoring of many HSMs:
+        one central server plus agents running on each host.</p></div>
+      <div class="card"><div class="tag">Device</div><h3>Vendor providers</h3><p>Appliance-level health
+        (disk, HA, tamper): SoftHSM stable; Luna/nShield/CloudHSM experimental.</p></div>
+    </div>
+  </section>
+
+  <section id="install">
+    <div class="col section-head">
+      <p class="eyebrow">04 · Install</p>
+      <h2>How to install</h2>
+      <p class="muted">The fastest path is a pre-built binary. Building from source needs a C compiler
+        (the PKCS#11 wrapper uses <code class="k">dlopen</code>/cgo).</p>
+    </div>
+    <div class="term col">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="term-title">install</span></div>
+      <pre><span class="c"># Easiest: download a pre-built binary from the releases page</span>
+<span class="c"># github.com/kurtserdar/hsm-doctor/releases  (Linux / macOS / Windows)</span>
+
+<span class="c"># or build from source (needs a C compiler):</span>
+<span class="p">$</span> git clone https://github.com/kurtserdar/hsm-doctor.git
+<span class="p">$</span> cd hsm-doctor
+<span class="p">$</span> make build       <span class="c"># CLI only</span>
+<span class="p">$</span> make ui build    <span class="c"># CLI + embedded web interface (needs Node.js)</span>
+
+<span class="c"># or directly with Go:</span>
+<span class="p">$</span> go install github.com/kurtserdar/hsm-doctor/cmd/hsmdoctor@latest</pre>
+    </div>
+  </section>
+
+  <section id="first-run">
+    <div class="col section-head">
+      <p class="eyebrow">05 · First run</p>
+      <h2>No HSM at hand? SoftHSM in 5 steps</h2>
+      <p class="muted">SoftHSM lets you try everything without a physical HSM.</p>
+    </div>
+
+    <ol class="steps col">
+      <li><div class="body"><h3>Install SoftHSM</h3>
+        <p class="muted">Grab the software PKCS#11 implementation from your package manager.</p></div></li>
+      <li><div class="body"><h3>Create a test token</h3>
+        <p class="muted">A <code class="k">DEMO</code>-labeled token in a free slot; user PIN <code class="k">123456</code>.</p></div></li>
+      <li><div class="body"><h3>Put the PIN in an env var</h3>
+        <p class="muted">Pass it via <code class="k">--pin-env</code> so it never lands in shell history.</p></div></li>
+      <li><div class="body"><h3>Discover slots and tokens</h3>
+        <p class="muted"><code class="k">discover</code> opens the module and lists slots/tokens — no login required.</p></div></li>
+      <li><div class="body"><h3>Run a full scan and read the score</h3>
+        <p class="muted"><code class="k">scan</code>: inventory + posture rules + health score.</p></div></li>
+    </ol>
+
+    <div class="term col" style="margin-top:22px">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="term-title">first run</span></div>
+      <pre><span class="p">$</span> sudo apt-get install softhsm2
+
+<span class="p">$</span> softhsm2-util --init-token --free --label DEMO --so-pin 12345678 --pin 123456
+
+<span class="p">$</span> export HSM_PIN=123456
+
+<span class="p">$</span> hsmdoctor discover --module /usr/lib/softhsm/libsofthsm2.so
+
+<span class="p">$</span> hsmdoctor scan --module /usr/lib/softhsm/libsofthsm2.so --slot <span class="c">&lt;SLOT-ID&gt;</span> --pin-env HSM_PIN</pre>
+    </div>
+
+    <div class="col" style="margin-top:26px">
+      <h3 style="font-size:17px; margin-bottom:10px">How do I read the health score?</h3>
+      <div class="bands">
+        <div class="band"><span class="chip g">90–100</span><span class="muted">Good — the token is configured safely.</span></div>
+        <div class="band"><span class="chip a">70–89</span><span class="muted">Attention — medium findings worth reviewing.</span></div>
+        <div class="band"><span class="chip r">0–69</span><span class="muted">Poor — critical/high risks present; action needed.</span></div>
+      </div>
+      <p class="muted" style="margin-top:12px; font-size:15px">Every finding carries a rule id
+        (like <code class="k">HSM-001</code>) and is grouped by severity:
+        <span class="sev-crit">CRITICAL</span> · <span class="sev-high">HIGH</span> ·
+        <span class="sev-med">MEDIUM</span> · LOW.</p>
+    </div>
+  </section>
+
+  <section id="next">
+    <div class="col section-head">
+      <p class="eyebrow">06 · Next steps</p>
+      <h2>Other commands</h2>
+      <p class="muted">The same binary does much more than scanning. Everything works with
+        <code class="k">--module</code> + <code class="k">--slot</code> or a PKCS#11 URI.</p>
+    </div>
+    <div class="ref-wrap col">
+      <table class="ref">
+        <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">certs</td><td>Certificate expiry monitor; cron/CI-friendly exit codes.</td></tr>
+          <tr><td class="cmd">test</td><td>Safe functional tests (keygen, sign/verify, AES-GCM) using ephemeral objects.</td></tr>
+          <tr><td class="cmd">bench</td><td>Performance measurement under strictly bounded load (duration + op budget).</td></tr>
+          <tr><td class="cmd">snapshot / diff</td><td>Record a token’s state, then compare later to see <strong>drift</strong>.</td></tr>
+          <tr><td class="cmd">pqc</td><td>Post-quantum readiness: support matrix + exposure analysis of existing keys.</td></tr>
+          <tr><td class="cmd">vendor</td><td>Appliance-level health (disk, HA, partitions, tamper) via vendor providers.</td></tr>
+          <tr><td class="cmd">trace</td><td>Analyze Flight Recorder traces: leaks, ordering bugs, error codes, slow calls.</td></tr>
+          <tr><td class="cmd">serve</td><td>Local web interface + REST API; scan history, automatic drift, Prometheus metrics.</td></tr>
+          <tr><td class="cmd">server + agent</td><td>Fleet: a central server collects reports pushed by agents; monitor many HSMs in one dashboard.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="term col" style="margin-top:22px">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="term-title">web interface</span></div>
+      <pre><span class="p">$</span> export HSM_PIN=123456
+<span class="p">$</span> hsmdoctor serve --module /usr/lib/softhsm/libsofthsm2.so --pin-env HSM_PIN
+<span class="c"># → http://127.0.0.1:8080  (dashboard, inventory, certificates, PQC, fleet…)</span></pre>
+    </div>
+
+    <div class="callout col">
+      <p><strong>Tip:</strong> Address a token the classic way (<code class="k">--module</code> + <code class="k">--slot</code>)
+        or with an RFC 7512 PKCS#11 URI:
+        <code class="k">--uri "pkcs11:token=PROD?module-path=/usr/lib/libpkcs11.so"</code></p>
+    </div>
+  </section>
+
+  <div class="foot col">
+    <p><strong>HSM Doctor</strong> — a vendor-neutral tool for HSM health, security posture and PKCS#11
+      diagnostics. For more depth, see the <code class="k">docs/</code> folder in the repository: rules,
+      vendor providers, tracing, deployment (server/agent, SSO, mTLS) and architecture.</p>
+    <p class="muted">This guide is a starting map; at any step you can ask “what is this, and why is it
+      like that.”</p>
+  </div>
+
+</div>

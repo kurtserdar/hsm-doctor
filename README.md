@@ -405,6 +405,11 @@ and systemd units.
 
 ## Documentation
 
+New to HSM Doctor? The illustrated
+[getting-started guide](docs/getting-started.html) covers what it is, why it
+exists, install and first run (a self-contained HTML page — open it in a
+browser).
+
 Full documentation lives in [docs/](docs/) — start with the
 [documentation index](docs/README.md). Highlights: the
 [command reference](docs/cli.md), the [deployment guide](docs/deployment.md),
