@@ -166,6 +166,9 @@ The web server binds loopback by default — pass `--listen 0.0.0.0:8080` to
 reach it from the host. Images are tagged `:vX.Y.Z` and `:latest` and signed
 with cosign.
 
+For a multi-vendor fleet, a ready-to-run central-server stack (PostgreSQL +
+fleet server) with a step-by-step guide lives in [deploy/](deploy/).
+
 ## Quick start (with SoftHSM)
 
 No HSM at hand? SoftHSM works out of the box:

@@ -1,0 +1,19 @@
+# Copy to "vendor.yaml" ON EACH AGENT HOST (not the central server) to enable
+# appliance-level checks (HA, tamper, partitions) for that host's HSM. Only the
+# provider that matches the host's HSM is used. Treat as a secret (mode 0600).
+providers:
+  # Thales Luna network HSM — lunash over SSH.
+  luna:
+    host: luna-app-1.acme.internal
+    user: admin
+    key_file: /etc/hsmdoctor/luna_id_ed25519
+    known_hosts: /etc/hsmdoctor/known_hosts
+
+  # Entrust nShield — local enquiry / nfkminfo (no settings needed).
+  nshield: {}
+
+  # AWS CloudHSM — AWS CLI.
+  cloudhsm:
+    cluster_id: cluster-abcdef123
+    region: eu-west-1
+    profile: hsm-audit

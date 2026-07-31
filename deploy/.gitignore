@@ -1,0 +1,5 @@
+# Local secrets and generated material — never commit these.
+.env
+auth.yaml
+vendor.yaml
+tls/

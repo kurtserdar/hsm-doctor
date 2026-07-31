@@ -1,0 +1,57 @@
+# Central HSM Doctor stack: PostgreSQL + the fleet server.
+#
+# This runs the vendor-neutral CENTRAL server only — it holds no PKCS#11 module
+# and never touches an HSM. Agents run on your HSM hosts (with their vendor
+# libraries) and push reports here. See README.md in this directory.
+#
+#   cp .env.example .env            # set DB_PASSWORD and ENROLL_TOKEN
+#   cp auth.yaml.example auth.yaml  # set your admin/viewer tokens
+#   ./gen-tls.sh                    # or drop real certs in ./tls/
+#   docker compose up -d --build
+
+name: hsm-doctor
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: hsmdoctor
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      POSTGRES_DB: hsmdoctor
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hsmdoctor -d hsmdoctor"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  server:
+    image: ghcr.io/kurtserdar/hsm-doctor:latest
+    # Falls back to building from the repo if the image is not published yet.
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      HSMDOCTOR_DB: postgres://hsmdoctor:${DB_PASSWORD:?set DB_PASSWORD in .env}@db:5432/hsmdoctor?sslmode=disable
+      HSMDOCTOR_ENROLL: ${ENROLL_TOKEN:?set ENROLL_TOKEN in .env}
+    command:
+      - server
+      - --listen=0.0.0.0:8443
+      - --tls-cert=/etc/hsmdoctor/tls/server.crt
+      - --tls-key=/etc/hsmdoctor/tls/server.key
+      - --auth-config=/etc/hsmdoctor/auth.yaml
+      - --enroll-token-env=HSMDOCTOR_ENROLL
+    volumes:
+      - ./auth.yaml:/etc/hsmdoctor/auth.yaml:ro
+      - ./tls:/etc/hsmdoctor/tls:ro
+    ports:
+      - "8443:8443"
+    restart: unless-stopped
+
+volumes:
+  db-data:

@@ -1,0 +1,12 @@
+# Copy to "auth.yaml". API bearer tokens for humans and automation.
+# Each token must be at least 16 characters. Roles: admin (read + write) or
+# viewer (read-only). Generate tokens with:  openssl rand -hex 24
+#
+# You can also (or instead) use OIDC single sign-on — see docs/deployment.md.
+tokens:
+  - name: alice-admin
+    token: replace-with-openssl-rand-hex-24-value
+    role: admin
+  - name: dashboard-viewer
+    token: replace-with-another-rand-hex-24-value
+    role: viewer
