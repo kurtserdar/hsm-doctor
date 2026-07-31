@@ -145,6 +145,27 @@ or
 go install github.com/kurtserdar/hsm-doctor/cmd/hsmdoctor@latest
 ```
 
+### Docker
+
+A container image is published on GHCR with SoftHSM2 and OpenSC baked in, so
+you can try HSM Doctor without installing anything:
+
+```sh
+# Version
+docker run --rm ghcr.io/kurtserdar/hsm-doctor version
+
+# Create a demo token and scan it — entirely inside the container
+docker run --rm --entrypoint sh ghcr.io/kurtserdar/hsm-doctor -c '
+  softhsm2-util --init-token --free --label DEMO --so-pin 12345678 --pin 123456
+  HSM_PIN=123456 hsmdoctor scan \
+    --uri "pkcs11:token=DEMO?module-path=/usr/lib/softhsm/libsofthsm2.so" --pin-env HSM_PIN'
+```
+
+For a real HSM, mount your vendor PKCS#11 library and point `--module` at it.
+The web server binds loopback by default — pass `--listen 0.0.0.0:8080` to
+reach it from the host. Images are tagged `:vX.Y.Z` and `:latest` and signed
+with cosign.
+
 ## Quick start (with SoftHSM)
 
 No HSM at hand? SoftHSM works out of the box:

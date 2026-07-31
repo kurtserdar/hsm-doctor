@@ -1,0 +1,9 @@
+.git
+.github
+web/node_modules
+docs
+*.png
+hsmdoctor
+hsmdoctor-trace.h
+hsmdoctor-trace.so
+coverage.out

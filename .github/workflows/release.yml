@@ -161,3 +161,59 @@ jobs:
           gh release view "$TAG" > /dev/null 2>&1 || \
             gh release create "$TAG" --title "$TAG" --generate-notes
           gh release upload "$TAG" dist/* --clobber
+
+  docker:
+    name: Docker image (GHCR)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write # keyless cosign image signing
+    steps:
+      - name: Resolve tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.tag.outputs.tag }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64
+          build-args: |
+            VERSION=${{ steps.tag.outputs.version }}
+            COMMIT=${{ github.sha }}
+          tags: |
+            ghcr.io/kurtserdar/hsm-doctor:${{ steps.tag.outputs.tag }}
+            ghcr.io/kurtserdar/hsm-doctor:latest
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign image (keyless)
+        env:
+          COSIGN_YES: "true"
+        run: cosign sign ghcr.io/kurtserdar/hsm-doctor@${{ steps.build.outputs.digest }}
