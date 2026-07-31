@@ -65,7 +65,12 @@ func (p *provider) Collect(ctx context.Context, cfg vendor.Config) (*vendor.Info
 }
 
 // parseHSMShow extracts firmware, serial and tamper state from "hsm show".
+// Tamper is decided across all matching lines so a single tripped sensor wins,
+// and only an affirmative tamper value raises the critical finding — a bare
+// "No" must never be misread as a tamper condition.
 func parseHSMShow(out string, info *vendor.Info) {
+	var tamperSeen, tampered bool
+	var tamperDetail string
 	for _, line := range strings.Split(out, "\n") {
 		line = strings.TrimSpace(line)
 		key, value, ok := strings.Cut(line, ":")
@@ -74,37 +79,72 @@ func parseHSMShow(out string, info *vendor.Info) {
 		}
 		key = strings.TrimSpace(strings.ToLower(key))
 		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
 		switch {
 		case strings.Contains(key, "firmware"):
 			info.Extra["firmware"] = value
 		case strings.Contains(key, "serial"):
 			info.Extra["serial"] = value
 		case strings.Contains(key, "tamper"):
-			tampered := !strings.Contains(strings.ToLower(value), "none") &&
-				!strings.Contains(strings.ToLower(value), "no tamper")
-			info.Tamper = &vendor.TamperStatus{Tampered: tampered, Detail: value}
-			if tampered {
-				info.Findings = append(info.Findings, policy.Finding{
-					RuleID:   "LUNA-001",
-					Title:    "HSM reports a tamper condition",
-					Severity: policy.SevCritical,
-					Detail:   value,
-				})
+			tamperSeen = true
+			if tamperTripped(value) {
+				tampered = true
+				tamperDetail = value
+			} else if tamperDetail == "" {
+				tamperDetail = value
 			}
+		}
+	}
+	if tamperSeen {
+		info.Tamper = &vendor.TamperStatus{Tampered: tampered, Detail: tamperDetail}
+		if tampered {
+			info.Findings = append(info.Findings, policy.Finding{
+				RuleID:   "LUNA-001",
+				Title:    "HSM reports a tamper condition",
+				Severity: policy.SevCritical,
+				Detail:   tamperDetail,
+			})
 		}
 	}
 }
 
+// tamperTripped reports whether a tamper-state value affirmatively indicates a
+// tamper event. Known-clear values ("No", "None", "No tamper(s)"…) and
+// ambiguous values are treated as not tripped to avoid false criticals.
+func tamperTripped(value string) bool {
+	v := strings.ToLower(strings.TrimSpace(value))
+	switch v {
+	case "", "no", "none", "clear", "ok", "false", "0", "normal", "not tampered":
+		return false
+	}
+	if strings.Contains(v, "no tamper") || strings.Contains(v, "none") {
+		return false
+	}
+	for _, s := range []string{"yes", "true", "detected", "active", "intrusion", "tampered", "tamper detected"} {
+		if strings.Contains(v, s) {
+			return true
+		}
+	}
+	// Unknown wording: do not raise a critical finding on uncertainty.
+	return false
+}
+
 // parsePartitionList extracts partition object counts from "partition list".
+// The heuristic reads "<label> ... <objects>" data rows and skips header and
+// separator lines.
 func parsePartitionList(out string, info *vendor.Info) {
 	for _, line := range strings.Split(out, "\n") {
 		fields := strings.Fields(line)
-		// Heuristic: "<label> <objects> <...>" data rows.
 		if len(fields) < 2 {
 			continue
 		}
+		if isSeparator(fields[0]) || isSeparator(fields[len(fields)-1]) {
+			continue
+		}
 		used, err := atoiSafe(fields[len(fields)-1])
-		if err != nil {
+		if err != nil || used < 0 {
 			continue
 		}
 		info.Partitions = append(info.Partitions, vendor.PartitionInfo{
@@ -112,4 +152,13 @@ func parsePartitionList(out string, info *vendor.Info) {
 			UsedObjects: &used,
 		})
 	}
+}
+
+// isSeparator reports whether a token is a table rule made only of separator
+// characters (=, -, _), used to skip header underlines.
+func isSeparator(s string) bool {
+	if s == "" {
+		return true
+	}
+	return strings.Trim(s, "=-_") == ""
 }

@@ -2,21 +2,13 @@ package luna
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/kurtserdar/hsm-doctor/internal/p11"
 	"github.com/kurtserdar/hsm-doctor/internal/vendors"
+	"github.com/kurtserdar/hsm-doctor/internal/vendors/vendortest"
 )
-
-type fakeRunner struct{ outputs map[string]string }
-
-func (f fakeRunner) Run(_ context.Context, name string, args ...string) (string, error) {
-	key := name
-	for _, a := range args {
-		key += " " + a
-	}
-	return f.outputs[key], nil
-}
 
 func TestDetect(t *testing.T) {
 	p := &provider{}
@@ -53,6 +45,16 @@ const hsmShowTampered = `
    Tamper State:                Chassis intrusion detected
 `
 
+// hsmShowTamperNo is the regression fixture: a bare "No" must not be read as a
+// tamper condition.
+const hsmShowTamperNo = `
+   HSM Details:
+   ===========
+   Serial Number:               1234567
+   Firmware Version:            7.7.1
+   Tamper State:                No
+`
+
 const partitionListOutput = `
    Partition Name           Objects
    ============             =======
@@ -60,11 +62,9 @@ const partitionListOutput = `
    TEST-PARTITION           7
 `
 
-func TestCollectHealthy(t *testing.T) {
-	p := &provider{runner: fakeRunner{outputs: map[string]string{
-		"hsm show":       hsmShowOutput,
-		"partition list": partitionListOutput,
-	}}}
+func collect(t *testing.T, r *vendortest.Runner) *vendor.Info {
+	t.Helper()
+	p := &provider{runner: r}
 	info, err := p.Collect(context.Background(), vendor.Config{})
 	if err != nil {
 		t.Fatalf("Collect: %v", err)
@@ -72,6 +72,23 @@ func TestCollectHealthy(t *testing.T) {
 	if !info.Experimental {
 		t.Error("luna provider must be marked experimental")
 	}
+	return info
+}
+
+func hasFinding(info *vendor.Info, id string) bool {
+	for _, f := range info.Findings {
+		if f.RuleID == id {
+			return true
+		}
+	}
+	return false
+}
+
+func TestCollectHealthy(t *testing.T) {
+	info := collect(t, &vendortest.Runner{Outputs: map[string]string{
+		"hsm":       hsmShowOutput,
+		"partition": partitionListOutput,
+	}})
 	if info.Extra["firmware"] != "7.7.1" || info.Extra["serial"] != "1234567" {
 		t.Errorf("hsm show not parsed: %+v", info.Extra)
 	}
@@ -86,17 +103,46 @@ func TestCollectHealthy(t *testing.T) {
 	}
 }
 
-func TestCollectTamperRaisesCriticalFinding(t *testing.T) {
-	p := &provider{runner: fakeRunner{outputs: map[string]string{"hsm show": hsmShowTampered}}}
-	info, err := p.Collect(context.Background(), vendor.Config{})
-	if err != nil {
-		t.Fatalf("Collect: %v", err)
+// Regression: "Tamper State: No" must not raise a critical finding.
+func TestTamperNoIsNotTripped(t *testing.T) {
+	info := collect(t, &vendortest.Runner{Outputs: map[string]string{"hsm": hsmShowTamperNo}})
+	if info.Tamper == nil || info.Tamper.Tampered {
+		t.Errorf("a bare \"No\" must not be read as tampered: %+v", info.Tamper)
 	}
+	if hasFinding(info, "LUNA-001") {
+		t.Error("\"No\" tamper state must not raise LUNA-001")
+	}
+}
+
+func TestTamperDetectedRaisesCriticalFinding(t *testing.T) {
+	info := collect(t, &vendortest.Runner{Outputs: map[string]string{"hsm": hsmShowTampered}})
 	if info.Tamper == nil || !info.Tamper.Tampered {
 		t.Fatalf("tamper state not detected: %+v", info.Tamper)
 	}
 	if len(info.Findings) != 1 || info.Findings[0].RuleID != "LUNA-001" {
-		t.Errorf("tamper should raise LUNA-001: %+v", info.Findings)
+		t.Errorf("tamper should raise exactly one LUNA-001: %+v", info.Findings)
+	}
+}
+
+// hsm show is the fundamental command; if it fails, Collect reports an error.
+func TestHSMShowError(t *testing.T) {
+	p := &provider{runner: &vendortest.Runner{Errs: map[string]error{"hsm": errors.New("ssh: connection refused")}}}
+	if _, err := p.Collect(context.Background(), vendor.Config{}); err == nil {
+		t.Fatal("expected an error when 'hsm show' fails")
+	}
+}
+
+// A failing 'partition list' must not sink the HSM data already gathered.
+func TestPartitionListErrorIsPartial(t *testing.T) {
+	info := collect(t, &vendortest.Runner{
+		Outputs: map[string]string{"hsm": hsmShowOutput},
+		Errs:    map[string]error{"partition": errors.New("timeout")},
+	})
+	if info.Extra["firmware"] != "7.7.1" {
+		t.Errorf("hsm data should survive partition-list failure: %+v", info.Extra)
+	}
+	if len(info.Partitions) != 0 {
+		t.Errorf("no partitions expected when 'partition list' fails: %+v", info.Partitions)
 	}
 }
 
