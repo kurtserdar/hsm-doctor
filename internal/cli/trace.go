@@ -17,7 +17,7 @@ func newTraceCmd() *cobra.Command {
 shim (see docs/trace.md). Traces are metadata only — no PINs, key material
 or plaintext are ever recorded.`,
 	}
-	cmd.AddCommand(newTraceAnalyzeCmd(), newTraceSummaryCmd())
+	cmd.AddCommand(newTraceAnalyzeCmd(), newTraceSummaryCmd(), newTraceCoverageCmd())
 	return cmd
 }
 
@@ -100,6 +100,61 @@ func newTraceSummaryCmd() *cobra.Command {
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "output as JSON")
 	return cmd
+}
+
+func newTraceCoverageCmd() *cobra.Command {
+	var asJSON bool
+	cmd := &cobra.Command{
+		Use:   "coverage [trace.jsonl]",
+		Short: "Report which PKCS#11 functions the trace exercised",
+		Long: `Report PKCS#11 function coverage for a trace: how many of the functions
+the Flight Recorder can observe were actually exercised, and which were not.
+Useful for gauging how thoroughly a test suite drives its PKCS#11 module.`,
+		Args: cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			path := ""
+			if len(args) == 1 {
+				path = args[0]
+			}
+			events, err := openTrace(path)
+			if err != nil {
+				return err
+			}
+			cov := trace.CoverageOf(events)
+			if asJSON {
+				return jsonEncoder(cmd.OutOrStdout()).Encode(cov)
+			}
+			printCoverage(cmd, cov)
+			return nil
+		},
+	}
+	cmd.Flags().BoolVar(&asJSON, "json", false, "output as JSON")
+	return cmd
+}
+
+func printCoverage(cmd *cobra.Command, cov *trace.Coverage) {
+	out := cmd.OutOrStdout()
+	fmt.Fprintf(out, "PKCS#11 function coverage: %d/%d (%.0f%%)\n\n", cov.Covered, cov.Total, cov.Percent)
+
+	if len(cov.Exercise) > 0 {
+		fmt.Fprintf(out, "EXERCISED (%d)\n", len(cov.Exercise))
+		for _, c := range cov.Exercise {
+			fmt.Fprintf(out, "  %-24s %d\n", c.Function, c.Calls)
+		}
+		fmt.Fprintln(out)
+	}
+	if len(cov.Missing) > 0 {
+		fmt.Fprintf(out, "NOT EXERCISED (%d)\n", len(cov.Missing))
+		for _, fn := range cov.Missing {
+			fmt.Fprintf(out, "  %s\n", fn)
+		}
+	}
+	if len(cov.Unexpected) > 0 {
+		fmt.Fprintf(out, "\nUNRECOGNIZED (%d) — recorded but not in the known set\n", len(cov.Unexpected))
+		for _, fn := range cov.Unexpected {
+			fmt.Fprintf(out, "  %s\n", fn)
+		}
+	}
 }
 
 func printAnalysis(cmd *cobra.Command, a *trace.Analysis) {

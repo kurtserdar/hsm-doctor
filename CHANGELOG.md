@@ -9,6 +9,9 @@ under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
 ### Added
 
+- `hsmdoctor trace coverage` — reports which PKCS#11 functions a Flight
+  Recorder trace exercised (with call counts) and which it did not, measured
+  against the functions the shim can observe; `--json` for machine output.
 - `bouncyhsm` vendor provider (experimental) for
   [BouncyHsm](https://github.com/harrison314/BouncyHsm), the software HSM /
   PKCS#11 simulator. It reads BouncyHsm's REST API for version and object

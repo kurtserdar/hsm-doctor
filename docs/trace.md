@@ -76,3 +76,16 @@ generation, sign/verify, encrypt/decrypt, digest, wrap/unwrap, random).
 Functions outside that set are forwarded to the real module untraced, so
 applications keep working; coverage grows over time. The shim currently
 targets Linux.
+
+`trace coverage` reports how much of that recordable set a given trace
+exercised — useful for gauging how thoroughly a test suite drives its PKCS#11
+module:
+
+```sh
+hsmdoctor trace coverage /tmp/app-trace.jsonl     # exercised vs not-exercised
+hsmdoctor trace coverage --json trace.jsonl       # machine-readable
+```
+
+It lists the functions that were called (with counts) and those that were
+not, measured against the functions the recorder can observe (not the full
+PKCS#11 API — a function the shim does not wrap can never appear in a trace).
