@@ -26,16 +26,16 @@ jobs:
       HSMDOCTOR_TEST_POSTGRES: postgres://postgres:secret@127.0.0.1:5432/hsmdoctor?sslmode=disable
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: "1.25"
           check-latest: true
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "20"
           cache: npm
@@ -129,12 +129,12 @@ jobs:
             pkgconf-pkg-config opensc golang gcc
 
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # The cargo target dir lives OUTSIDE the clone so restoring the cache
       # never pre-creates a non-empty kryoptic-src that would break the clone.
       - name: Cache Kryoptic build
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cargo/registry
