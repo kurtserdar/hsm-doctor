@@ -93,22 +93,37 @@ func parseClusters(out, clusterID string) (*vendor.Info, error) {
 		// CloudHSM clusters need at least two HSMs across AZs for HA.
 		ha := &vendor.HAStatus{Group: c.ClusterID}
 		degraded := 0
+		azs := map[string]bool{}
 		for _, h := range c.HSMs {
 			up := h.State == "ACTIVE"
 			if !up {
 				degraded++
+			}
+			if h.AZ != "" {
+				azs[h.AZ] = true
 			}
 			ha.Members = append(ha.Members, vendor.HAMember{
 				Name: h.HsmID + " (" + h.AZ + ")", Status: h.State, Up: up,
 			})
 		}
 		info.HA = ha
+		info.Extra["hsm_count"] = fmt.Sprintf("%d", len(c.HSMs))
+		info.Extra["availability_zones"] = fmt.Sprintf("%d", len(azs))
 		if len(c.HSMs) < 2 {
 			info.Findings = append(info.Findings, policy.Finding{
 				RuleID:   "CLOUDHSM-002",
 				Title:    "Cluster has no high-availability redundancy",
 				Severity: policy.SevMedium,
 				Detail:   fmt.Sprintf("cluster has %d HSM(s); use at least two across availability zones", len(c.HSMs)),
+			})
+		} else if len(azs) < 2 {
+			// Two or more HSMs, but all in one AZ: no protection against an AZ
+			// outage.
+			info.Findings = append(info.Findings, policy.Finding{
+				RuleID:   "CLOUDHSM-004",
+				Title:    "HSMs are not spread across availability zones",
+				Severity: policy.SevMedium,
+				Detail:   fmt.Sprintf("%d HSMs share a single availability zone; spread them across zones for resilience", len(c.HSMs)),
 			})
 		}
 		if degraded > 0 {
