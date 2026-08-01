@@ -20,6 +20,12 @@ updates:
     groups:
       web-dependencies:
         patterns: ["*"]
+    ignore:
+      # vue-tsc is not yet compatible with the native TypeScript 7 compiler
+      # (TS 7 drops the ./lib/tsc entry point vue-tsc relies on). Remove this
+      # once vue-tsc supports TS 7.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"

@@ -5,6 +5,15 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [Unreleased]
+
+### Changed
+
+- Web UI toolchain upgraded: Vite 7 → 8, vue-router 4 → 5, TypeScript 5.8 →
+  6.0 (each verified with a build and a runtime pass of the embedded UI).
+  TypeScript 7 is deliberately held — its native compiler drops the entry
+  point `vue-tsc` relies on, so `vue-tsc` is not yet compatible.
+
 ## [1.2.0] - 2026-07-31
 
 ### Added
