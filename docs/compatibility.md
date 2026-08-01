@@ -31,16 +31,27 @@ Breaking changes are reserved for a new major version.
 These may change or be replaced in a minor release. They are clearly labeled
 in output and docs:
 
-- **Vendor providers `luna`, `nshield` and `cloudhsm`.** Built against public
-  documentation and **not validated against real hardware**. Their findings,
-  parsing and configuration keys may change as they are hardened. The
-  `softhsm` reference provider is stable.
+- **Vendor providers `luna`, `nshield`, `cloudhsm` and `bouncyhsm`.** The
+  first three are built against public documentation and **not validated
+  against real hardware**; `bouncyhsm` targets a software simulator through
+  its REST API. Their findings, parsing and configuration keys may change as
+  they are hardened. The `softhsm` reference provider is stable.
 - **Flight Recorder shim function coverage.** The shim instruments a curated,
   growing subset of the PKCS#11 API. Which functions are traced may expand
-  between minor releases (the trace *format* is stable).
+  between minor releases (the trace *format* is stable). Because that set is
+  the denominator, `trace coverage` ratios may shift across releases even for
+  the same trace.
 - **PQC functional probes for ML-KEM.** Reported as `KEYGEN ONLY` until
   key-encapsulation is wired through the underlying wrapper; this may change
   to a full probe.
+
+## Distribution artifacts
+
+Release binaries, the `ghcr.io/kurtserdar/hsm-doctor` container image and its
+tags (`:vX.Y.Z`, `:latest`), the keyless cosign signatures and the CycloneDX
+SBOM are distribution conveniences, not compatibility interfaces: their
+presence, naming and contents may change between releases. Verify downloads
+against the signed `SHA256SUMS.txt` — see [SECURITY.md](../SECURITY.md).
 
 ## Not an interface
 

@@ -5,6 +5,16 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [Unreleased]
+
+### Changed
+
+- Compatibility policy (`docs/compatibility.md`): list the `bouncyhsm` vendor
+  provider as experimental, note that release/distribution artifacts
+  (container image, cosign signatures, SBOM) are not compatibility interfaces,
+  and clarify that `trace coverage` ratios can shift as the shim's function
+  set grows.
+
 ## [1.3.0] - 2026-08-01
 
 ### Changed
