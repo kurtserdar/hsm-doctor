@@ -64,3 +64,13 @@ interfaces and may change at any time.
 The module path is `github.com/kurtserdar/hsm-doctor`. Only `cmd/hsmdoctor`
 is a supported entry point; the `internal/` packages are implementation
 detail and carry no compatibility guarantee.
+
+## Extending
+
+New vendor providers are added **in-tree**: implement the provider interface
+under `internal/vendors/<name>` and open a pull request (see
+[vendors.md](vendors.md) and [CONTRIBUTING.md](../CONTRIBUTING.md)). The
+provider interface is intentionally internal for now and is **not** a stable
+public plugin API — it may still change as the vendor layer evolves. A public,
+SemVer-stable provider API may follow if there is demand for out-of-tree
+providers.

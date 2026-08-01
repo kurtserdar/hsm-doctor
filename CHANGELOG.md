@@ -5,6 +5,15 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [Unreleased]
+
+### Changed
+
+- Documented the extension model: vendor providers are added in-tree via pull
+  request, and the provider interface is intentionally internal for now — not
+  a stable public plugin API. A SemVer-stable provider API may follow if there
+  is demand for out-of-tree providers (`docs/compatibility.md`, `docs/vendors.md`).
+
 ## [1.3.1] - 2026-08-01
 
 ### Changed

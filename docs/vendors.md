@@ -113,3 +113,7 @@ Two patterns are supported, both testable without real hardware:
   real hardware.
 
 See any existing provider and its `_test.go` for a complete example.
+
+Providers live **in-tree** and ship in the binary — contribute a new one via a
+pull request. The provider interface is internal for now and not a stable
+public plugin API (see [compatibility.md](compatibility.md#extending)).
