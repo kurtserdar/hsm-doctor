@@ -11,12 +11,13 @@ import (
 // Every embedded pack must parse, validate and carry proper metadata.
 func TestEmbeddedPacksLoad(t *testing.T) {
 	packs := rules.Packs()
-	if len(packs) != 4 {
-		t.Fatalf("expected 4 embedded packs, got %d", len(packs))
+	if len(packs) != 7 {
+		t.Fatalf("expected 7 embedded packs, got %d", len(packs))
 	}
 
 	expectedPrefix := map[string]string{
 		"nist": "NIST-", "cabf": "CABF-", "strict": "STRICT-", "pqc-migration": "PQCM-",
+		"fips-140-3": "FIPS-", "pci-hsm": "PCI-", "cnsa-2.0": "CNSA-",
 	}
 	var configs []*policy.Config
 	for _, p := range packs {
@@ -46,7 +47,7 @@ func TestEmbeddedPacksLoad(t *testing.T) {
 
 	// Compliance-inspired packs must state they are guidance, not
 	// certification.
-	for _, name := range []string{"nist", "cabf"} {
+	for _, name := range []string{"nist", "cabf", "fips-140-3", "pci-hsm", "cnsa-2.0"} {
 		data, ok := rules.PackData(name)
 		if !ok {
 			t.Fatalf("PackData(%s) missing", name)

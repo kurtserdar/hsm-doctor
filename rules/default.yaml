@@ -115,3 +115,33 @@ rules:
         - CKM_MD5_RSA_PKCS
         - CKM_DES_CBC
         - CKM_DES_ECB
+
+  - id: HSM-011
+    title: Certificate signed with SHA-1 or MD5
+    severity: medium
+    description: >-
+      The certificate uses a broken signature algorithm (SHA-1 or MD5).
+      These are forgeable and disallowed for new certificates.
+    match:
+      class: certificate
+      cert_sig_alg_in: [SHA1-RSA, MD5-RSA, ECDSA-SHA1]
+
+  - id: HSM-012
+    title: Secret key not marked sensitive
+    severity: high
+    description: >-
+      A secret key with CKA_SENSITIVE=false may reveal its value through
+      C_GetAttributeValue. Symmetric keys should always be sensitive.
+    match:
+      class: secret-key
+      sensitive: false
+
+  - id: HSM-013
+    title: Extractable secret key
+    severity: high
+    description: >-
+      A secret key with CKA_EXTRACTABLE=true can be wrapped and exported.
+      Production symmetric keys should not be extractable.
+    match:
+      class: secret-key
+      extractable: true

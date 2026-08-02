@@ -5,6 +5,18 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [Unreleased]
+
+### Added
+
+- Three compliance-inspired policy packs: `fips-140-3` (FIPS 140-3 approved
+  algorithms and key strengths), `pci-hsm` (PCI HSM / PCI PIN key protection
+  and role separation) and `cnsa-2.0` (NSA CNSA 2.0 RSA-3072+/P-384 plus
+  ML-KEM/ML-DSA migration). Guidance only — not a compliance or certification
+  statement.
+- Three default posture rules: certificate signed with SHA-1/MD5 (`HSM-011`),
+  non-sensitive secret key (`HSM-012`) and extractable secret key (`HSM-013`).
+
 ## [1.4.1] - 2026-08-02
 
 ### Changed

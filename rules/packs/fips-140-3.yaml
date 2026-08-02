@@ -1,0 +1,72 @@
+# FIPS 140-3 approved-algorithm alignment for token contents.
+pack:
+  name: fips-140-3
+  description: >-
+    Checks aligned with FIPS 140-3 approved algorithms and key strengths
+    (RSA >= 2048, NIST curves, no SHA-1/MD5 signatures, no single DES). FIPS
+    140-3 certifies cryptographic modules, not configurations, so this is
+    guidance only:
+    passing this pack is not a compliance or certification statement.
+
+rules:
+  - id: FIPS-001
+    title: Extractable private key
+    severity: critical
+    description: >-
+      Approved key management keeps private keys inside the module; an
+      extractable key can be exported and defeats that protection.
+    match:
+      class: private-key
+      extractable: true
+
+  - id: FIPS-002
+    title: Private key not marked sensitive
+    severity: critical
+    description: A non-sensitive private key may reveal key material.
+    match:
+      class: private-key
+      sensitive: false
+
+  - id: FIPS-003
+    title: RSA key below 2048 bits
+    severity: high
+    description: >-
+      SP 800-131A disallows RSA moduli under 2048 bits (below 112-bit
+      security strength).
+    match:
+      class: private-key
+      key_type: RSA
+      key_size_lt: 2048
+
+  - id: FIPS-004
+    title: EC key below 256 bits
+    severity: high
+    description: >-
+      Approved elliptic curves (P-256, P-384, P-521) provide at least
+      128-bit strength; smaller curves are not approved.
+    match:
+      class: private-key
+      key_type: EC
+      key_size_lt: 256
+
+  - id: FIPS-005
+    title: Certificate signed with SHA-1 or MD5
+    severity: high
+    description: SHA-1 and MD5 are not approved for signature generation.
+    match:
+      class: certificate
+      cert_sig_alg_in: [SHA1-RSA, MD5-RSA, ECDSA-SHA1]
+
+  - id: FIPS-006
+    title: Non-approved mechanism enabled
+    severity: medium
+    description: >-
+      The token advertises mechanisms outside the approved set (SHA-1 or MD5
+      signatures, single DES). Disable them where the configuration allows.
+    match:
+      mechanism_any_of:
+        - CKM_SHA1_RSA_PKCS
+        - CKM_MD5_RSA_PKCS
+        - CKM_MD5
+        - CKM_DES_CBC
+        - CKM_DES_ECB

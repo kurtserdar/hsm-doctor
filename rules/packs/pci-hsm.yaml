@@ -1,0 +1,73 @@
+# PCI HSM / PCI PIN security-inspired checks for payment key material.
+pack:
+  name: pci-hsm
+  description: >-
+    Checks inspired by the PCI HSM and PCI PIN security requirements: strong,
+    non-exportable keys with role separation. Guidance only — passing this
+    pack is not a compliance or certification statement.
+
+rules:
+  - id: PCI-001
+    title: Extractable key
+    severity: critical
+    description: >-
+      Payment keys must not be exportable in the clear; an extractable key
+      can be wrapped out of the HSM.
+    match:
+      class: private-key
+      extractable: true
+
+  - id: PCI-002
+    title: Private key not marked sensitive
+    severity: critical
+    description: A non-sensitive key may disclose its value.
+    match:
+      class: private-key
+      sensitive: false
+
+  - id: PCI-003
+    title: Key mixes signing and decryption roles
+    severity: medium
+    description: >-
+      Key separation is a core PCI requirement; a key that both signs and
+      decrypts widens the blast radius of a compromise.
+    match:
+      class: private-key
+      sign: true
+      decrypt: true
+
+  - id: PCI-004
+    title: RSA key below 2048 bits
+    severity: high
+    description: RSA under 2048 bits is below the accepted payment minimum.
+    match:
+      class: private-key
+      key_type: RSA
+      key_size_lt: 2048
+
+  - id: PCI-005
+    title: EC key below 256 bits
+    severity: high
+    description: EC keys under 256 bits provide insufficient strength.
+    match:
+      class: private-key
+      key_type: EC
+      key_size_lt: 256
+
+  - id: PCI-006
+    title: Certificate signed with SHA-1 or MD5
+    severity: medium
+    description: Weak certificate signatures should be reissued.
+    match:
+      class: certificate
+      cert_sig_alg_in: [SHA1-RSA, MD5-RSA, ECDSA-SHA1]
+
+  - id: PCI-007
+    title: Modifiable key
+    severity: low
+    description: >-
+      A key with CKA_MODIFIABLE=true can have its attributes changed after
+      creation; payment keys should be immutable.
+    match:
+      class: private-key
+      modifiable: true

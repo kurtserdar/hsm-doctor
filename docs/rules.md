@@ -16,6 +16,9 @@ Curated rule sets ship inside the binary — list them with
 | `cabf` | CA/Browser Forum TLS Baseline Requirements inspired checks |
 | `strict` | Attribute hygiene for high-assurance deployments |
 | `pqc-migration` | Post-quantum migration advisories (info severity, score-neutral) |
+| `fips-140-3` | FIPS 140-3 approved-algorithm alignment (key strength, no SHA-1/MD5/DES) |
+| `pci-hsm` | PCI HSM / PCI PIN inspired: non-exportable keys and role separation |
+| `cnsa-2.0` | NSA CNSA 2.0: RSA-3072+/P-384 and PQC (ML-KEM/ML-DSA) migration |
 
 Packs combine freely and also accept file paths, so corporate packs ride the
 same mechanism:

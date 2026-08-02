@@ -52,6 +52,16 @@ func testInventory(now time.Time) *inventory.Inventory {
 				Sensitive: b(true), Extractable: b(false)},
 			{Class: inventory.ClassSecretKey, Label: "dup", ID: "06", KeyType: "AES", KeyBits: 256,
 				Sensitive: b(true), Extractable: b(false)},
+
+			// Fires HSM-012 and HSM-013: a secret key that is neither sensitive
+			// nor non-extractable.
+			{Class: inventory.ClassSecretKey, Label: "leaky-secret", ID: "07", KeyType: "AES", KeyBits: 256,
+				Sensitive: b(false), Extractable: b(true)},
+
+			// Fires HSM-011 only: SHA-1 signed certificate. Shares ID 02 with a
+			// key (not orphaned) and expires far in the future.
+			{Class: inventory.ClassCertificate, Label: "weak-cert", ID: "02",
+				Certificate: &inventory.CertInfo{NotAfter: valid, SignatureAlgorithm: "SHA1-RSA"}},
 		},
 	}
 }
@@ -76,14 +86,15 @@ func TestEvaluateDefaultRules(t *testing.T) {
 	wantCounts := map[string]int{
 		"HSM-001": 1, "HSM-002": 1, "HSM-003": 1, "HSM-004": 1, "HSM-005": 1,
 		"HSM-006": 2, "HSM-007": 1, "HSM-008": 1, "HSM-009": 1, "HSM-010": 1,
+		"HSM-011": 1, "HSM-012": 1, "HSM-013": 1,
 	}
 	for id, want := range wantCounts {
 		if got := len(byRule[id]); got != want {
 			t.Errorf("rule %s: want %d finding(s), got %d: %+v", id, want, got, byRule[id])
 		}
 	}
-	if len(res.Findings) != 11 {
-		t.Errorf("total findings: want 11, got %d", len(res.Findings))
+	if len(res.Findings) != 14 {
+		t.Errorf("total findings: want 14, got %d", len(res.Findings))
 	}
 
 	// Findings must be sorted most-severe first.

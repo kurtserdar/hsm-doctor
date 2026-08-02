@@ -1,0 +1,56 @@
+# NSA Commercial National Security Algorithm Suite 2.0 (PQC-forward).
+pack:
+  name: cnsa-2.0
+  description: >-
+    Checks aligned with the NSA CNSA 2.0 suite: RSA-3072+ / ECDSA P-384 in
+    the near term and a mandated migration to ML-KEM (FIPS 203) and ML-DSA
+    (FIPS 204). Guidance only:
+    passing this pack is not a compliance or certification statement.
+
+rules:
+  - id: CNSA-001
+    title: RSA key below 3072 bits
+    severity: high
+    description: >-
+      CNSA 2.0 sets RSA-3072 as the transitional minimum; RSA-2048 is no
+      longer sufficient for national-security systems.
+    match:
+      class: private-key
+      key_type: RSA
+      key_size_lt: 3072
+
+  - id: CNSA-002
+    title: EC key weaker than P-384
+    severity: high
+    description: >-
+      CNSA 2.0 requires ECDSA/ECDH on P-384; smaller curves such as P-256 are
+      below the bar.
+    match:
+      class: private-key
+      key_type: EC
+      key_size_lt: 384
+
+  - id: CNSA-003
+    title: Classical key requires post-quantum migration
+    severity: info
+    description: >-
+      CNSA 2.0 mandates migration to ML-KEM and ML-DSA. Every classical
+      RSA/EC/DSA/DH key needs a migration plan. Informational — it charts the
+      work ahead rather than lowering the score.
+    match:
+      class: private-key
+      key_type_in: [RSA, EC, DSA, DH]
+
+  - id: CNSA-004
+    title: No ML-DSA signature mechanism on the token
+    severity: low
+    description: The token advertises no ML-DSA (FIPS 204) mechanism.
+    match:
+      mechanism_missing: [CKM_ML_DSA, CKM_ML_DSA_KEY_PAIR_GEN]
+
+  - id: CNSA-005
+    title: No ML-KEM key-establishment mechanism on the token
+    severity: low
+    description: The token advertises no ML-KEM (FIPS 203) mechanism.
+    match:
+      mechanism_missing: [CKM_ML_KEM, CKM_ML_KEM_KEY_PAIR_GEN]
