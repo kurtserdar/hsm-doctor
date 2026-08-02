@@ -18,6 +18,17 @@ providers:
     region: eu-west-1
     profile: hsm-audit
 
+  # Google Cloud HSM (Cloud KMS via libkmsp11) — gcloud CLI.
+  gcp:
+    keyring: my-hsm-keyring
+    location: us-east1
+    project: my-project
+
+  # Azure Key Vault Managed HSM — az CLI.
+  azure-hsm:
+    hsm_name: my-managed-hsm
+    subscription: 00000000-0000-0000-0000-000000000000
+
   # BouncyHsm software simulator — REST management API.
   bouncyhsm:
     url: http://bouncy-host:8080

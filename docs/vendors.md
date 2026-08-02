@@ -31,6 +31,8 @@ labeled by serial, token label and provider.
 | `luna` | **Experimental** | lunash over SSH | Parses `hsm show` / `partition list`; not validated on real hardware |
 | `nshield` | **Experimental** | local `enquiry` / `nfkminfo` | Module mode and security-world state |
 | `cloudhsm` | **Experimental** | AWS CLI | `cloudhsmv2 describe-clusters`; cluster/HSM/HA state |
+| `gcp` | **Experimental** | gcloud CLI | Google Cloud HSM (Cloud KMS via `libkmsp11`); `kms keys list` — software-protected keys, disabled/destroy-scheduled versions, missing rotation (`GCP-001`..`GCP-004`) |
+| `azure-hsm` | **Experimental** | Azure CLI | Azure Key Vault Managed HSM; `keyvault show` — security-domain activation, provisioning, purge protection, public access (`AZUREHSM-001`..`AZUREHSM-004`) |
 | `bouncyhsm` | **Experimental** | REST API (HTTP) | Software simulator; reads `/HsmInfo/Versions` and `/Stats`; always warns it is non-production (`BOUNCYHSM-001`) |
 
 Experimental providers are built against public documentation and clearly
@@ -57,11 +59,25 @@ providers:
     region: eu-west-1
     profile: hsm-audit        # optional AWS CLI profile
 
+  gcp:
+    keyring: my-hsm-keyring   # Cloud KMS key ring name
+    location: us-east1
+    project: my-project       # optional; uses the active gcloud project otherwise
+
+  azure-hsm:
+    hsm_name: my-managed-hsm  # Managed HSM pool name
+    subscription: 00000000-0000-0000-0000-000000000000   # optional
+
   bouncyhsm:
     url: http://bouncy-host:8080   # BouncyHsm REST/management endpoint
 ```
 
 nShield needs no configuration: it runs the locally installed nShield tools.
+
+The cloud providers (`cloudhsm`, `gcp`, `azure-hsm`) shell out to the vendor
+CLI and rely on it for authentication — configure credentials the usual way
+(`aws configure`, `gcloud auth`, `az login`, or an environment/managed
+identity). HSM Doctor never handles cloud credentials itself.
 
 ## Writing a provider
 

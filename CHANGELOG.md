@@ -5,6 +5,19 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [Unreleased]
+
+### Added
+
+- Two experimental cloud-HSM vendor providers, both driven through the vendor
+  CLI (which also handles authentication): `gcp` for Google Cloud HSM (Cloud
+  KMS via `libkmsp11`) reads `gcloud kms keys list` and flags software-protected
+  keys, disabled or destruction-scheduled versions and symmetric keys without
+  automatic rotation (`GCP-001`..`GCP-004`); `azure-hsm` for Azure Key Vault
+  Managed HSM reads `az keyvault show` and flags an inactive security domain,
+  incomplete provisioning, disabled purge protection and public network access
+  (`AZUREHSM-001`..`AZUREHSM-004`).
+
 ## [1.6.0] - 2026-08-02
 
 ### Added
