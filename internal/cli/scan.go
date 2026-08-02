@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/kurtserdar/hsm-doctor/internal/inventory"
 	"github.com/kurtserdar/hsm-doctor/internal/policy"
+	"github.com/kurtserdar/hsm-doctor/internal/regression"
 	"github.com/kurtserdar/hsm-doctor/internal/report"
 	"github.com/kurtserdar/hsm-doctor/internal/version"
 	"github.com/spf13/cobra"
@@ -15,8 +17,9 @@ import (
 
 func newScanCmd() *cobra.Command {
 	var conn connFlags
-	var rulesPath, format, outPath, failOn, vendorConfig, caBundle string
+	var rulesPath, format, outPath, failOn, vendorConfig, caBundle, baseline string
 	var packNames []string
+	var baselineMaxDrop int
 
 	cmd := &cobra.Command{
 		Use:   "scan",
@@ -87,6 +90,9 @@ Only object metadata is read; private key material never leaves the HSM.`,
 			if err != nil {
 				return err
 			}
+			if err := checkBaseline(cmd, baseline, baselineMaxDrop, rep); err != nil {
+				return err
+			}
 			return checkFailOn(failOn, res)
 		},
 	}
@@ -98,6 +104,8 @@ Only object metadata is read; private key material never leaves the HSM.`,
 	cmd.Flags().StringVar(&failOn, "fail-on", "", "exit non-zero if findings at or above this severity exist (critical, high, medium, low)")
 	cmd.Flags().StringVar(&caBundle, "ca-bundle", "", "PEM trust anchors; enables certificate chain validation (HSM-019)")
 	cmd.Flags().StringVar(&vendorConfig, "vendor-config", "", "vendor configuration file enabling appliance-level checks")
+	cmd.Flags().StringVar(&baseline, "baseline", "", "compare against a saved JSON report (from --format json) and exit non-zero on posture regression")
+	cmd.Flags().IntVar(&baselineMaxDrop, "baseline-max-drop", regression.DefaultScoreDropThreshold, "health-score drop that counts as a regression for --baseline")
 	return cmd
 }
 
@@ -111,6 +119,35 @@ func openOutput(path string) (io.Writer, func(), error) {
 		return nil, nil, fmt.Errorf("creating output file: %w", err)
 	}
 	return f, func() { _ = f.Close() }, nil
+}
+
+// checkBaseline compares the current report against a saved JSON report and
+// returns a non-zero-exit error when the posture regressed (health-score drop
+// or a new critical/high finding). The human-readable summary goes to stderr
+// so it never pollutes the report written to stdout. It reuses the same
+// detection engine as the fleet server, keeping the two consistent.
+func checkBaseline(cmd *cobra.Command, path string, maxDrop int, rep *report.Report) error {
+	if path == "" {
+		return nil
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("reading baseline: %w", err)
+	}
+	var base report.Report
+	if err := json.Unmarshal(data, &base); err != nil {
+		return fmt.Errorf("parsing baseline report %q: %w", path, err)
+	}
+	reg := regression.Detect(base.Score, rep.Score, base.Findings, rep.Findings, maxDrop)
+	if reg == nil {
+		return nil
+	}
+	w := cmd.ErrOrStderr()
+	fmt.Fprintf(w, "\nPosture regression vs baseline %s:\n", path)
+	for _, r := range reg.Reasons {
+		fmt.Fprintf(w, "  - %s\n", r)
+	}
+	return fmt.Errorf("posture regressed against baseline (score %d \u2192 %d)", base.Score, rep.Score)
 }
 
 // checkFailOn turns findings at or above the threshold into a non-zero exit.

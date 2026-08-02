@@ -5,6 +5,18 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [Unreleased]
+
+### Added
+
+- `scan --baseline FILE` gates CI on posture regression without a database:
+  it compares the current scan against a saved JSON report (produced by
+  `scan --format json --out`) and exits non-zero when the health score drops
+  by `--baseline-max-drop` points (default 10) or a new critical/high finding
+  appears, printing a summary to stderr. It reuses the same detection engine
+  as the fleet server, and composes with `--fail-on` (relative vs absolute
+  gating).
+
 ## [1.9.0] - 2026-08-02
 
 ### Added

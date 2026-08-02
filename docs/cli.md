@@ -51,19 +51,39 @@ Usage:
   hsmdoctor scan [flags]
 
 Flags:
-      --fail-on string         exit non-zero if findings at or above this severity exist (critical, high, medium, low)
-      --format string          output format: text, json or html (default "text")
-  -h, --help                   help for scan
-      --module string          path to the PKCS#11 library
-      --out string             output file ('-' for stdout) (default "-")
-      --pack stringArray       policy pack to apply (embedded name or file path; repeatable, see 'hsmdoctor packs')
-      --pin string             user PIN (WARNING: visible in shell history; prefer --pin-env)
-      --pin-env string         name of the environment variable holding the user PIN
-      --rules string           path to a custom rules YAML file replacing all packs
-      --slot uint              slot ID to operate on
-      --uri string             RFC 7512 PKCS#11 URI, e.g. "pkcs11:token=PROD?module-path=/usr/lib/libpkcs11.so"
-      --vendor-config string   vendor configuration file enabling appliance-level checks
+      --baseline string         compare against a saved JSON report (from --format json) and exit non-zero on posture regression
+      --baseline-max-drop int   health-score drop that counts as a regression for --baseline (default 10)
+      --ca-bundle string        PEM trust anchors; enables certificate chain validation (HSM-019)
+      --fail-on string          exit non-zero if findings at or above this severity exist (critical, high, medium, low)
+      --format string           output format: text, json, html or sarif (default "text")
+  -h, --help                    help for scan
+      --module string           path to the PKCS#11 library
+      --out string              output file ('-' for stdout) (default "-")
+      --pack stringArray        policy pack to apply (embedded name or file path; repeatable, see 'hsmdoctor packs')
+      --pin string              user PIN (WARNING: visible in shell history; prefer --pin-env)
+      --pin-env string          name of the environment variable holding the user PIN
+      --rules string            path to a custom rules YAML file replacing all packs
+      --slot uint               slot ID to operate on
+      --uri string              RFC 7512 PKCS#11 URI, e.g. "pkcs11:token=PROD?module-path=/usr/lib/libpkcs11.so"
+      --vendor-config string    vendor configuration file enabling appliance-level checks
 ```
+
+**Regression gating in CI.** Save a baseline on your known-good branch and
+compare later scans against it — the run fails when the posture regresses
+(health score drops by `--baseline-max-drop` points, default 10, or a new
+critical/high finding appears). The baseline is an ordinary JSON report:
+
+```sh
+# On the trusted branch: record the baseline.
+hsmdoctor scan --slot 0 --pin-env PIN --format json --out baseline.json
+
+# In CI / on a PR: fail if the posture got worse.
+hsmdoctor scan --slot 0 --pin-env PIN --baseline baseline.json
+```
+
+`--baseline` gates on *relative* worsening; `--fail-on` gates on *absolute*
+severity. They compose — either can fail the run. This is the offline
+counterpart of the fleet server's posture-regression events.
 
 ## hsmdoctor certs
 
