@@ -10,6 +10,7 @@ rules:
   - id: STRICT-001
     title: Private key not marked sensitive
     severity: critical
+    remediation: Regenerate the key with CKA_SENSITIVE=true.
     match:
       class: private-key
       sensitive: false
@@ -17,6 +18,7 @@ rules:
   - id: STRICT-002
     title: Extractable private key
     severity: critical
+    remediation: Regenerate the key with CKA_EXTRACTABLE=false.
     match:
       class: private-key
       extractable: true
@@ -27,6 +29,9 @@ rules:
     description: >-
       CKA_ALWAYS_SENSITIVE=false means the key material may have existed
       outside HSM protection at some point in its life.
+    remediation: >-
+      Regenerate the key so it is sensitive from creation; this history cannot
+      be changed on an existing key.
     match:
       class: private-key
       always_sensitive: false
@@ -37,6 +42,9 @@ rules:
     description: >-
       CKA_NEVER_EXTRACTABLE=false means the key could have been wrapped out
       earlier, even if it is not extractable now.
+    remediation: >-
+      Regenerate the key so it was never extractable; this history cannot be
+      changed on an existing key.
     match:
       class: private-key
       never_extractable: false
@@ -45,6 +53,7 @@ rules:
     title: Modifiable private key
     severity: low
     description: Immutable objects prevent silent attribute drift.
+    remediation: Recreate the key with CKA_MODIFIABLE=false.
     match:
       class: private-key
       modifiable: true
@@ -52,6 +61,7 @@ rules:
   - id: STRICT-006
     title: Signing key can also decrypt
     severity: medium
+    remediation: Split the roles into separate signing and decryption keys.
     match:
       class: private-key
       sign: true
@@ -60,6 +70,7 @@ rules:
   - id: STRICT-007
     title: Signing key can also unwrap
     severity: medium
+    remediation: Split signing and key-unwrapping into separate keys.
     match:
       class: private-key
       sign: true
@@ -68,6 +79,7 @@ rules:
   - id: STRICT-008
     title: Extractable secret key
     severity: high
+    remediation: Regenerate the secret key with CKA_EXTRACTABLE=false.
     match:
       class: secret-key
       extractable: true
@@ -78,6 +90,8 @@ rules:
     description: >-
       A key that encrypts, decrypts, wraps and unwraps mixes data protection
       with key management duties.
+    remediation: >-
+      Separate data-protection keys from key-management (wrap/unwrap) keys.
     match:
       class: secret-key
       encrypt: true
@@ -88,12 +102,16 @@ rules:
   - id: STRICT-010
     title: Duplicate object label
     severity: medium
+    remediation: Give each object a unique CKA_LABEL, or select by CKA_ID.
     match:
       duplicate_label: true
 
   - id: STRICT-011
     title: Orphan private key
     severity: medium
+    remediation: >-
+      Confirm the key is unused and delete it, or restore its certificate or
+      public key.
     match:
       class: private-key
       orphan: true
@@ -101,6 +119,7 @@ rules:
   - id: STRICT-012
     title: Orphan certificate
     severity: low
+    remediation: Delete the stale certificate, or import the matching private key.
     match:
       class: certificate
       orphan: true

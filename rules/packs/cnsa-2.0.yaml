@@ -14,6 +14,7 @@ rules:
     description: >-
       CNSA 2.0 sets RSA-3072 as the transitional minimum; RSA-2048 is no
       longer sufficient for national-security systems.
+    remediation: Replace with an RSA-3072+ key per CNSA 2.0.
     match:
       class: private-key
       key_type: RSA
@@ -25,6 +26,7 @@ rules:
     description: >-
       CNSA 2.0 requires ECDSA/ECDH on P-384; smaller curves such as P-256 are
       below the bar.
+    remediation: Re-key on P-384.
     match:
       class: private-key
       key_type: EC
@@ -37,6 +39,9 @@ rules:
       CNSA 2.0 mandates migration to ML-KEM and ML-DSA. Every classical
       RSA/EC/DSA/DH key needs a migration plan. Informational — it charts the
       work ahead rather than lowering the score.
+    remediation: >-
+      Add this classical key to your ML-KEM (FIPS 203) / ML-DSA (FIPS 204)
+      migration plan.
     match:
       class: private-key
       key_type_in: [RSA, EC, DSA, DH]
@@ -45,6 +50,8 @@ rules:
     title: No ML-DSA signature mechanism on the token
     severity: low
     description: The token advertises no ML-DSA (FIPS 204) mechanism.
+    remediation: >-
+      Upgrade firmware or move to an HSM that offers ML-DSA (FIPS 204).
     match:
       mechanism_missing: [CKM_ML_DSA, CKM_ML_DSA_KEY_PAIR_GEN]
 
@@ -52,5 +59,7 @@ rules:
     title: No ML-KEM key-establishment mechanism on the token
     severity: low
     description: The token advertises no ML-KEM (FIPS 203) mechanism.
+    remediation: >-
+      Upgrade firmware or move to an HSM that offers ML-KEM (FIPS 203).
     match:
       mechanism_missing: [CKM_ML_KEM, CKM_ML_KEM_KEY_PAIR_GEN]

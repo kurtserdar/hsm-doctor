@@ -14,6 +14,9 @@ rules:
     description: >-
       TLS subscriber certificates issued after 2020-09-01 must not exceed
       398 days of validity; browsers reject longer ones.
+    remediation: >-
+      Re-issue the subscriber certificate with a validity period of 398 days
+      or fewer.
     match:
       class: certificate
       cert_is_ca: false
@@ -23,6 +26,7 @@ rules:
     title: Certificate signed with SHA-1 or MD5
     severity: high
     description: SHA-1 TLS certificates have been forbidden since 2016.
+    remediation: Re-issue the certificate with a SHA-256 (or stronger) signature.
     match:
       class: certificate
       cert_sig_alg_in: [SHA1-RSA, MD5-RSA, ECDSA-SHA1]
@@ -31,6 +35,9 @@ rules:
     title: RSA key below 2048 bits
     severity: high
     description: The Baseline Requirements set 2048 bits as the RSA minimum.
+    remediation: >-
+      Replace with an RSA-2048+ key (RSA-3072 preferred) and re-issue the
+      certificate.
     match:
       class: private-key
       key_type: RSA
@@ -42,6 +49,7 @@ rules:
     description: >-
       The Baseline Requirements only allow the NIST P-256, P-384 and P-521
       curves for TLS hierarchies.
+    remediation: Re-key on P-256, P-384 or P-521 and re-issue the certificate.
     match:
       class: private-key
       key_type: EC
@@ -51,6 +59,7 @@ rules:
     title: Expired certificate
     severity: high
     description: The certificate's validity period has ended.
+    remediation: Re-issue the certificate and remove the expired object from the token.
     match:
       class: certificate
       cert_expired: true
@@ -59,6 +68,7 @@ rules:
     title: Certificate expiring within 30 days
     severity: medium
     description: Renew before browsers and clients start failing.
+    remediation: Renew the certificate before it expires and roll it onto the token.
     match:
       class: certificate
       cert_expires_within_days: 30

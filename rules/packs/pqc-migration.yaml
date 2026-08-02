@@ -14,6 +14,9 @@ rules:
     description: >-
       The token advertises no ML-DSA (FIPS 204) mechanisms; quantum-safe
       signing is not possible on this device yet.
+    remediation: >-
+      Upgrade firmware or move to an HSM that offers ML-DSA (FIPS 204) before
+      signing-migration deadlines.
     match:
       mechanism_missing: [CKM_ML_DSA, CKM_ML_DSA_KEY_PAIR_GEN]
 
@@ -23,6 +26,9 @@ rules:
     description: >-
       The token advertises no ML-KEM (FIPS 203) mechanisms; quantum-safe
       key establishment is not possible on this device yet.
+    remediation: >-
+      Upgrade firmware or move to an HSM that offers ML-KEM (FIPS 203) for
+      quantum-safe key establishment.
     match:
       mechanism_missing: [CKM_ML_KEM, CKM_ML_KEM_KEY_PAIR_GEN]
 
@@ -33,6 +39,9 @@ rules:
       Traffic recorded today can be decrypted once a cryptographically
       relevant quantum computer exists. Decryption keys are the most urgent
       part of any migration plan.
+    remediation: >-
+      Prioritize this decryption key for migration to a hybrid or ML-KEM
+      scheme; recorded traffic is already at future risk.
     match:
       class: private-key
       key_type: RSA
@@ -44,6 +53,7 @@ rules:
     description: >-
       Keys wrapped under RSA today can be recovered by a future quantum
       adversary along with everything they protect.
+    remediation: Migrate key-wrapping to ML-KEM or a hybrid scheme.
     match:
       class: private-key
       key_type: RSA
@@ -55,6 +65,7 @@ rules:
     description: >-
       ECDH exchanges recorded today are recoverable by a future quantum
       adversary.
+    remediation: Migrate key agreement to a hybrid ECDH+ML-KEM scheme.
     match:
       class: private-key
       key_type: EC

@@ -11,8 +11,9 @@ under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
 - Remediation guidance on findings: rules gain optional `remediation` (a short,
   actionable fix) and `reference` (a URL) fields, carried through to each
-  finding. All default rules now ship remediation text, shown under each
-  finding in text and HTML reports. Vendor findings can set the fields too.
+  finding. Every built-in rule — the default set and all seven policy packs —
+  now ships remediation text, shown under each finding in text and HTML
+  reports. Vendor findings can set the fields too.
 - SARIF output: `scan --format sarif` writes a SARIF 2.1.0 log for upload to
   code-scanning dashboards (for example GitHub Advanced Security). Each rule
   maps its severity to a SARIF level and a `security-severity` score and
