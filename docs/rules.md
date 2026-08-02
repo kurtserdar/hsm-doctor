@@ -87,6 +87,11 @@ instead of producing rules that never match.
 | `cert_validity_days_gt` | int | Certificate validity period exceeds N days |
 | `cert_sig_alg_in` | list | Certificate signature algorithm is listed (Go x509 names, e.g. `SHA1-RSA`) |
 | `cert_is_ca` | bool | Certificate basic constraints CA flag |
+| `cert_self_signed` | bool | Certificate issuer equals subject (self-signed) |
+| `cert_not_yet_valid` | bool | Certificate `notBefore` is in the future |
+| `cert_key_size_lt` | int | Certificate's own public key is smaller than N bits |
+| `cert_pubkey_alg_in` | list | Certificate public-key algorithm is listed (e.g. `RSA`, `ECDSA`) |
+| `cert_ca_without_keycertsign` | bool | CA certificate lacking the `keyCertSign` key usage |
 | `duplicate_label` | bool | Another object of the same class shares the label |
 | `orphan` | bool | Private key with no certificate/public key sharing its `CKA_ID`, or certificate with no private key sharing its `CKA_ID` |
 | `mechanism_any_of` | list | Token-scoped: fires when the token advertises any listed `CKM_*` name |

@@ -5,6 +5,17 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [Unreleased]
+
+### Added
+
+- Deeper certificate validation — structural per-certificate checks. New
+  default posture rules (and match conditions) for self-signed leaf
+  certificates (`HSM-014`), not-yet-valid certificates (`HSM-015`), weak RSA
+  certificate keys (`HSM-016`) and CA certificates missing `keyCertSign`
+  (`HSM-017`). The inventory now records each certificate's public-key size,
+  self-signed flag and key usage.
+
 ## [1.5.0] - 2026-08-02
 
 ### Added

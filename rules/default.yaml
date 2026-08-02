@@ -145,3 +145,45 @@ rules:
     match:
       class: secret-key
       extractable: true
+
+  - id: HSM-014
+    title: Self-signed leaf certificate
+    severity: low
+    description: >-
+      A self-signed certificate that is not a CA is not anchored to a real
+      trust chain — often a leftover test or placeholder certificate.
+    match:
+      class: certificate
+      cert_self_signed: true
+      cert_is_ca: false
+
+  - id: HSM-015
+    title: Certificate not yet valid
+    severity: medium
+    description: >-
+      The certificate's notBefore is in the future. It will not be accepted
+      until then — usually a clock problem or a premature deployment.
+    match:
+      class: certificate
+      cert_not_yet_valid: true
+
+  - id: HSM-016
+    title: Weak RSA certificate key
+    severity: high
+    description: >-
+      The certificate's own RSA public key is shorter than 2048 bits and is
+      considered broken for new use, regardless of the HSM key protecting it.
+    match:
+      class: certificate
+      cert_pubkey_alg_in: [RSA]
+      cert_key_size_lt: 2048
+
+  - id: HSM-017
+    title: CA certificate without keyCertSign
+    severity: medium
+    description: >-
+      A certificate marked as a CA (basicConstraints CA:TRUE) but missing the
+      keyCertSign key usage is malformed and will be rejected by many clients.
+    match:
+      class: certificate
+      cert_ca_without_keycertsign: true

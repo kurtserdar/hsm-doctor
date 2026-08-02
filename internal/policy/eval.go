@@ -305,6 +305,46 @@ func matchObject(rule *Rule, o *inventory.Object, f *facts) (bool, string) {
 			details = append(details, "CA certificate")
 		}
 	}
+	if c.CertSelfSigned != nil {
+		if o.Certificate == nil || o.Certificate.SelfSigned != *c.CertSelfSigned {
+			return false, ""
+		}
+		if *c.CertSelfSigned {
+			details = append(details, "self-signed (issuer equals subject)")
+		}
+	}
+	if c.CertNotYetValid != nil {
+		notYet := o.Certificate != nil && o.Certificate.NotBefore.After(f.now)
+		if o.Certificate == nil || notYet != *c.CertNotYetValid {
+			return false, ""
+		}
+		if *c.CertNotYetValid {
+			details = append(details, "not valid until "+o.Certificate.NotBefore.Format("2006-01-02"))
+		}
+	}
+	if c.CertKeySizeLT > 0 {
+		if o.Certificate == nil || o.Certificate.PublicKeyBits == 0 ||
+			uint(o.Certificate.PublicKeyBits) >= c.CertKeySizeLT {
+			return false, ""
+		}
+		details = append(details, fmt.Sprintf("certificate key %d bits < %d",
+			o.Certificate.PublicKeyBits, c.CertKeySizeLT))
+	}
+	if len(c.CertPubKeyAlgIn) > 0 {
+		if o.Certificate == nil || !contains(c.CertPubKeyAlgIn, o.Certificate.PublicKeyAlgorithm) {
+			return false, ""
+		}
+		details = append(details, "certificate key algorithm "+o.Certificate.PublicKeyAlgorithm)
+	}
+	if c.CertCAWithoutKeyCertSign != nil {
+		bad := o.Certificate != nil && o.Certificate.IsCA && !o.Certificate.HasKeyUsage("keyCertSign")
+		if o.Certificate == nil || bad != *c.CertCAWithoutKeyCertSign {
+			return false, ""
+		}
+		if *c.CertCAWithoutKeyCertSign {
+			details = append(details, "CA certificate lacks keyCertSign usage")
+		}
+	}
 	if c.DuplicateLabel != nil {
 		if f.isDuplicateLabel(o) != *c.DuplicateLabel {
 			return false, ""

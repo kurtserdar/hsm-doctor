@@ -70,7 +70,21 @@ type CertInfo struct {
 	NotAfter           time.Time `json:"not_after"`
 	SignatureAlgorithm string    `json:"signature_algorithm"`
 	PublicKeyAlgorithm string    `json:"public_key_algorithm"`
+	PublicKeyBits      int       `json:"public_key_bits,omitempty"`
 	IsCA               bool      `json:"is_ca"`
+	SelfSigned         bool      `json:"self_signed,omitempty"`
+	KeyUsage           []string  `json:"key_usage,omitempty"`
+}
+
+// HasKeyUsage reports whether the certificate asserts the named X.509 key
+// usage (e.g. "keyCertSign", "digitalSignature").
+func (c *CertInfo) HasKeyUsage(name string) bool {
+	for _, u := range c.KeyUsage {
+		if u == name {
+			return true
+		}
+	}
+	return false
 }
 
 // Counts summarizes the inventory by object class.

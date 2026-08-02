@@ -62,6 +62,22 @@ func testInventory(now time.Time) *inventory.Inventory {
 			// key (not orphaned) and expires far in the future.
 			{Class: inventory.ClassCertificate, Label: "weak-cert", ID: "02",
 				Certificate: &inventory.CertInfo{NotAfter: valid, SignatureAlgorithm: "SHA1-RSA"}},
+
+			// Fires HSM-014: self-signed non-CA certificate.
+			{Class: inventory.ClassCertificate, Label: "selfsigned-cert", ID: "02",
+				Certificate: &inventory.CertInfo{NotAfter: valid, SelfSigned: true, IsCA: false}},
+
+			// Fires HSM-015: certificate not yet valid (notBefore in the future).
+			{Class: inventory.ClassCertificate, Label: "future-cert", ID: "02",
+				Certificate: &inventory.CertInfo{NotBefore: now.Add(48 * time.Hour), NotAfter: valid}},
+
+			// Fires HSM-016: certificate carrying a weak RSA public key.
+			{Class: inventory.ClassCertificate, Label: "weakkey-cert", ID: "02",
+				Certificate: &inventory.CertInfo{NotAfter: valid, PublicKeyAlgorithm: "RSA", PublicKeyBits: 1024}},
+
+			// Fires HSM-017: CA certificate without keyCertSign usage.
+			{Class: inventory.ClassCertificate, Label: "ca-nokcs", ID: "02",
+				Certificate: &inventory.CertInfo{NotAfter: valid, IsCA: true, KeyUsage: []string{"digitalSignature"}}},
 		},
 	}
 }
@@ -86,15 +102,16 @@ func TestEvaluateDefaultRules(t *testing.T) {
 	wantCounts := map[string]int{
 		"HSM-001": 1, "HSM-002": 1, "HSM-003": 1, "HSM-004": 1, "HSM-005": 1,
 		"HSM-006": 2, "HSM-007": 1, "HSM-008": 1, "HSM-009": 1, "HSM-010": 1,
-		"HSM-011": 1, "HSM-012": 1, "HSM-013": 1,
+		"HSM-011": 1, "HSM-012": 1, "HSM-013": 1, "HSM-014": 1, "HSM-015": 1,
+		"HSM-016": 1, "HSM-017": 1,
 	}
 	for id, want := range wantCounts {
 		if got := len(byRule[id]); got != want {
 			t.Errorf("rule %s: want %d finding(s), got %d: %+v", id, want, got, byRule[id])
 		}
 	}
-	if len(res.Findings) != 14 {
-		t.Errorf("total findings: want 14, got %d", len(res.Findings))
+	if len(res.Findings) != 18 {
+		t.Errorf("total findings: want 18, got %d", len(res.Findings))
 	}
 
 	// Findings must be sorted most-severe first.

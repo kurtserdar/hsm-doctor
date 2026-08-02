@@ -1,6 +1,9 @@
 package inventory
 
 import (
+	"crypto/ecdsa"
+	"crypto/ed25519"
+	"crypto/rsa"
 	"crypto/x509"
 	"encoding/hex"
 	"fmt"
@@ -202,8 +205,50 @@ func ParseCert(cert *x509.Certificate) *CertInfo {
 		NotAfter:           cert.NotAfter.UTC(),
 		SignatureAlgorithm: cert.SignatureAlgorithm.String(),
 		PublicKeyAlgorithm: cert.PublicKeyAlgorithm.String(),
+		PublicKeyBits:      certPublicKeyBits(cert.PublicKey),
 		IsCA:               cert.IsCA,
+		SelfSigned:         cert.Subject.String() == cert.Issuer.String(),
+		KeyUsage:           keyUsageNames(cert.KeyUsage),
 	}
+}
+
+// certPublicKeyBits returns the security size of a certificate's public key:
+// RSA modulus length, EC curve bit size, or 256 for Ed25519.
+func certPublicKeyBits(pub any) int {
+	switch k := pub.(type) {
+	case *rsa.PublicKey:
+		return k.N.BitLen()
+	case *ecdsa.PublicKey:
+		return k.Curve.Params().BitSize
+	case ed25519.PublicKey:
+		return 256
+	}
+	return 0
+}
+
+// keyUsageNames decodes an X.509 key-usage bitmask into its named flags.
+func keyUsageNames(ku x509.KeyUsage) []string {
+	pairs := []struct {
+		bit  x509.KeyUsage
+		name string
+	}{
+		{x509.KeyUsageDigitalSignature, "digitalSignature"},
+		{x509.KeyUsageContentCommitment, "contentCommitment"},
+		{x509.KeyUsageKeyEncipherment, "keyEncipherment"},
+		{x509.KeyUsageDataEncipherment, "dataEncipherment"},
+		{x509.KeyUsageKeyAgreement, "keyAgreement"},
+		{x509.KeyUsageCertSign, "keyCertSign"},
+		{x509.KeyUsageCRLSign, "cRLSign"},
+		{x509.KeyUsageEncipherOnly, "encipherOnly"},
+		{x509.KeyUsageDecipherOnly, "decipherOnly"},
+	}
+	var out []string
+	for _, p := range pairs {
+		if ku&p.bit != 0 {
+			out = append(out, p.name)
+		}
+	}
+	return out
 }
 
 func attrBoolPtr(sess *p11.Session, h pkcs11.ObjectHandle, typ uint) *bool {
