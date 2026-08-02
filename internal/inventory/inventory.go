@@ -41,6 +41,9 @@ type Object struct {
 	KeyType string `json:"key_type,omitempty"`
 	KeyBits uint   `json:"key_bits,omitempty"`
 	Curve   string `json:"curve,omitempty"`
+	// PublicKeyFingerprint is a hex SHA-256 of the public key material (RSA
+	// modulus or EC point) — used to correlate certificates with their keys.
+	PublicKeyFingerprint string `json:"public_key_fingerprint,omitempty"`
 
 	Token            *bool `json:"token,omitempty"`
 	Private          *bool `json:"private,omitempty"`
@@ -74,6 +77,9 @@ type CertInfo struct {
 	IsCA               bool      `json:"is_ca"`
 	SelfSigned         bool      `json:"self_signed,omitempty"`
 	KeyUsage           []string  `json:"key_usage,omitempty"`
+	// PublicKeyFingerprint is a hex SHA-256 of the certificate's public key
+	// material (RSA modulus or EC point), comparable with an Object's.
+	PublicKeyFingerprint string `json:"public_key_fingerprint,omitempty"`
 }
 
 // HasKeyUsage reports whether the certificate asserts the named X.509 key

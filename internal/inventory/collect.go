@@ -4,7 +4,9 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/rsa"
+	"crypto/sha256"
 	"crypto/x509"
+	"encoding/asn1"
 	"encoding/hex"
 	"fmt"
 	"time"
@@ -142,10 +144,14 @@ func collectKeyAttrs(sess *p11.Session, h pkcs11.ObjectHandle, obj *Object) {
 	case "RSA":
 		if v, ok := sess.AttrBytes(h, pkcs11.CKA_MODULUS); ok {
 			obj.KeyBits = rsaBitsFromModulus(v)
+			obj.PublicKeyFingerprint = fingerprint(normalizeBig(v))
 		}
 	case "EC":
 		if v, ok := sess.AttrBytes(h, pkcs11.CKA_EC_PARAMS); ok {
 			obj.Curve, obj.KeyBits = curveFromECParams(v)
+		}
+		if v, ok := sess.AttrBytes(h, pkcs11.CKA_EC_POINT); ok {
+			obj.PublicKeyFingerprint = fingerprint(ecPointBytes(v))
 		}
 	default:
 		if v, ok := sess.AttrUint(h, pkcs11.CKA_VALUE_LEN); ok {
@@ -198,18 +204,65 @@ func collectCertAttrs(sess *p11.Session, h pkcs11.ObjectHandle, obj *Object) {
 // ParseCert converts an x509 certificate into the report-friendly CertInfo.
 func ParseCert(cert *x509.Certificate) *CertInfo {
 	return &CertInfo{
-		Subject:            cert.Subject.String(),
-		Issuer:             cert.Issuer.String(),
-		SerialNumber:       cert.SerialNumber.Text(16),
-		NotBefore:          cert.NotBefore.UTC(),
-		NotAfter:           cert.NotAfter.UTC(),
-		SignatureAlgorithm: cert.SignatureAlgorithm.String(),
-		PublicKeyAlgorithm: cert.PublicKeyAlgorithm.String(),
-		PublicKeyBits:      certPublicKeyBits(cert.PublicKey),
-		IsCA:               cert.IsCA,
-		SelfSigned:         cert.Subject.String() == cert.Issuer.String(),
-		KeyUsage:           keyUsageNames(cert.KeyUsage),
+		Subject:              cert.Subject.String(),
+		Issuer:               cert.Issuer.String(),
+		SerialNumber:         cert.SerialNumber.Text(16),
+		NotBefore:            cert.NotBefore.UTC(),
+		NotAfter:             cert.NotAfter.UTC(),
+		SignatureAlgorithm:   cert.SignatureAlgorithm.String(),
+		PublicKeyAlgorithm:   cert.PublicKeyAlgorithm.String(),
+		PublicKeyBits:        certPublicKeyBits(cert.PublicKey),
+		IsCA:                 cert.IsCA,
+		SelfSigned:           cert.Subject.String() == cert.Issuer.String(),
+		KeyUsage:             keyUsageNames(cert.KeyUsage),
+		PublicKeyFingerprint: publicKeyFingerprint(cert.PublicKey),
 	}
+}
+
+// fingerprint is a hex SHA-256 of the given bytes ("" for empty input).
+func fingerprint(b []byte) string {
+	if len(b) == 0 {
+		return ""
+	}
+	sum := sha256.Sum256(b)
+	return hex.EncodeToString(sum[:])
+}
+
+// normalizeBig strips leading zero bytes so the same integer hashes equally
+// regardless of a leading-zero prefix.
+func normalizeBig(b []byte) []byte {
+	i := 0
+	for i < len(b)-1 && b[i] == 0 {
+		i++
+	}
+	return b[i:]
+}
+
+// ecPointBytes unwraps a CKA_EC_POINT (a DER OCTET STRING around the ANSI
+// X9.62 point); it falls back to the raw bytes when not DER-wrapped.
+func ecPointBytes(v []byte) []byte {
+	var raw []byte
+	if _, err := asn1.Unmarshal(v, &raw); err == nil && len(raw) > 0 {
+		return raw
+	}
+	return v
+}
+
+// publicKeyFingerprint fingerprints a certificate's public key using the same
+// material (RSA modulus / EC point) that the token key attributes expose.
+func publicKeyFingerprint(pub any) string {
+	switch k := pub.(type) {
+	case *rsa.PublicKey:
+		return fingerprint(normalizeBig(k.N.Bytes()))
+	case *ecdsa.PublicKey:
+		size := (k.Curve.Params().BitSize + 7) / 8
+		point := make([]byte, 1+2*size)
+		point[0] = 0x04
+		k.X.FillBytes(point[1 : 1+size])
+		k.Y.FillBytes(point[1+size:])
+		return fingerprint(point)
+	}
+	return ""
 }
 
 // certPublicKeyBits returns the security size of a certificate's public key:

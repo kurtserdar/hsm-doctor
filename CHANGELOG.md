@@ -15,6 +15,9 @@ under the guarantees in [docs/compatibility.md](docs/compatibility.md).
   certificate keys (`HSM-016`) and CA certificates missing `keyCertSign`
   (`HSM-017`). The inventory now records each certificate's public-key size,
   self-signed flag and key usage.
+- Certificate/key correspondence: `HSM-018` flags a certificate whose public
+  key does not match the key sharing its `CKA_ID` (public-key fingerprint
+  comparison, RSA and EC).
 
 ## [1.5.0] - 2026-08-02
 

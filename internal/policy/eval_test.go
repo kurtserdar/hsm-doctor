@@ -78,6 +78,21 @@ func testInventory(now time.Time) *inventory.Inventory {
 			// Fires HSM-017: CA certificate without keyCertSign usage.
 			{Class: inventory.ClassCertificate, Label: "ca-nokcs", ID: "02",
 				Certificate: &inventory.CertInfo{NotAfter: valid, IsCA: true, KeyUsage: []string{"digitalSignature"}}},
+
+			// Fires HSM-018: certificate whose public key does not match the key
+			// sharing its CKA_ID. The key itself is otherwise healthy.
+			{Class: inventory.ClassPrivateKey, Label: "mk", ID: "08",
+				KeyType: "RSA", KeyBits: 3072, Extractable: b(false), Sensitive: b(true), Sign: b(true),
+				PublicKeyFingerprint: "aaaa"},
+			{Class: inventory.ClassCertificate, Label: "mismatch-cert", ID: "08",
+				Certificate: &inventory.CertInfo{NotAfter: valid, PublicKeyFingerprint: "bbbb"}},
+
+			// A matching cert/key pair (same fingerprint) must NOT fire HSM-018.
+			{Class: inventory.ClassPrivateKey, Label: "gk", ID: "09",
+				KeyType: "RSA", KeyBits: 3072, Extractable: b(false), Sensitive: b(true), Sign: b(true),
+				PublicKeyFingerprint: "cccc"},
+			{Class: inventory.ClassCertificate, Label: "match-cert", ID: "09",
+				Certificate: &inventory.CertInfo{NotAfter: valid, PublicKeyFingerprint: "cccc"}},
 		},
 	}
 }
@@ -103,15 +118,15 @@ func TestEvaluateDefaultRules(t *testing.T) {
 		"HSM-001": 1, "HSM-002": 1, "HSM-003": 1, "HSM-004": 1, "HSM-005": 1,
 		"HSM-006": 2, "HSM-007": 1, "HSM-008": 1, "HSM-009": 1, "HSM-010": 1,
 		"HSM-011": 1, "HSM-012": 1, "HSM-013": 1, "HSM-014": 1, "HSM-015": 1,
-		"HSM-016": 1, "HSM-017": 1,
+		"HSM-016": 1, "HSM-017": 1, "HSM-018": 1,
 	}
 	for id, want := range wantCounts {
 		if got := len(byRule[id]); got != want {
 			t.Errorf("rule %s: want %d finding(s), got %d: %+v", id, want, got, byRule[id])
 		}
 	}
-	if len(res.Findings) != 18 {
-		t.Errorf("total findings: want 18, got %d", len(res.Findings))
+	if len(res.Findings) != 19 {
+		t.Errorf("total findings: want 19, got %d", len(res.Findings))
 	}
 
 	// Findings must be sorted most-severe first.

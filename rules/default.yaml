@@ -187,3 +187,14 @@ rules:
     match:
       class: certificate
       cert_ca_without_keycertsign: true
+
+  - id: HSM-018
+    title: Certificate does not match its key
+    severity: high
+    description: >-
+      The certificate shares its CKA_ID with a key on the token, but its
+      public key does not match that key — a mislabeled or wrong certificate
+      that will break signing and TLS.
+    match:
+      class: certificate
+      cert_key_mismatch: true

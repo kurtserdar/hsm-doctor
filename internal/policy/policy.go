@@ -72,6 +72,7 @@ type Condition struct {
 	CertKeySizeLT            uint     `yaml:"cert_key_size_lt,omitempty" json:"cert_key_size_lt,omitempty"`
 	CertPubKeyAlgIn          []string `yaml:"cert_pubkey_alg_in,omitempty" json:"cert_pubkey_alg_in,omitempty"`
 	CertCAWithoutKeyCertSign *bool    `yaml:"cert_ca_without_keycertsign,omitempty" json:"cert_ca_without_keycertsign,omitempty"`
+	CertKeyMismatch          *bool    `yaml:"cert_key_mismatch,omitempty" json:"cert_key_mismatch,omitempty"`
 
 	DuplicateLabel *bool `yaml:"duplicate_label,omitempty" json:"duplicate_label,omitempty"`
 	Orphan         *bool `yaml:"orphan,omitempty" json:"orphan,omitempty"`
@@ -102,6 +103,7 @@ func (c *Condition) empty() bool {
 		c.CertValidityDaysGT == 0 && len(c.CertSigAlgIn) == 0 && c.CertIsCA == nil &&
 		c.CertSelfSigned == nil && c.CertNotYetValid == nil && c.CertKeySizeLT == 0 &&
 		len(c.CertPubKeyAlgIn) == 0 && c.CertCAWithoutKeyCertSign == nil &&
+		c.CertKeyMismatch == nil &&
 		c.DuplicateLabel == nil && c.Orphan == nil &&
 		len(c.MechanismAnyOf) == 0 && len(c.MechanismMissing) == 0
 }

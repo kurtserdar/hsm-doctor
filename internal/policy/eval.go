@@ -63,6 +63,8 @@ type facts struct {
 	duplicateLabels map[string]map[string]int
 	// idOwners: hex CKA_ID -> set of classes carrying that ID
 	idOwners map[string]map[string]bool
+	// keyFingerprints: hex CKA_ID -> public-key fingerprints of key objects
+	keyFingerprints map[string][]string
 }
 
 func buildFacts(inv *inventory.Inventory, now time.Time) *facts {
@@ -70,8 +72,10 @@ func buildFacts(inv *inventory.Inventory, now time.Time) *facts {
 		now:             now,
 		duplicateLabels: map[string]map[string]int{},
 		idOwners:        map[string]map[string]bool{},
+		keyFingerprints: map[string][]string{},
 	}
-	for _, o := range inv.Objects {
+	for i := range inv.Objects {
+		o := &inv.Objects[i]
 		if o.Label != "" {
 			if f.duplicateLabels[o.Class] == nil {
 				f.duplicateLabels[o.Class] = map[string]int{}
@@ -83,9 +87,35 @@ func buildFacts(inv *inventory.Inventory, now time.Time) *facts {
 				f.idOwners[o.ID] = map[string]bool{}
 			}
 			f.idOwners[o.ID][o.Class] = true
+			if o.PublicKeyFingerprint != "" &&
+				(o.Class == inventory.ClassPrivateKey || o.Class == inventory.ClassPublicKey) {
+				f.keyFingerprints[o.ID] = append(f.keyFingerprints[o.ID], o.PublicKeyFingerprint)
+			}
 		}
 	}
 	return f
+}
+
+// certKeyMismatch reports whether a certificate shares its CKA_ID with one or
+// more key objects but its public key matches none of them.
+func (f *facts) certKeyMismatch(o *inventory.Object) bool {
+	if o.Class != inventory.ClassCertificate || o.ID == "" || o.Certificate == nil {
+		return false
+	}
+	certFP := o.Certificate.PublicKeyFingerprint
+	if certFP == "" {
+		return false
+	}
+	fps := f.keyFingerprints[o.ID]
+	if len(fps) == 0 {
+		return false
+	}
+	for _, fp := range fps {
+		if fp == certFP {
+			return false
+		}
+	}
+	return true
 }
 
 // isDuplicateLabel reports whether another object of the same class shares
@@ -343,6 +373,14 @@ func matchObject(rule *Rule, o *inventory.Object, f *facts) (bool, string) {
 		}
 		if *c.CertCAWithoutKeyCertSign {
 			details = append(details, "CA certificate lacks keyCertSign usage")
+		}
+	}
+	if c.CertKeyMismatch != nil {
+		if f.certKeyMismatch(o) != *c.CertKeyMismatch {
+			return false, ""
+		}
+		if *c.CertKeyMismatch {
+			details = append(details, "public key does not match the key sharing its CKA_ID")
 		}
 	}
 	if c.DuplicateLabel != nil {
