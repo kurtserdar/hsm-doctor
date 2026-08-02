@@ -15,7 +15,7 @@ import (
 
 func newScanCmd() *cobra.Command {
 	var conn connFlags
-	var rulesPath, format, outPath, failOn, vendorConfig string
+	var rulesPath, format, outPath, failOn, vendorConfig, caBundle string
 	var packNames []string
 
 	cmd := &cobra.Command{
@@ -40,6 +40,17 @@ Only object metadata is read; private key material never leaves the HSM.`,
 			inv, err := inventory.Collect(client, slot, pin)
 			if err != nil {
 				return err
+			}
+			if caBundle != "" {
+				data, err := os.ReadFile(caBundle)
+				if err != nil {
+					return fmt.Errorf("reading CA bundle: %w", err)
+				}
+				roots, err := inventory.ParseCABundle(data)
+				if err != nil {
+					return err
+				}
+				inventory.ValidateChains(inv, roots)
 			}
 			res := policy.Evaluate(inv, cfg, time.Now())
 			rep := report.New(version.Version, inv, res)
@@ -83,6 +94,7 @@ Only object metadata is read; private key material never leaves the HSM.`,
 	cmd.Flags().StringVar(&format, "format", "text", "output format: text, json or html")
 	cmd.Flags().StringVar(&outPath, "out", "-", "output file ('-' for stdout)")
 	cmd.Flags().StringVar(&failOn, "fail-on", "", "exit non-zero if findings at or above this severity exist (critical, high, medium, low)")
+	cmd.Flags().StringVar(&caBundle, "ca-bundle", "", "PEM trust anchors; enables certificate chain validation (HSM-019)")
 	cmd.Flags().StringVar(&vendorConfig, "vendor-config", "", "vendor configuration file enabling appliance-level checks")
 	return cmd
 }

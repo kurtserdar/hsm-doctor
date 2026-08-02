@@ -18,6 +18,9 @@ under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 - Certificate/key correspondence: `HSM-018` flags a certificate whose public
   key does not match the key sharing its `CKA_ID` (public-key fingerprint
   comparison, RSA and EC).
+- Certificate chain validation (opt-in): `scan --ca-bundle FILE` verifies each
+  certificate against the supplied trust anchors, using token CA certificates
+  as intermediates; `HSM-019` flags certificates that do not chain.
 
 ## [1.5.0] - 2026-08-02
 

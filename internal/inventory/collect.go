@@ -216,6 +216,7 @@ func ParseCert(cert *x509.Certificate) *CertInfo {
 		SelfSigned:           cert.Subject.String() == cert.Issuer.String(),
 		KeyUsage:             keyUsageNames(cert.KeyUsage),
 		PublicKeyFingerprint: publicKeyFingerprint(cert.PublicKey),
+		Raw:                  cert.Raw,
 	}
 }
 

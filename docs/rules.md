@@ -93,6 +93,7 @@ instead of producing rules that never match.
 | `cert_pubkey_alg_in` | list | Certificate public-key algorithm is listed (e.g. `RSA`, `ECDSA`) |
 | `cert_ca_without_keycertsign` | bool | CA certificate lacking the `keyCertSign` key usage |
 | `cert_key_mismatch` | bool | Certificate public key does not match the key sharing its `CKA_ID` |
+| `cert_chain_broken` | bool | Certificate fails to build a valid chain to the `--ca-bundle` trust anchors (only checked when a bundle is given) |
 | `duplicate_label` | bool | Another object of the same class shares the label |
 | `orphan` | bool | Private key with no certificate/public key sharing its `CKA_ID`, or certificate with no private key sharing its `CKA_ID` |
 | `mechanism_any_of` | list | Token-scoped: fires when the token advertises any listed `CKM_*` name |

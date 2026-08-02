@@ -12,8 +12,8 @@ func TestLoadDefaultRules(t *testing.T) {
 	if err != nil {
 		t.Fatalf("default rules must load: %v", err)
 	}
-	if len(cfg.Rules) != 18 {
-		t.Errorf("expected 18 default rules, got %d", len(cfg.Rules))
+	if len(cfg.Rules) != 19 {
+		t.Errorf("expected 19 default rules, got %d", len(cfg.Rules))
 	}
 	if cfg.Scoring == nil || cfg.Scoring.Critical != 25 {
 		t.Errorf("default scoring not parsed: %+v", cfg.Scoring)

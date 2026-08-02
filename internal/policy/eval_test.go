@@ -93,6 +93,12 @@ func testInventory(now time.Time) *inventory.Inventory {
 				PublicKeyFingerprint: "cccc"},
 			{Class: inventory.ClassCertificate, Label: "match-cert", ID: "09",
 				Certificate: &inventory.CertInfo{NotAfter: valid, PublicKeyFingerprint: "cccc"}},
+
+			// Fires HSM-019: certificate whose chain did not validate (shares
+			// ID 09 with a key, so not orphaned).
+			{Class: inventory.ClassCertificate, Label: "broken-chain", ID: "09",
+				Certificate: &inventory.CertInfo{NotAfter: valid,
+					ChainStatus: "unverified: x509: certificate signed by unknown authority"}},
 		},
 	}
 }
@@ -118,15 +124,15 @@ func TestEvaluateDefaultRules(t *testing.T) {
 		"HSM-001": 1, "HSM-002": 1, "HSM-003": 1, "HSM-004": 1, "HSM-005": 1,
 		"HSM-006": 2, "HSM-007": 1, "HSM-008": 1, "HSM-009": 1, "HSM-010": 1,
 		"HSM-011": 1, "HSM-012": 1, "HSM-013": 1, "HSM-014": 1, "HSM-015": 1,
-		"HSM-016": 1, "HSM-017": 1, "HSM-018": 1,
+		"HSM-016": 1, "HSM-017": 1, "HSM-018": 1, "HSM-019": 1,
 	}
 	for id, want := range wantCounts {
 		if got := len(byRule[id]); got != want {
 			t.Errorf("rule %s: want %d finding(s), got %d: %+v", id, want, got, byRule[id])
 		}
 	}
-	if len(res.Findings) != 19 {
-		t.Errorf("total findings: want 19, got %d", len(res.Findings))
+	if len(res.Findings) != 20 {
+		t.Errorf("total findings: want 20, got %d", len(res.Findings))
 	}
 
 	// Findings must be sorted most-severe first.

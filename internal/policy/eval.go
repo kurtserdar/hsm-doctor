@@ -383,6 +383,15 @@ func matchObject(rule *Rule, o *inventory.Object, f *facts) (bool, string) {
 			details = append(details, "public key does not match the key sharing its CKA_ID")
 		}
 	}
+	if c.CertChainBroken != nil {
+		broken := o.Certificate != nil && strings.HasPrefix(o.Certificate.ChainStatus, "unverified")
+		if o.Certificate == nil || broken != *c.CertChainBroken {
+			return false, ""
+		}
+		if *c.CertChainBroken {
+			details = append(details, o.Certificate.ChainStatus)
+		}
+	}
 	if c.DuplicateLabel != nil {
 		if f.isDuplicateLabel(o) != *c.DuplicateLabel {
 			return false, ""

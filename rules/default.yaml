@@ -198,3 +198,14 @@ rules:
     match:
       class: certificate
       cert_key_mismatch: true
+
+  - id: HSM-019
+    title: Certificate chain does not validate
+    severity: medium
+    description: >-
+      The certificate does not build a valid chain to the supplied trust
+      anchors (--ca-bundle) — a missing intermediate, an expired issuer or an
+      untrusted root. Only evaluated when a CA bundle is provided.
+    match:
+      class: certificate
+      cert_chain_broken: true

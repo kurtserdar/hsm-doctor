@@ -80,6 +80,12 @@ type CertInfo struct {
 	// PublicKeyFingerprint is a hex SHA-256 of the certificate's public key
 	// material (RSA modulus or EC point), comparable with an Object's.
 	PublicKeyFingerprint string `json:"public_key_fingerprint,omitempty"`
+	// ChainStatus is set by ValidateChains: "verified", or "unverified: ..."
+	// with the reason. Empty when chain validation was not run.
+	ChainStatus string `json:"chain_status,omitempty"`
+	// Raw is the certificate DER, retained in-memory for chain building. It is
+	// not serialized (certificates are public, but this keeps reports compact).
+	Raw []byte `json:"-"`
 }
 
 // HasKeyUsage reports whether the certificate asserts the named X.509 key
