@@ -40,6 +40,7 @@
   .badge.medium { background: var(--medium); } .badge.low { background: var(--low); }
   .badge.info { background: #0369a1; }
   .muted { color: var(--muted); }
+  .fix { color: var(--muted); font-style: italic; margin-top: .15rem; }
   code { background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
          padding: 0 .3rem; font-size: .85em; }
   details summary { cursor: pointer; color: var(--muted); }
@@ -95,7 +96,7 @@
           <td><span class="badge {{$sev}}">{{$sev}}</span></td>
           <td><code>{{.RuleID}}</code></td>
           <td>{{.Title}}</td>
-          <td>{{if .Object}}{{.Object}}{{end}}{{if .Detail}}<div class="muted">{{.Detail}}</div>{{end}}</td>
+          <td>{{if .Object}}{{.Object}}{{end}}{{if .Detail}}<div class="muted">{{.Detail}}</div>{{end}}{{if .Remediation}}<div class="fix">fix: {{.Remediation}}</div>{{end}}</td>
         </tr>
       {{end}}
       </tbody>

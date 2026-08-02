@@ -5,6 +5,21 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [Unreleased]
+
+### Added
+
+- Remediation guidance on findings: rules gain optional `remediation` (a short,
+  actionable fix) and `reference` (a URL) fields, carried through to each
+  finding. All default rules now ship remediation text, shown under each
+  finding in text and HTML reports. Vendor findings can set the fields too.
+- SARIF output: `scan --format sarif` writes a SARIF 2.1.0 log for upload to
+  code-scanning dashboards (for example GitHub Advanced Security). Each rule
+  maps its severity to a SARIF level and a `security-severity` score and
+  carries its remediation as `help`/`helpUri`; each finding carries the
+  offending object as a logical location. Posture and vendor findings are both
+  included.
+
 ## [1.7.0] - 2026-08-02
 
 ### Added

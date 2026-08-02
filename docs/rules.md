@@ -55,6 +55,8 @@ rules:
     title: Extractable private key
     severity: critical           # critical | high | medium | low
     description: Optional longer explanation shown in reports.
+    remediation: Regenerate the key with CKA_EXTRACTABLE=false.  # optional fix
+    reference: https://example.com/policy                        # optional URL
     match:                       # all conditions must hold (logical AND)
       class: private-key
       extractable: true
@@ -62,6 +64,19 @@ rules:
 
 The health score starts at 100; every finding subtracts its severity
 penalty, with a floor of 0.
+
+`remediation` (a short actionable fix) and `reference` (a URL) are optional.
+When set they appear under each finding in text and HTML reports, and populate
+the rule `help`/`helpUri` fields in SARIF output.
+
+## Output formats
+
+`scan --format` accepts `text` (default), `json`, `html` and `sarif`. The
+SARIF 2.1.0 output (`--format sarif`) lets scan results be uploaded to
+code-scanning dashboards such as GitHub Advanced Security: each rule carries
+its severity (mapped to a SARIF level and a `security-severity` score) and its
+remediation, and each finding carries the offending object as a logical
+location. Both posture and vendor findings are included.
 
 Unknown fields anywhere in the file are rejected, so typos fail loudly
 instead of producing rules that never match.

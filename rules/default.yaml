@@ -22,6 +22,9 @@ rules:
       A private key with CKA_EXTRACTABLE=true can be wrapped and exported
       from the HSM. Production signing and decryption keys should never be
       extractable.
+    remediation: >-
+      Regenerate the key on the HSM with CKA_EXTRACTABLE=false; extractability
+      cannot be removed from an existing key.
     match:
       class: private-key
       extractable: true
@@ -32,6 +35,9 @@ rules:
     description: >-
       A private key with CKA_SENSITIVE=false may reveal key material through
       C_GetAttributeValue on some implementations.
+    remediation: >-
+      Regenerate the key with CKA_SENSITIVE=true; sensitivity cannot be added
+      to an existing key.
     match:
       class: private-key
       sensitive: false
@@ -42,6 +48,10 @@ rules:
     description: >-
       RSA keys shorter than 2048 bits are considered broken for new use and
       are disallowed by NIST SP 800-57 since 2013.
+    remediation: >-
+      Replace with an RSA-3072+ or ECC P-256+ key and re-issue any certificates
+      bound to it.
+    reference: https://csrc.nist.gov/pubs/sp/800/57/pt1/r5/final
     match:
       class: private-key
       key_type: RSA
@@ -51,6 +61,8 @@ rules:
     title: Expired certificate
     severity: high
     description: The certificate's validity period has ended.
+    remediation: >-
+      Re-issue the certificate and remove the expired object from the token.
     match:
       class: certificate
       cert_expired: true
@@ -59,6 +71,7 @@ rules:
     title: Certificate expiring soon
     severity: medium
     description: The certificate expires within the next 30 days.
+    remediation: Renew the certificate before it expires and roll it onto the token.
     match:
       class: certificate
       cert_expires_within_days: 30
@@ -69,6 +82,9 @@ rules:
     description: >-
       Multiple objects of the same class share a CKA_LABEL. Applications
       selecting keys by label may silently pick the wrong object.
+    remediation: >-
+      Give each object a unique CKA_LABEL, or select keys by CKA_ID instead of
+      label.
     match:
       duplicate_label: true
 
@@ -78,6 +94,9 @@ rules:
     description: >-
       No certificate or public key shares this private key's CKA_ID. The key
       may be leftover from an incomplete rotation or deletion.
+    remediation: >-
+      Confirm the key is unused, then delete it — or restore its matching
+      certificate or public key.
     match:
       class: private-key
       orphan: true
@@ -88,6 +107,9 @@ rules:
     description: >-
       No private key shares this certificate's CKA_ID. The certificate may
       be stale and safe to remove.
+    remediation: >-
+      Delete the stale certificate, or import the matching private key if it
+      belongs on this token.
     match:
       class: certificate
       orphan: true
@@ -98,6 +120,9 @@ rules:
     description: >-
       A key that both signs and decrypts mixes usage roles, widening the
       impact of a compromise and enabling cross-protocol attacks.
+    remediation: >-
+      Split the roles into separate signing and decryption keys, each with a
+      single usage.
     match:
       class: private-key
       sign: true
@@ -109,6 +134,9 @@ rules:
     description: >-
       The token advertises legacy mechanisms (SHA-1 or MD5 signatures,
       single DES). Disable them where the HSM configuration allows it.
+    remediation: >-
+      Disable the legacy mechanisms in the HSM or partition policy where the
+      vendor allows it.
     match:
       mechanism_any_of:
         - CKM_SHA1_RSA_PKCS
@@ -122,6 +150,7 @@ rules:
     description: >-
       The certificate uses a broken signature algorithm (SHA-1 or MD5).
       These are forgeable and disallowed for new certificates.
+    remediation: Re-issue the certificate with a SHA-256 (or stronger) signature.
     match:
       class: certificate
       cert_sig_alg_in: [SHA1-RSA, MD5-RSA, ECDSA-SHA1]
@@ -132,6 +161,7 @@ rules:
     description: >-
       A secret key with CKA_SENSITIVE=false may reveal its value through
       C_GetAttributeValue. Symmetric keys should always be sensitive.
+    remediation: Regenerate the secret key with CKA_SENSITIVE=true.
     match:
       class: secret-key
       sensitive: false
@@ -142,6 +172,9 @@ rules:
     description: >-
       A secret key with CKA_EXTRACTABLE=true can be wrapped and exported.
       Production symmetric keys should not be extractable.
+    remediation: >-
+      Regenerate the secret key with CKA_EXTRACTABLE=false; use wrap/unwrap
+      only for keys explicitly meant to leave the HSM.
     match:
       class: secret-key
       extractable: true
@@ -152,6 +185,9 @@ rules:
     description: >-
       A self-signed certificate that is not a CA is not anchored to a real
       trust chain — often a leftover test or placeholder certificate.
+    remediation: >-
+      Replace with a certificate issued by your CA, or remove the placeholder
+      if it is a leftover.
     match:
       class: certificate
       cert_self_signed: true
@@ -163,6 +199,9 @@ rules:
     description: >-
       The certificate's notBefore is in the future. It will not be accepted
       until then — usually a clock problem or a premature deployment.
+    remediation: >-
+      Check the host clock and the certificate's notBefore; re-issue if the
+      date is wrong.
     match:
       class: certificate
       cert_not_yet_valid: true
@@ -173,6 +212,8 @@ rules:
     description: >-
       The certificate's own RSA public key is shorter than 2048 bits and is
       considered broken for new use, regardless of the HSM key protecting it.
+    remediation: Re-issue the certificate with an RSA-3072+ or ECC key.
+    reference: https://csrc.nist.gov/pubs/sp/800/57/pt1/r5/final
     match:
       class: certificate
       cert_pubkey_alg_in: [RSA]
@@ -184,6 +225,8 @@ rules:
     description: >-
       A certificate marked as a CA (basicConstraints CA:TRUE) but missing the
       keyCertSign key usage is malformed and will be rejected by many clients.
+    remediation: >-
+      Re-issue the CA certificate with the keyCertSign key usage set.
     match:
       class: certificate
       cert_ca_without_keycertsign: true
@@ -195,6 +238,9 @@ rules:
       The certificate shares its CKA_ID with a key on the token, but its
       public key does not match that key — a mislabeled or wrong certificate
       that will break signing and TLS.
+    remediation: >-
+      Import the certificate that matches this key, or correct the CKA_ID so
+      the certificate and key line up.
     match:
       class: certificate
       cert_key_mismatch: true
@@ -206,6 +252,9 @@ rules:
       The certificate does not build a valid chain to the supplied trust
       anchors (--ca-bundle) — a missing intermediate, an expired issuer or an
       untrusted root. Only evaluated when a CA bundle is provided.
+    remediation: >-
+      Add the missing intermediate or root to the token or the CA bundle, or
+      renew the issuer if it has expired.
     match:
       class: certificate
       cert_chain_broken: true

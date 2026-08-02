@@ -18,6 +18,11 @@ type Finding struct {
 	// empty for token-scoped findings such as weak mechanisms.
 	Object string `json:"object,omitempty"`
 	Detail string `json:"detail,omitempty"`
+	// Remediation and Reference are copied from the matched rule so that
+	// consumers (text/HTML reports, SARIF) can present a fix without the
+	// rule set. Vendor findings may set them directly.
+	Remediation string `json:"remediation,omitempty"`
+	Reference   string `json:"reference,omitempty"`
 }
 
 // Result is the outcome of evaluating an inventory against a rule set.
@@ -162,11 +167,13 @@ func Evaluate(inv *inventory.Inventory, cfg *Config, now time.Time) *Result {
 			obj := &inv.Objects[j]
 			if matched, detail := matchObject(rule, obj, f); matched {
 				res.Findings = append(res.Findings, Finding{
-					RuleID:   rule.ID,
-					Title:    rule.Title,
-					Severity: rule.Severity,
-					Object:   objectRef(obj),
-					Detail:   detail,
+					RuleID:      rule.ID,
+					Title:       rule.Title,
+					Severity:    rule.Severity,
+					Object:      objectRef(obj),
+					Detail:      detail,
+					Remediation: rule.Remediation,
+					Reference:   rule.Reference,
 				})
 			}
 		}
@@ -202,10 +209,12 @@ func evalMechanismRule(inv *inventory.Inventory, rule *Rule, res *Result) {
 		}
 		if len(hits) > 0 {
 			res.Findings = append(res.Findings, Finding{
-				RuleID:   rule.ID,
-				Title:    rule.Title,
-				Severity: rule.Severity,
-				Detail:   "token advertises: " + strings.Join(hits, ", "),
+				RuleID:      rule.ID,
+				Title:       rule.Title,
+				Severity:    rule.Severity,
+				Detail:      "token advertises: " + strings.Join(hits, ", "),
+				Remediation: rule.Remediation,
+				Reference:   rule.Reference,
 			})
 		}
 		return
@@ -219,10 +228,12 @@ func evalMechanismRule(inv *inventory.Inventory, rule *Rule, res *Result) {
 		}
 	}
 	res.Findings = append(res.Findings, Finding{
-		RuleID:   rule.ID,
-		Title:    rule.Title,
-		Severity: rule.Severity,
-		Detail:   "token advertises none of: " + strings.Join(rule.Match.MechanismMissing, ", "),
+		RuleID:      rule.ID,
+		Title:       rule.Title,
+		Severity:    rule.Severity,
+		Detail:      "token advertises none of: " + strings.Join(rule.Match.MechanismMissing, ", "),
+		Remediation: rule.Remediation,
+		Reference:   rule.Reference,
 	})
 }
 

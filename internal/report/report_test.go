@@ -41,7 +41,8 @@ func sampleReport() *Report {
 		Score: 65,
 		Findings: []policy.Finding{
 			{RuleID: "HSM-001", Title: "Extractable private key", Severity: policy.SevCritical,
-				Object: "private-key tls-key (id 01)", Detail: "CKA_EXTRACTABLE=true"},
+				Object: "private-key tls-key (id 01)", Detail: "CKA_EXTRACTABLE=true",
+				Remediation: "Regenerate the key with CKA_EXTRACTABLE=false."},
 			{RuleID: "HSM-003", Title: "Weak RSA key", Severity: policy.SevHigh,
 				Object: "private-key tls-key (id 01)", Detail: "key size 1024 < 2048 bits"},
 		},
@@ -59,6 +60,7 @@ func TestTextReport(t *testing.T) {
 		"Health Score: 65/100",
 		"CRITICAL (1)",
 		"[HSM-001] Extractable private key",
+		"fix: Regenerate the key with CKA_EXTRACTABLE=false.",
 		"HIGH (1)",
 		"PROD-PARTITION",
 		"Private keys:   1",
@@ -100,6 +102,7 @@ func TestHTMLReport(t *testing.T) {
 		"Extractable private key",
 		"CN=api.example.com",
 		"CKM_RSA_PKCS",
+		"fix: Regenerate the key with CKA_EXTRACTABLE=false.",
 		">65<",
 	} {
 		if !strings.Contains(out, want) {

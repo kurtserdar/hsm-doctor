@@ -114,6 +114,9 @@ func (r *Report) Text(w io.Writer) error {
 			if f.Detail != "" {
 				fmt.Fprintf(w, "          %s\n", f.Detail)
 			}
+			if f.Remediation != "" {
+				fmt.Fprintf(w, "          fix: %s\n", f.Remediation)
+			}
 		}
 		fmt.Fprintln(w)
 	}

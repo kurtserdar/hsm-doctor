@@ -111,11 +111,15 @@ func (c *Condition) empty() bool {
 
 // Rule is a single security posture check.
 type Rule struct {
-	ID          string    `yaml:"id" json:"id"`
-	Title       string    `yaml:"title" json:"title"`
-	Severity    Severity  `yaml:"severity" json:"severity"`
-	Description string    `yaml:"description,omitempty" json:"description,omitempty"`
-	Match       Condition `yaml:"match" json:"match"`
+	ID          string   `yaml:"id" json:"id"`
+	Title       string   `yaml:"title" json:"title"`
+	Severity    Severity `yaml:"severity" json:"severity"`
+	Description string   `yaml:"description,omitempty" json:"description,omitempty"`
+	// Remediation is a short, actionable instruction for fixing a match.
+	Remediation string `yaml:"remediation,omitempty" json:"remediation,omitempty"`
+	// Reference is an optional URL with background or guidance.
+	Reference string    `yaml:"reference,omitempty" json:"reference,omitempty"`
+	Match     Condition `yaml:"match" json:"match"`
 }
 
 // Scoring holds the per-finding penalty for each severity. The health score
