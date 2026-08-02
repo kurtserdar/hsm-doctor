@@ -76,6 +76,18 @@ CREATE TABLE notifications (
     UNIQUE (hsm_id, kind, ref, threshold)
 );
 `,
+	`
+CREATE TABLE regression_events (
+    id            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    hsm_id        BIGINT NOT NULL REFERENCES hsms(id) ON DELETE CASCADE,
+    detected_at   TIMESTAMPTZ NOT NULL,
+    old_scan_id   BIGINT NOT NULL,
+    new_scan_id   BIGINT NOT NULL,
+    score_delta   INTEGER NOT NULL,
+    detail        BYTEA NOT NULL
+);
+CREATE INDEX idx_regression_hsm ON regression_events(hsm_id, detected_at DESC, id DESC);
+`,
 }
 
 // PG is the PostgreSQL-backed Store.
@@ -389,6 +401,44 @@ FROM drift_events WHERE hsm_id = $1 ORDER BY detected_at DESC, id DESC LIMIT $2`
 			return nil, err
 		}
 		e.Diff = diff
+		out = append(out, e)
+	}
+	return out, rows.Err()
+}
+
+func (s *PG) InsertRegressionEvent(e *RegressionEvent) (int64, error) {
+	var id int64
+	err := s.db.QueryRow(`
+INSERT INTO regression_events (hsm_id, detected_at, old_scan_id, new_scan_id, score_delta, detail)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id`,
+		e.HSMID, e.DetectedAt.UTC(), e.OldScanID, e.NewScanID, e.ScoreDelta, []byte(e.Detail)).Scan(&id)
+	if err != nil {
+		return 0, fmt.Errorf("inserting regression event: %w", err)
+	}
+	return id, nil
+}
+
+func (s *PG) ListRegressionEvents(hsmID int64, limit int) ([]RegressionEvent, error) {
+	if limit <= 0 || limit > 1000 {
+		limit = 100
+	}
+	rows, err := s.db.Query(`
+SELECT id, hsm_id, detected_at, old_scan_id, new_scan_id, score_delta, detail
+FROM regression_events WHERE hsm_id = $1 ORDER BY detected_at DESC, id DESC LIMIT $2`, hsmID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("listing regression events: %w", err)
+	}
+	defer rows.Close()
+
+	var out []RegressionEvent
+	for rows.Next() {
+		var e RegressionEvent
+		var detail []byte
+		if err := rows.Scan(&e.ID, &e.HSMID, &e.DetectedAt, &e.OldScanID, &e.NewScanID, &e.ScoreDelta, &detail); err != nil {
+			return nil, err
+		}
+		e.Detail = detail
 		out = append(out, e)
 	}
 	return out, rows.Err()

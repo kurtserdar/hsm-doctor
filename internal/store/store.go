@@ -69,6 +69,21 @@ type DriftEvent struct {
 	Diff       json.RawMessage `json:"diff"`
 }
 
+// RegressionEvent records a worsening of posture between two consecutive
+// scans: a health-score drop or a new critical/high finding. It complements
+// DriftEvent, which tracks inventory changes.
+type RegressionEvent struct {
+	ID         int64           `json:"id"`
+	HSMID      int64           `json:"hsm_id"`
+	DetectedAt time.Time       `json:"detected_at"`
+	OldScanID  int64           `json:"old_scan_id"`
+	NewScanID  int64           `json:"new_scan_id"`
+	// ScoreDelta is the new score minus the old; negative means worse.
+	ScoreDelta int `json:"score_delta"`
+	// Detail is the JSON-encoded regression.Regression that triggered it.
+	Detail json.RawMessage `json:"detail"`
+}
+
 // Agent is an enrolled push client. Only the SHA-256 hash of its bearer
 // token is stored.
 type Agent struct {
@@ -97,6 +112,9 @@ type Store interface {
 
 	InsertDriftEvent(e *DriftEvent) (int64, error)
 	ListDriftEvents(hsmID int64, limit int) ([]DriftEvent, error)
+
+	InsertRegressionEvent(e *RegressionEvent) (int64, error)
+	ListRegressionEvents(hsmID int64, limit int) ([]RegressionEvent, error)
 
 	// MarkNotified records that a notification for (hsmID, kind, ref,
 	// threshold) has been sent. It returns true when this is the first time

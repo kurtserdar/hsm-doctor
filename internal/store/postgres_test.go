@@ -37,7 +37,7 @@ func dropAllTables(t *testing.T, dsn string) {
 		t.Fatalf("connecting to reset schema: %v", err)
 	}
 	defer func() { _ = db.Close() }()
-	if _, err := db.Exec(`DROP TABLE IF EXISTS notifications, drift_events, scans, agents, hsms, schema_version CASCADE`); err != nil {
+	if _, err := db.Exec(`DROP TABLE IF EXISTS notifications, regression_events, drift_events, scans, agents, hsms, schema_version CASCADE`); err != nil {
 		t.Fatalf("dropping tables: %v", err)
 	}
 }

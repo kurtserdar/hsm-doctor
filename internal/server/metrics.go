@@ -16,12 +16,13 @@ import (
 type metrics struct {
 	registry *prometheus.Registry
 
-	healthScore  *prometheus.GaugeVec
-	findings     *prometheus.GaugeVec
-	objects      *prometheus.GaugeVec
-	certMinDays  *prometheus.GaugeVec
-	lastScanTime *prometheus.GaugeVec
-	scansTotal   *prometheus.CounterVec
+	healthScore      *prometheus.GaugeVec
+	findings         *prometheus.GaugeVec
+	objects          *prometheus.GaugeVec
+	certMinDays      *prometheus.GaugeVec
+	lastScanTime     *prometheus.GaugeVec
+	scansTotal       *prometheus.CounterVec
+	regressionsTotal *prometheus.CounterVec
 
 	pqcAdvertised *prometheus.GaugeVec
 	pqcVulnerable *prometheus.GaugeVec
@@ -61,6 +62,10 @@ func newMetrics(version string) *metrics {
 			Name: "hsmdoctor_scans_total",
 			Help: "Total number of scans performed since process start.",
 		}, []string{"serial", "label"}),
+		regressionsTotal: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "hsmdoctor_posture_regressions_total",
+			Help: "Total number of posture regressions detected since process start.",
+		}, []string{"serial", "label"}),
 		pqcAdvertised: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "hsmdoctor_pqc_family_advertised",
 			Help: "1 when the token advertises the PQC family's mechanisms (ML-KEM, ML-DSA, SLH-DSA).",
@@ -91,6 +96,7 @@ func newMetrics(version string) *metrics {
 		}, []string{"serial", "label", "provider"}),
 	}
 	reg.MustRegister(m.healthScore, m.findings, m.objects, m.certMinDays, m.lastScanTime, m.scansTotal,
+		m.regressionsTotal,
 		m.pqcAdvertised, m.pqcVulnerable, m.pqcHNDL,
 		m.vendorTamper, m.vendorDiskPercent, m.vendorHAMembersUp, m.vendorHAMembers)
 
@@ -106,6 +112,11 @@ func newMetrics(version string) *metrics {
 // handler serves the metrics endpoint.
 func (m *metrics) handler() http.Handler {
 	return promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{})
+}
+
+// observeRegression counts a detected posture regression.
+func (m *metrics) observeRegression(serial, label string) {
+	m.regressionsTotal.WithLabelValues(serial, label).Inc()
 }
 
 // observeScan refreshes all per-HSM series from a finished scan report.

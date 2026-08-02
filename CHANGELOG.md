@@ -5,6 +5,19 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [Unreleased]
+
+### Added
+
+- Posture-regression detection for the fleet: when a scan's security posture
+  worsens relative to the previous scan — the health score drops by 10 or more
+  points, or a new critical/high finding appears — the server records a
+  regression event alongside the existing drift event. Regressions are exposed
+  at `GET /api/v1/hsms/{id}/regressions`, shown in the HSM detail view, counted
+  by the `hsmdoctor_posture_regressions_total` metric, and delivered through
+  the webhook (`posture_regression` event) and e-mail (new `regression` toggle,
+  default on). The score-history sparkline already visualises the trend.
+
 ## [1.8.0] - 2026-08-02
 
 ### Added

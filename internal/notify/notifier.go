@@ -25,6 +25,17 @@ type DriftInfo struct {
 	Summary []string
 }
 
+// RegressionInfo is the minimal posture-regression context an e-mail needs.
+type RegressionInfo struct {
+	HSMID      int64
+	Serial     string
+	Label      string
+	Source     string
+	ScoreDelta int
+	// Reasons is a short human-readable list of what worsened.
+	Reasons []string
+}
+
 // CertInfo is one certificate's expiry status for notification.
 type CertInfo struct {
 	Label    string
@@ -87,6 +98,26 @@ func (n *Notifier) NotifyDrift(d DriftInfo) {
 		fmt.Fprintf(&b, "  - %s\n", c)
 	}
 	fmt.Fprintf(&b, "\nReview the full diff in the HSM Doctor dashboard.\n")
+	n.send(subject, b.String())
+}
+
+// NotifyRegression e-mails a posture-regression alert. Delivery failures are
+// logged, never propagated, so they cannot disrupt scanning.
+func (n *Notifier) NotifyRegression(r RegressionInfo) {
+	if n == nil || !n.cfg.RegressionEnabled() {
+		return
+	}
+	name := r.Label
+	if name == "" {
+		name = r.Serial
+	}
+	subject := fmt.Sprintf("[HSM Doctor] Posture regression on %s (score %+d)", name, r.ScoreDelta)
+	var b strings.Builder
+	fmt.Fprintf(&b, "The security posture of HSM %q (serial %s, source %s) worsened.\n\n", r.Label, r.Serial, r.Source)
+	for _, c := range r.Reasons {
+		fmt.Fprintf(&b, "  - %s\n", c)
+	}
+	fmt.Fprintf(&b, "\nReview the scan history in the HSM Doctor dashboard.\n")
 	n.send(subject, b.String())
 }
 

@@ -268,3 +268,26 @@ export interface DriftEvent {
   changes: number;
   diff: DriftDiff;
 }
+
+export interface SevereFinding {
+  rule_id: string;
+  title: string;
+  severity: Severity;
+}
+
+export interface RegressionDetail {
+  score_delta: number;
+  score_dropped: boolean;
+  new_severe?: SevereFinding[];
+  reasons: string[];
+}
+
+export interface RegressionEvent {
+  id: number;
+  hsm_id: number;
+  detected_at: string;
+  old_scan_id: number;
+  new_scan_id: number;
+  score_delta: number;
+  detail: RegressionDetail;
+}

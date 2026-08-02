@@ -12,7 +12,9 @@ import (
 	"github.com/kurtserdar/hsm-doctor/internal/certmon"
 	"github.com/kurtserdar/hsm-doctor/internal/inventory"
 	"github.com/kurtserdar/hsm-doctor/internal/notify"
+	"github.com/kurtserdar/hsm-doctor/internal/p11"
 	"github.com/kurtserdar/hsm-doctor/internal/policy"
+	"github.com/kurtserdar/hsm-doctor/internal/regression"
 	"github.com/kurtserdar/hsm-doctor/internal/report"
 	"github.com/kurtserdar/hsm-doctor/internal/snapshot"
 	"github.com/kurtserdar/hsm-doctor/internal/store"
@@ -24,6 +26,7 @@ func (s *Server) registerHistoryAPI(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/hsms/{id}/scans", s.handleHSMScans)
 	mux.HandleFunc("GET /api/v1/hsms/{id}/scans/{scanID}", s.handleHSMScan)
 	mux.HandleFunc("GET /api/v1/hsms/{id}/drift", s.handleHSMDrift)
+	mux.HandleFunc("GET /api/v1/hsms/{id}/regressions", s.handleHSMRegressions)
 }
 
 // requireStore returns the store or writes a 503 when persistence is off.
@@ -161,6 +164,27 @@ func (s *Server) handleHSMDrift(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, events)
 }
 
+func (s *Server) handleHSMRegressions(w http.ResponseWriter, r *http.Request) {
+	st := s.requireStore(w)
+	if st == nil {
+		return
+	}
+	id, err := idFromPath(r, "id")
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	events, err := st.ListRegressionEvents(id, limitFromQuery(r))
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	if events == nil {
+		events = []store.RegressionEvent{}
+	}
+	writeJSON(w, http.StatusOK, events)
+}
+
 // persistScan stores a finished scan, updates the HSM row and records a
 // drift event when the inventory changed since the previous scan. Storage
 // problems are logged, never surfaced to the caller: the scan itself
@@ -239,6 +263,10 @@ func (s *Server) persistScan(rep *report.Report, source string) {
 		log.Printf("warning: previous report unreadable, skipping drift check")
 		return
 	}
+
+	// Posture regression is independent of inventory drift, so check it first.
+	s.checkRegression(hsmID, t, source, prev, newID, rep, &prevRep)
+
 	d := snapshot.Compare(prevRep.Inventory, inv)
 	if d.Empty() {
 		return
@@ -270,6 +298,47 @@ func (s *Server) persistScan(rep *report.Report, source string) {
 		s.notifier.NotifyDrift(notify.DriftInfo{
 			HSMID: hsmID, Serial: t.SerialNumber, Label: t.Label, Source: source,
 			Changes: d.Count(), Summary: driftSummary(d),
+		})
+	}
+}
+
+// checkRegression compares the new scan's posture to the previous scan and,
+// when it worsened (score drop or a new critical/high finding), records a
+// regression event and fires the webhook, e-mail and metric. Storage or
+// delivery problems are logged, never surfaced.
+func (s *Server) checkRegression(hsmID int64, t *p11.TokenInfo, source string, prev *store.ScanRecord, newID int64, rep, prevRep *report.Report) {
+	reg := regression.Detect(prev.Score, rep.Score, prevRep.Findings, rep.Findings, 0)
+	if reg == nil {
+		return
+	}
+	detail, err := json.Marshal(reg)
+	if err != nil {
+		log.Printf("warning: encoding regression detail: %v", err)
+		return
+	}
+	event := &store.RegressionEvent{
+		HSMID:      hsmID,
+		DetectedAt: time.Now().UTC(),
+		OldScanID:  prev.ID,
+		NewScanID:  newID,
+		ScoreDelta: reg.ScoreDelta,
+		Detail:     detail,
+	}
+	if _, err := s.store.InsertRegressionEvent(event); err != nil {
+		log.Printf("warning: persisting regression event: %v", err)
+		return
+	}
+	log.Printf("posture regression on %s (score delta %+d, %d new severe finding(s))", t.Label, reg.ScoreDelta, len(reg.NewSevere))
+	s.metrics.observeRegression(t.SerialNumber, t.Label)
+	if s.webhook != nil {
+		s.webhook.notifyRegression(&store.HSM{
+			ID: hsmID, Serial: t.SerialNumber, Label: t.Label, Source: source,
+		}, event)
+	}
+	if s.notifier != nil {
+		s.notifier.NotifyRegression(notify.RegressionInfo{
+			HSMID: hsmID, Serial: t.SerialNumber, Label: t.Label, Source: source,
+			ScoreDelta: reg.ScoreDelta, Reasons: reg.Reasons,
 		})
 	}
 }

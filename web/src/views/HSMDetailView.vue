@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
-import { hsmDrift, hsmScan, hsmScans } from "../api";
+import { hsmDrift, hsmRegressions, hsmScan, hsmScans } from "../api";
 import Sparkline from "../components/Sparkline.vue";
-import type { DriftEvent, ScanReport, ScanSummary } from "../types";
+import type { DriftEvent, RegressionEvent, ScanReport, ScanSummary } from "../types";
 
 const route = useRoute();
 const hsmID = Number(route.params.id);
 
 const scans = ref<ScanSummary[]>([]);
 const drift = ref<DriftEvent[]>([]);
+const regressions = ref<RegressionEvent[]>([]);
 const latestReport = ref<ScanReport | null>(null);
 const error = ref("");
 const loading = ref(false);
@@ -17,9 +18,10 @@ const loading = ref(false);
 onMounted(async () => {
   loading.value = true;
   try {
-    [scans.value, drift.value] = await Promise.all([
+    [scans.value, drift.value, regressions.value] = await Promise.all([
       hsmScans(hsmID, 100),
       hsmDrift(hsmID, 25),
+      hsmRegressions(hsmID, 25),
     ]);
     if (scans.value.length > 0) {
       const full = await hsmScan(hsmID, scans.value[0].id);
@@ -85,6 +87,16 @@ function scoreClass(score: number): string {
         <div class="value">{{ latest.critical + latest.high + latest.medium + latest.low }}</div>
         <div class="label">findings in latest scan</div>
       </div>
+    </div>
+
+    <h2>Posture regressions</h2>
+    <div v-if="regressions.length === 0" class="card muted">No posture regressions recorded.</div>
+    <div v-for="e in regressions" :key="e.id" class="card">
+      <strong>{{ fmt(e.detected_at) }}</strong>
+      <span class="muted"> — score {{ e.score_delta > 0 ? "+" : "" }}{{ e.score_delta }} between scan #{{ e.old_scan_id }} and #{{ e.new_scan_id }}</span>
+      <ul style="margin: 0.5rem 0 0; padding-left: 1.25rem">
+        <li v-for="(r, i) in e.detail.reasons" :key="'r' + i">{{ r }}</li>
+      </ul>
     </div>
 
     <h2>Drift events</h2>

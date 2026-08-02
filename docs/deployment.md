@@ -233,7 +233,8 @@ scrape_configs:
 Useful alerts: `hsmdoctor_health_score < 70`,
 `hsmdoctor_findings{severity="critical"} > 0`,
 `hsmdoctor_certificate_min_days_to_expiry < 14`,
-`time() - hsmdoctor_last_scan_timestamp_seconds > 3600`.
+`time() - hsmdoctor_last_scan_timestamp_seconds > 3600`,
+`increase(hsmdoctor_posture_regressions_total[1h]) > 0` (posture worsened).
 
 ## Webhooks
 
@@ -250,15 +251,35 @@ Useful alerts: `hsmdoctor_health_score < 70`,
 }
 ```
 
-Delivery is retried three times with backoff; failures are logged and
-never block scanning.
+A `posture_regression` event fires when a scan's security posture worsens
+relative to the previous scan — the health score drops by 10 or more points,
+or a new critical/high finding appears (`X-HSMDoctor-Event: posture_regression`):
+
+```json
+{
+  "event": "posture_regression",
+  "hsm": {"id": 3, "serial": "7000123", "label": "PROD-PARTITION", "source": "edge-01"},
+  "detected_at": "2026-07-29T16:20:11Z",
+  "score_delta": -25,
+  "detail": {"score_delta": -25, "score_dropped": true,
+             "new_severe": [{"rule_id": "HSM-001", "title": "Extractable private key",
+                             "severity": "critical"}],
+             "reasons": ["health score dropped 25 points (90 → 65)",
+                         "new critical finding HSM-001: Extractable private key"]}
+}
+```
+
+Regression is posture-level (score and findings); drift is inventory-level
+(objects and attributes). The two are independent — a scan can raise either,
+both or neither. Delivery is retried three times with backoff; failures are
+logged and never block scanning.
 
 ## E-mail notifications
 
 Where the webhook targets machines, e-mail targets people. `--notify-config`
 points at a YAML file with SMTP settings and recipients; the server then
-e-mails **drift alerts** (same events as the webhook) and **certificate
-expiry reminders**.
+e-mails **drift alerts**, **posture-regression alerts** (same events as the
+webhook) and **certificate expiry reminders**.
 
 ```yaml
 # notify.yaml (chmod 600)
@@ -271,8 +292,9 @@ smtp:
   to: [hsm-team@example.com, oncall@example.com]
   tls: starttls          # starttls (587), implicit (465) or none (localhost relay)
 
-# Optional — both default to true:
+# Optional — all default to true:
 drift: true
+regression: true
 cert_expiry: true
 cert_warn_days: [30, 14, 1]   # e-mail once as a cert crosses each threshold
 ```

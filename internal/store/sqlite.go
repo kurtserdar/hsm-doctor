@@ -79,6 +79,18 @@ CREATE TABLE notifications (
     UNIQUE (hsm_id, kind, ref, threshold)
 );
 `,
+	`
+CREATE TABLE regression_events (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    hsm_id        INTEGER NOT NULL REFERENCES hsms(id) ON DELETE CASCADE,
+    detected_at   TIMESTAMP NOT NULL,
+    old_scan_id   INTEGER NOT NULL,
+    new_scan_id   INTEGER NOT NULL,
+    score_delta   INTEGER NOT NULL,
+    detail        BLOB NOT NULL
+);
+CREATE INDEX idx_regression_hsm ON regression_events(hsm_id, detected_at DESC, id DESC);
+`,
 }
 
 // DB is the SQLite-backed Store.
@@ -403,6 +415,42 @@ FROM drift_events WHERE hsm_id = ? ORDER BY detected_at DESC, id DESC LIMIT ?`, 
 			return nil, err
 		}
 		e.Diff = diff
+		out = append(out, e)
+	}
+	return out, rows.Err()
+}
+
+func (s *DB) InsertRegressionEvent(e *RegressionEvent) (int64, error) {
+	res, err := s.db.Exec(`
+INSERT INTO regression_events (hsm_id, detected_at, old_scan_id, new_scan_id, score_delta, detail)
+VALUES (?, ?, ?, ?, ?, ?)`,
+		e.HSMID, e.DetectedAt.UTC(), e.OldScanID, e.NewScanID, e.ScoreDelta, []byte(e.Detail))
+	if err != nil {
+		return 0, fmt.Errorf("inserting regression event: %w", err)
+	}
+	return res.LastInsertId()
+}
+
+func (s *DB) ListRegressionEvents(hsmID int64, limit int) ([]RegressionEvent, error) {
+	if limit <= 0 || limit > 1000 {
+		limit = 100
+	}
+	rows, err := s.db.Query(`
+SELECT id, hsm_id, detected_at, old_scan_id, new_scan_id, score_delta, detail
+FROM regression_events WHERE hsm_id = ? ORDER BY detected_at DESC, id DESC LIMIT ?`, hsmID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("listing regression events: %w", err)
+	}
+	defer rows.Close()
+
+	var out []RegressionEvent
+	for rows.Next() {
+		var e RegressionEvent
+		var detail []byte
+		if err := rows.Scan(&e.ID, &e.HSMID, &e.DetectedAt, &e.OldScanID, &e.NewScanID, &e.ScoreDelta, &detail); err != nil {
+			return nil, err
+		}
+		e.Detail = detail
 		out = append(out, e)
 	}
 	return out, rows.Err()

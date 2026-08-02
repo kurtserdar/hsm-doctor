@@ -40,6 +40,7 @@ type Config struct {
 	// Triggers select which events send mail; both default to true when the
 	// notify config is present.
 	Drift      *bool `yaml:"drift,omitempty"`
+	Regression *bool `yaml:"regression,omitempty"`
 	CertExpiry *bool `yaml:"cert_expiry,omitempty"`
 	// CertWarnDays are the day thresholds at which an expiring certificate
 	// first triggers a mail; defaults to 30, 14, 1.
@@ -93,6 +94,10 @@ func (c *Config) validate() error {
 
 // DriftEnabled reports whether drift notifications are on (default true).
 func (c *Config) DriftEnabled() bool { return c.Drift == nil || *c.Drift }
+
+// RegressionEnabled reports whether posture-regression notifications are on
+// (default true).
+func (c *Config) RegressionEnabled() bool { return c.Regression == nil || *c.Regression }
 
 // CertExpiryEnabled reports whether cert-expiry notifications are on
 // (default true).

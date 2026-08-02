@@ -5,6 +5,7 @@ import type {
   DriftEvent,
   HSMSummary,
   PQCResponse,
+  RegressionEvent,
   ScanReport,
   ScanSummary,
   ServerInfo,
@@ -63,6 +64,10 @@ export function hsmScan(id: number, scanID: number): Promise<ScanSummary> {
 
 export function hsmDrift(id: number, limit = 20): Promise<DriftEvent[]> {
   return request(`/api/v1/hsms/${id}/drift?limit=${limit}`);
+}
+
+export function hsmRegressions(id: number, limit = 20): Promise<RegressionEvent[]> {
+  return request(`/api/v1/hsms/${id}/regressions?limit=${limit}`);
 }
 
 export function pqcAssess(

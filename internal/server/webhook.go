@@ -63,10 +63,38 @@ func (w *webhook) notifyDrift(h *store.HSM, e *store.DriftEvent) {
 		log.Printf("warning: encoding webhook payload: %v", err)
 		return
 	}
-	go w.deliver(body)
+	go w.deliver("drift_detected", body)
 }
 
-func (w *webhook) deliver(body []byte) {
+// regressionPayload is the JSON body POSTed on posture-regression events.
+type regressionPayload struct {
+	Event      string          `json:"event"`
+	HSM        driftHSM        `json:"hsm"`
+	DetectedAt time.Time       `json:"detected_at"`
+	ScoreDelta int             `json:"score_delta"`
+	Detail     json.RawMessage `json:"detail"`
+}
+
+// notifyRegression delivers the event asynchronously.
+func (w *webhook) notifyRegression(h *store.HSM, e *store.RegressionEvent) {
+	payload := regressionPayload{
+		Event: "posture_regression",
+		HSM: driftHSM{
+			ID: h.ID, Serial: h.Serial, Label: h.Label, Source: h.Source,
+		},
+		DetectedAt: e.DetectedAt,
+		ScoreDelta: e.ScoreDelta,
+		Detail:     e.Detail,
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		log.Printf("warning: encoding webhook payload: %v", err)
+		return
+	}
+	go w.deliver("posture_regression", body)
+}
+
+func (w *webhook) deliver(event string, body []byte) {
 	var lastErr error
 	for attempt := 1; attempt <= w.attempts; attempt++ {
 		if attempt > 1 {
@@ -78,7 +106,7 @@ func (w *webhook) deliver(body []byte) {
 			return
 		}
 		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("X-HSMDoctor-Event", "drift_detected")
+		req.Header.Set("X-HSMDoctor-Event", event)
 
 		resp, err := w.httpc.Do(req)
 		if err != nil {

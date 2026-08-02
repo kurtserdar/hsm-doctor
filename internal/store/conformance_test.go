@@ -125,6 +125,31 @@ func runConformance(t *testing.T, fresh freshFunc) {
 		}
 	})
 
+	t.Run("RegressionEvents", func(t *testing.T) {
+		db := newDB(t)
+		hsmID, err := db.UpsertHSM(&HSM{Serial: "S1", Source: "local"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := db.InsertRegressionEvent(&RegressionEvent{
+			HSMID: hsmID, DetectedAt: time.Now(), OldScanID: 1, NewScanID: 2,
+			ScoreDelta: -15, Detail: json.RawMessage(`{"reasons":["health score dropped 15 points (90 → 75)"]}`),
+		}); err != nil {
+			t.Fatalf("InsertRegressionEvent: %v", err)
+		}
+		events, err := db.ListRegressionEvents(hsmID, 10)
+		if err != nil {
+			t.Fatalf("ListRegressionEvents: %v", err)
+		}
+		if len(events) != 1 || events[0].ScoreDelta != -15 {
+			t.Errorf("regression events wrong: %+v", events)
+		}
+		var detail map[string]any
+		if err := json.Unmarshal(events[0].Detail, &detail); err != nil {
+			t.Errorf("detail blob not valid JSON: %v", err)
+		}
+	})
+
 	t.Run("Agents", func(t *testing.T) {
 		db := newDB(t)
 		id, err := db.UpsertAgent("edge-01", "hash-aaa")
