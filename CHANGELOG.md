@@ -21,6 +21,8 @@ under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 - Certificate chain validation (opt-in): `scan --ca-bundle FILE` verifies each
   certificate against the supplied trust anchors, using token CA certificates
   as intermediates; `HSM-019` flags certificates that do not chain.
+- The `certs` command reports per-certificate validation warnings (self-signed,
+  not-yet-valid, weak key, key mismatch, unverified chain) alongside expiry.
 
 ## [1.5.0] - 2026-08-02
 

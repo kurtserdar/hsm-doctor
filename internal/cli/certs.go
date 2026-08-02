@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/kurtserdar/hsm-doctor/internal/certmon"
@@ -89,6 +90,9 @@ func printCerts(cmd *cobra.Command, entries []certmon.Entry, warnDays int) {
 			subject = subject[:35] + "..."
 		}
 		fmt.Fprintf(out, "%-22s %-38s %-12s %s\n", e.Label, subject, e.NotAfter.Format("2006-01-02"), status)
+		if len(e.Warnings) > 0 {
+			fmt.Fprintf(out, "%-22s ! %s\n", "", strings.Join(e.Warnings, ", "))
+		}
 	}
 	ok, expiring, expired := certmon.Counts(entries)
 	fmt.Fprintf(out, "\n%d ok, %d expiring within %d days, %d expired\n", ok, expiring, warnDays, expired)

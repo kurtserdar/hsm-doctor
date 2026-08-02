@@ -3,7 +3,9 @@
 package certmon
 
 import (
+	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/kurtserdar/hsm-doctor/internal/inventory"
@@ -29,12 +31,24 @@ type Entry struct {
 	Status   Status    `json:"status"`
 	// DaysLeft is negative for expired certificates.
 	DaysLeft int `json:"days_left"`
+	// Warnings lists validation issues beyond expiry (self-signed, weak key,
+	// key mismatch, unverified chain, ...).
+	Warnings []string `json:"warnings,omitempty"`
 }
 
 // Classify extracts all X.509 certificate objects from the inventory and
 // computes their status. Certificates expiring within warnDays are marked
 // StatusExpiring. Results are sorted most-urgent first.
 func Classify(inv *inventory.Inventory, now time.Time, warnDays int) []Entry {
+	// Key public-key fingerprints per CKA_ID, for certificate/key matching.
+	keyFPs := map[string][]string{}
+	for _, o := range inv.Objects {
+		if (o.Class == inventory.ClassPrivateKey || o.Class == inventory.ClassPublicKey) &&
+			o.ID != "" && o.PublicKeyFingerprint != "" {
+			keyFPs[o.ID] = append(keyFPs[o.ID], o.PublicKeyFingerprint)
+		}
+	}
+
 	var entries []Entry
 	for _, o := range inv.Objects {
 		if o.Class != inventory.ClassCertificate || o.Certificate == nil {
@@ -48,6 +62,7 @@ func Classify(inv *inventory.Inventory, now time.Time, warnDays int) []Entry {
 			Issuer:   c.Issuer,
 			NotAfter: c.NotAfter,
 			IsCA:     c.IsCA,
+			Warnings: certWarnings(o, c, now, keyFPs),
 		}
 		left := c.NotAfter.Sub(now)
 		e.DaysLeft = int(left.Hours() / 24)
@@ -65,6 +80,42 @@ func Classify(inv *inventory.Inventory, now time.Time, warnDays int) []Entry {
 		return entries[i].NotAfter.Before(entries[j].NotAfter)
 	})
 	return entries
+}
+
+// certWarnings collects validation issues (beyond expiry) for one certificate.
+func certWarnings(o inventory.Object, c *inventory.CertInfo, now time.Time, keyFPs map[string][]string) []string {
+	var w []string
+	if c.SelfSigned && !c.IsCA {
+		w = append(w, "self-signed")
+	}
+	if c.NotBefore.After(now) {
+		w = append(w, "not yet valid")
+	}
+	if c.PublicKeyAlgorithm == "RSA" && c.PublicKeyBits > 0 && c.PublicKeyBits < 2048 {
+		w = append(w, fmt.Sprintf("weak RSA key (%d-bit)", c.PublicKeyBits))
+	}
+	if c.IsCA && !c.HasKeyUsage("keyCertSign") {
+		w = append(w, "CA without keyCertSign")
+	}
+	if o.ID != "" && c.PublicKeyFingerprint != "" {
+		fps := keyFPs[o.ID]
+		if len(fps) > 0 && !containsFP(fps, c.PublicKeyFingerprint) {
+			w = append(w, "key mismatch")
+		}
+	}
+	if strings.HasPrefix(c.ChainStatus, "unverified") {
+		w = append(w, "chain unverified")
+	}
+	return w
+}
+
+func containsFP(list []string, v string) bool {
+	for _, x := range list {
+		if x == v {
+			return true
+		}
+	}
+	return false
 }
 
 // Counts tallies entries per status.
