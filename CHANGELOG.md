@@ -5,6 +5,21 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [Unreleased]
+
+### Added
+
+- `trace keys` summarizes which keys a Flight Recorder trace put to work: for
+  each key the operations it was used for (sign, verify, encrypt, decrypt,
+  wrap, unwrap) and the mechanisms seen. The shim now records the key handle on
+  operation-init calls and the `CKA_LABEL`/`CKA_ID` a `C_FindObjectsInit`
+  searched for, so a used handle maps back to a named key; operations on
+  handles never located that way are grouped as unresolved. A key absent from
+  the summary was simply not used during the trace window — pair a
+  representative trace with `hsmdoctor scan` to spot idle keys. The recorded
+  label/id are identifiers, not key material; PINs, key bytes and plaintext are
+  still never recorded.
+
 ## [1.10.0] - 2026-08-02
 
 ### Added

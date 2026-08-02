@@ -53,7 +53,9 @@ func out() *trace.Writer {
 
 //export goEmit
 func goEmit(fn *C.char, hasSession C.int, session C.ulong,
+	hasObject C.int, object C.ulong,
 	hasMech C.int, mech C.ulong, dataLen C.long, outLen C.long,
+	label *C.char, keyID *C.char,
 	rv C.ulong, durNs C.longlong) {
 
 	e := trace.Event{
@@ -69,8 +71,18 @@ func goEmit(fn *C.char, hasSession C.int, session C.ulong,
 		s := uint64(session)
 		e.Session = &s
 	}
+	if hasObject != 0 {
+		o := uint64(object)
+		e.Object = &o
+	}
 	if hasMech != 0 {
 		e.Mechanism = p11names.Mechanism(uint(mech))
+	}
+	if label != nil {
+		e.Label = C.GoString(label)
+	}
+	if keyID != nil {
+		e.KeyID = C.GoString(keyID)
 	}
 	if dataLen >= 0 {
 		d := int(dataLen)

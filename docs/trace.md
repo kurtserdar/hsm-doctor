@@ -20,6 +20,11 @@ return codes and timings. PIN and key-material buffers are never
 dereferenced for logging — there is no flag that turns secret capture on,
 because the data never reaches the recording layer.
 
+The one attribute *values* recorded are the `CKA_LABEL` and `CKA_ID` a
+`C_FindObjectsInit` searches for. These are key **identifiers**, not key
+material, and they let `trace keys` map a used handle back to a named key. No
+other attribute value — and never a `CKA_VALUE`, PIN or plaintext — is read.
+
 ## Building
 
 The shim is a cgo `c-shared` artifact, separate from the main binary:
@@ -89,3 +94,26 @@ hsmdoctor trace coverage --json trace.jsonl       # machine-readable
 It lists the functions that were called (with counts) and those that were
 not, measured against the functions the recorder can observe (not the full
 PKCS#11 API — a function the shim does not wrap can never appear in a trace).
+
+## Key usage
+
+`trace keys` summarizes which keys the application actually put to work: for
+each key, the operations it was used for (sign, verify, encrypt, decrypt,
+wrap, unwrap) and the mechanisms seen.
+
+```sh
+hsmdoctor trace keys /tmp/app-trace.jsonl         # per-key usage summary
+hsmdoctor trace keys --json trace.jsonl           # machine-readable
+```
+
+It reconstructs each key's identity by tying the `CKA_LABEL`/`CKA_ID` a
+`C_FindObjectsInit` searched for to the handle the following `C_FindObjects`
+returned, then attributing later operation-init calls on that handle to the
+named key. Operations on a handle the trace never located that way are grouped
+as **unresolved**.
+
+This reflects only the trace window: a key that does not appear was simply not
+used *during the trace*, which is not proof it is never used. Capture a
+representative workload, then compare the used keys against the token inventory
+(`hsmdoctor scan`) to spot keys that sit idle — candidates for review or
+retirement.

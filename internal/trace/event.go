@@ -30,8 +30,15 @@ type Event struct {
 	Session *uint64 `json:"session,omitempty"`
 	// Slot is the slot ID when the call carries one.
 	Slot *uint64 `json:"slot,omitempty"`
-	// Object is an object handle when the call carries one.
+	// Object is an object handle when the call carries one (the key of an
+	// operation-init call, or the first handle returned by C_FindObjects).
 	Object *uint64 `json:"object,omitempty"`
+	// Label and KeyID carry the CKA_LABEL / CKA_ID search values of a
+	// C_FindObjectsInit template. They are identifiers, not key material, and
+	// let the analyzer map a used handle back to a named key. Everything else
+	// stays masked (no PINs, key bytes or plaintext are ever recorded).
+	Label string `json:"label,omitempty"`
+	KeyID string `json:"key_id,omitempty"`
 	// Mechanism is the CKM_* name for calls that take a mechanism.
 	Mechanism string `json:"mechanism,omitempty"`
 	// DataLen and OutLen record buffer sizes without their contents.

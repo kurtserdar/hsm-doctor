@@ -15,11 +15,14 @@
 #include "pkcs11.h"
 
 /* goEmit is implemented in Go (//export goEmit). The C trampolines call it
- * with cheap, non-secret metadata only. hasSession/hasMech/dataLen/outLen
- * use -1 / 0 sentinels when not applicable. */
+ * with cheap, non-secret metadata only. hasSession/hasObject/hasMech and
+ * dataLen/outLen use 0 / -1 sentinels when not applicable; label/keyID are
+ * NULL except on C_FindObjectsInit (CKA_LABEL/CKA_ID search values). */
 extern void goEmit(char *fn, int hasSession, unsigned long session,
+                   int hasObject, unsigned long object,
                    int hasMech, unsigned long mech,
                    long dataLen, long outLen,
+                   char *label, char *keyID,
                    unsigned long rv, long long durNs);
 
 /* Builds and returns the instrumented function list (defined in shim.c). */

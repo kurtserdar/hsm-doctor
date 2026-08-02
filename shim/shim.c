@@ -55,10 +55,58 @@ static unsigned long mech_of(CK_MECHANISM_PTR m) {
  * Pattern: time, forward to g_real->C_Foo, time, emit metadata, return. */
 
 #define BEGIN long long _t0 = now_ns()
+
+/* EMIT: the common case — no object handle, no identity strings. */
 #define EMIT(fn, hasSes, ses, hasMech, mech, dlen, olen) \
-    goEmit((char *)fn, hasSes, (unsigned long)(ses), hasMech, \
+    goEmit((char *)fn, hasSes, (unsigned long)(ses), 0, 0UL, hasMech, \
            (unsigned long)(mech), (long)(dlen), (long)(olen), \
-           (unsigned long)_rv, now_ns() - _t0)
+           NULL, NULL, (unsigned long)_rv, now_ns() - _t0)
+
+/* EMITO: a call that carries an object handle (operation-init key, or the
+ * first handle a find returned). */
+#define EMITO(fn, ses, obj, hasMech, mech, dlen, olen) \
+    goEmit((char *)fn, 1, (unsigned long)(ses), 1, (unsigned long)(obj), \
+           hasMech, (unsigned long)(mech), (long)(dlen), (long)(olen), \
+           NULL, NULL, (unsigned long)_rv, now_ns() - _t0)
+
+/* EMITF: C_FindObjectsInit, carrying the CKA_LABEL/CKA_ID search values so a
+ * used handle can later be mapped to a named key. */
+#define EMITF(fn, ses, n, label, keyid) \
+    goEmit((char *)fn, 1, (unsigned long)(ses), 0, 0UL, 0, 0UL, \
+           (long)(n), -1L, label, keyid, (unsigned long)_rv, now_ns() - _t0)
+
+/* find_identity extracts CKA_LABEL and CKA_ID search values from a find
+ * template into caller buffers. These identifiers (never key material) let the
+ * analyzer name a used key. No other attribute value is ever read. */
+static void find_identity(CK_ATTRIBUTE_PTR t, CK_ULONG n,
+                          char *label, size_t labelsz,
+                          char *keyid, size_t keyidsz) {
+    static const char hex[] = "0123456789abcdef";
+    label[0] = '\0';
+    keyid[0] = '\0';
+    if (t == NULL) return;
+    for (CK_ULONG i = 0; i < n; i++) {
+        if (t[i].pValue == NULL || t[i].ulValueLen == 0 ||
+            t[i].ulValueLen == (CK_ULONG)-1) {
+            continue;
+        }
+        if (t[i].type == CKA_LABEL) {
+            size_t len = (size_t)t[i].ulValueLen;
+            if (len > labelsz - 1) len = labelsz - 1;
+            memcpy(label, t[i].pValue, len);
+            label[len] = '\0';
+        } else if (t[i].type == CKA_ID) {
+            size_t len = (size_t)t[i].ulValueLen;
+            if (len > (keyidsz - 1) / 2) len = (keyidsz - 1) / 2;
+            const unsigned char *b = (const unsigned char *)t[i].pValue;
+            for (size_t j = 0; j < len; j++) {
+                keyid[j * 2] = hex[b[j] >> 4];
+                keyid[j * 2 + 1] = hex[b[j] & 0xf];
+            }
+            keyid[len * 2] = '\0';
+        }
+    }
+}
 
 CK_RV shim_C_Initialize(CK_VOID_PTR p) {
     BEGIN;
@@ -168,7 +216,9 @@ CK_RV shim_C_Logout(CK_SESSION_HANDLE s) {
 CK_RV shim_C_FindObjectsInit(CK_SESSION_HANDLE s, CK_ATTRIBUTE_PTR t, CK_ULONG n) {
     BEGIN;
     CK_RV _rv = g_real->C_FindObjectsInit(s, t, n);
-    EMIT("C_FindObjectsInit", 1, s, 0, 0, (long)n, -1);
+    char label[256], keyid[130];
+    find_identity(t, n, label, sizeof(label), keyid, sizeof(keyid));
+    EMITF("C_FindObjectsInit", s, n, label[0] ? label : NULL, keyid[0] ? keyid : NULL);
     return _rv;
 }
 
@@ -176,7 +226,11 @@ CK_RV shim_C_FindObjects(CK_SESSION_HANDLE s, CK_OBJECT_HANDLE_PTR o, CK_ULONG m
     BEGIN;
     CK_RV _rv = g_real->C_FindObjects(s, o, max, n);
     long found = (n != NULL) ? (long)*n : -1;
-    EMIT("C_FindObjects", 1, s, 0, 0, -1, found);
+    if (found > 0 && o != NULL) {
+        EMITO("C_FindObjects", s, o[0], 0, 0, -1, found);
+    } else {
+        EMIT("C_FindObjects", 1, s, 0, 0, -1, found);
+    }
     return _rv;
 }
 
@@ -215,7 +269,7 @@ CK_RV shim_C_GenerateKeyPair(CK_SESSION_HANDLE s, CK_MECHANISM_PTR m,
 CK_RV shim_C_SignInit(CK_SESSION_HANDLE s, CK_MECHANISM_PTR m, CK_OBJECT_HANDLE k) {
     BEGIN;
     CK_RV _rv = g_real->C_SignInit(s, m, k);
-    EMIT("C_SignInit", 1, s, 1, mech_of(m), -1, -1);
+    EMITO("C_SignInit", s, k, 1, mech_of(m), -1, -1);
     return _rv;
 }
 
@@ -231,7 +285,7 @@ CK_RV shim_C_Sign(CK_SESSION_HANDLE s, CK_BYTE_PTR data, CK_ULONG dlen, CK_BYTE_
 CK_RV shim_C_VerifyInit(CK_SESSION_HANDLE s, CK_MECHANISM_PTR m, CK_OBJECT_HANDLE k) {
     BEGIN;
     CK_RV _rv = g_real->C_VerifyInit(s, m, k);
-    EMIT("C_VerifyInit", 1, s, 1, mech_of(m), -1, -1);
+    EMITO("C_VerifyInit", s, k, 1, mech_of(m), -1, -1);
     return _rv;
 }
 
@@ -245,7 +299,7 @@ CK_RV shim_C_Verify(CK_SESSION_HANDLE s, CK_BYTE_PTR data, CK_ULONG dlen, CK_BYT
 CK_RV shim_C_EncryptInit(CK_SESSION_HANDLE s, CK_MECHANISM_PTR m, CK_OBJECT_HANDLE k) {
     BEGIN;
     CK_RV _rv = g_real->C_EncryptInit(s, m, k);
-    EMIT("C_EncryptInit", 1, s, 1, mech_of(m), -1, -1);
+    EMITO("C_EncryptInit", s, k, 1, mech_of(m), -1, -1);
     return _rv;
 }
 
@@ -260,7 +314,7 @@ CK_RV shim_C_Encrypt(CK_SESSION_HANDLE s, CK_BYTE_PTR data, CK_ULONG dlen, CK_BY
 CK_RV shim_C_DecryptInit(CK_SESSION_HANDLE s, CK_MECHANISM_PTR m, CK_OBJECT_HANDLE k) {
     BEGIN;
     CK_RV _rv = g_real->C_DecryptInit(s, m, k);
-    EMIT("C_DecryptInit", 1, s, 1, mech_of(m), -1, -1);
+    EMITO("C_DecryptInit", s, k, 1, mech_of(m), -1, -1);
     return _rv;
 }
 
@@ -290,7 +344,7 @@ CK_RV shim_C_WrapKey(CK_SESSION_HANDLE s, CK_MECHANISM_PTR m, CK_OBJECT_HANDLE w
                      CK_OBJECT_HANDLE k, CK_BYTE_PTR out, CK_ULONG_PTR olen) {
     BEGIN;
     CK_RV _rv = g_real->C_WrapKey(s, m, wk, k, out, olen);
-    EMIT("C_WrapKey", 1, s, 1, mech_of(m), -1, -1);
+    EMITO("C_WrapKey", s, wk, 1, mech_of(m), -1, -1);
     return _rv;
 }
 
@@ -299,7 +353,7 @@ CK_RV shim_C_UnwrapKey(CK_SESSION_HANDLE s, CK_MECHANISM_PTR m, CK_OBJECT_HANDLE
                        CK_OBJECT_HANDLE_PTR o) {
     BEGIN;
     CK_RV _rv = g_real->C_UnwrapKey(s, m, uk, wrapped, wlen, t, n, o);
-    EMIT("C_UnwrapKey", 1, s, 1, mech_of(m), (long)wlen, -1);
+    EMITO("C_UnwrapKey", s, uk, 1, mech_of(m), (long)wlen, -1);
     return _rv;
 }
 
