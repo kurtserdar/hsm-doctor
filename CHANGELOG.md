@@ -5,7 +5,7 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
-## [Unreleased]
+## [1.6.0] - 2026-08-02
 
 ### Added
 
