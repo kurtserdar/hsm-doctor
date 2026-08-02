@@ -5,6 +5,15 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [Unreleased]
+
+### Changed
+
+- Documented the versioning cadence in `docs/compatibility.md`: MAJOR for a
+  breaking change to a stable interface, MINOR for new user-facing
+  functionality, PATCH for everything else (docs, CI, refactors, and
+  behavior-neutral dependency/toolchain upgrades).
+
 ## [1.4.0] - 2026-08-02
 
 ### Changed

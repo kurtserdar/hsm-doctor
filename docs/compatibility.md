@@ -5,6 +5,21 @@ Versioning](https://semver.org/spec/v2.0.0.html): within a major version,
 the stable interfaces below do not change in backward-incompatible ways.
 Breaking changes are reserved for a new major version.
 
+## Versioning cadence
+
+Which part of the version bumps follows directly from the interfaces below:
+
+- **MAJOR** (`X.0.0`) — a backward-incompatible change to a stable interface:
+  removing or repurposing a CLI flag, removing or changing the meaning of a
+  JSON/REST field, removing a config key, breaking the trace or snapshot
+  format, or dropping forward migration of a 1.x database.
+- **MINOR** (`1.X.0`) — backward-compatible new user-facing functionality: a
+  new command or flag, new JSON fields, a new vendor provider, new rules or
+  policy packs, a new report format.
+- **PATCH** (`1.x.Y`) — everything else that is backward-compatible and adds
+  no new functionality: bug fixes, documentation, CI, internal refactors, and
+  dependency or toolchain upgrades that do not change behavior.
+
 ## Stable (covered by SemVer)
 
 - **CLI commands and flags.** Existing commands and flags keep their meaning.
