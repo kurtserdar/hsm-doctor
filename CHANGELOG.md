@@ -5,6 +5,18 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [Unreleased]
+
+### Added
+
+- ML-KEM functional probe now runs a full encapsulate/decapsulate round trip
+  (`pqc --test`), verifying the two derived shared secrets match, instead of
+  stopping at key generation. Because the Go PKCS#11 binding predates the 3.2
+  KEM calls, `C_EncapsulateKey`/`C_DecapsulateKey` are reached through a small
+  cgo shim that fetches the 3.2 interface and reuses the probe's session. The
+  probe falls back to `KEYGEN ONLY` on modules without the 3.2 KEM interface,
+  and on Windows or non-cgo builds. Validated against Kryoptic.
+
 ## [1.12.0] - 2026-08-03
 
 ### Added

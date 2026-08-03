@@ -24,6 +24,11 @@ const (
 
 	// Attributes.
 	CKA_PARAMETER_SET = 0x0000061d
+	// KEM key-usage attributes (PKCS#11 3.2): a public key must permit
+	// CKA_ENCAPSULATE and a private key CKA_DECAPSULATE for C_EncapsulateKey /
+	// C_DecapsulateKey to be allowed on them.
+	CKA_ENCAPSULATE = 0x00000633
+	CKA_DECAPSULATE = 0x00000634
 
 	// ML-DSA parameter set values (CKA_PARAMETER_SET).
 	CKP_ML_DSA_44 = 0x00000001

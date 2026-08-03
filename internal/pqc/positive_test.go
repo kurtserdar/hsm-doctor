@@ -64,14 +64,25 @@ func TestPositivePathAgainstPQCModule(t *testing.T) {
 	}
 
 	passes := 0
+	mlkemPass := 0
 	for _, r := range results {
 		t.Logf("%s %s: %s %s", r.Family, r.Set, r.Status, r.Detail)
-		switch r.Status {
-		case pqc.TestPass, pqc.TestKeyGenOnly:
+		if r.Status == pqc.TestFail {
+			t.Errorf("%s %s failed functionally: %s", r.Family, r.Set, r.Detail)
+		}
+		if r.Status == pqc.TestPass {
 			passes++
+			if r.Family == "ML-KEM" {
+				mlkemPass++
+			}
 		}
 	}
 	if passes == 0 {
 		t.Errorf("expected at least one parameter set to pass functionally: %+v", results)
+	}
+	// The module has real PQC support, so ML-KEM must complete the full
+	// encapsulate/decapsulate round trip, not just key generation.
+	if mlkemPass == 0 {
+		t.Errorf("expected ML-KEM encapsulate/decapsulate to pass on a 3.2 module: %+v", results)
 	}
 }

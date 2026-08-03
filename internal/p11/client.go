@@ -27,6 +27,9 @@ type Client struct {
 	logins map[uint]int
 }
 
+// Path returns the filesystem path of the loaded PKCS#11 module.
+func (c *Client) Path() string { return c.path }
+
 // Open loads and initializes the PKCS#11 module at the given path.
 func Open(path string) (*Client, error) {
 	ctx := pkcs11.New(path)

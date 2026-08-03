@@ -56,9 +56,10 @@ in output and docs:
   between minor releases (the trace *format* is stable). Because that set is
   the denominator, `trace coverage` ratios may shift across releases even for
   the same trace.
-- **PQC functional probes for ML-KEM.** Reported as `KEYGEN ONLY` until
-  key-encapsulation is wired through the underlying wrapper; this may change
-  to a full probe.
+- **PQC functional probes for ML-KEM.** On a PKCS#11 3.2 module the probe now
+  runs a full encapsulate/decapsulate round trip; it reports `KEYGEN ONLY` when
+  the module offers no `C_EncapsulateKey` (pre-3.2), and on Windows or non-cgo
+  builds, where the round trip is unavailable.
 
 ## Distribution artifacts
 
