@@ -60,6 +60,9 @@ in output and docs:
   runs a full encapsulate/decapsulate round trip; it reports `KEYGEN ONLY` when
   the module offers no `C_EncapsulateKey` (pre-3.2), and on Windows or non-cgo
   builds, where the round trip is unavailable.
+- **KMIP diagnostics (`kmip scan`).** A first-pass KMIP 1.x integration
+  validated against PyKMIP; its `KMIP-00x` rules, attribute mapping and flags
+  may change as it is validated against more servers.
 
 ## Distribution artifacts
 

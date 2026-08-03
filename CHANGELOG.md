@@ -5,6 +5,20 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [Unreleased]
+
+### Added
+
+- KMIP diagnostics (experimental): `hsmdoctor kmip scan` connects to a KMIP
+  key-management server over (mutual) TLS, inventories its managed objects via
+  `Discover Versions`/`Locate`/`Get Attributes`, and evaluates a security
+  posture — weak keys (`KMIP-001`), compromised objects (`KMIP-002`),
+  deactivated-but-not-destroyed keys (`KMIP-003`), sign+decrypt role mixing
+  (`KMIP-004`) and unnamed objects (`KMIP-005`) — with a health score, text and
+  JSON output, and `--fail-on` for CI. Read-only: it never creates, modifies or
+  destroys keys. KMIP 1.x over TTLV via the gemalto/kmip-go primitives;
+  validated against PyKMIP. See [docs/kmip.md](docs/kmip.md).
+
 ## [1.14.0] - 2026-08-03
 
 ### Added
