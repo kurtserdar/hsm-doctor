@@ -104,6 +104,7 @@ wrap, unwrap) and the mechanisms seen.
 ```sh
 hsmdoctor trace keys /tmp/app-trace.jsonl         # per-key usage summary
 hsmdoctor trace keys --json trace.jsonl           # machine-readable
+hsmdoctor trace keys trace.jsonl --inventory scan.json   # + idle-key report
 ```
 
 It reconstructs each key's identity by tying the `CKA_LABEL`/`CKA_ID` a
@@ -112,8 +113,15 @@ returned, then attributing later operation-init calls on that handle to the
 named key. Operations on a handle the trace never located that way are grouped
 as **unresolved**.
 
-This reflects only the trace window: a key that does not appear was simply not
-used *during the trace*, which is not proof it is never used. Capture a
-representative workload, then compare the used keys against the token inventory
-(`hsmdoctor scan`) to spot keys that sit idle — candidates for review or
-retirement.
+With `--inventory` — a JSON report from `scan --format json` — it also lists
+the token's private and secret keys that were **never observed used**: the idle
+keys, candidates for review or retirement.
+
+```sh
+hsmdoctor scan --slot 0 --pin-env PIN --format json --out scan.json
+hsmdoctor trace keys app-trace.jsonl --inventory scan.json
+```
+
+This reflects only the trace window: a key reported idle was simply not used
+*during the trace*, which is not proof it is never used. Capture a
+representative workload before acting on the result.

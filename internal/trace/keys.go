@@ -30,6 +30,14 @@ type KeyUsage struct {
 	Total int `json:"total"`
 }
 
+// KeyRef identifies a key in an inventory by class, label and CKA_ID (hex),
+// independent of any live handle. It is how idle-key analysis names candidates.
+type KeyRef struct {
+	Class string `json:"class,omitempty"`
+	Label string `json:"label,omitempty"`
+	KeyID string `json:"key_id,omitempty"`
+}
+
 // KeyUsageReport is the per-key usage summary of a trace. It reflects only what
 // the trace observed: a key absent here was simply not used during the trace
 // window, which is not proof it is never used.
@@ -39,6 +47,37 @@ type KeyUsageReport struct {
 	// mapped to a named key (e.g. the key was not located via a
 	// find-by-label/id in this trace).
 	Unresolved int `json:"unresolved"`
+	// Idle lists inventory keys never observed used, populated only when an
+	// inventory is supplied (trace keys --inventory).
+	Idle []KeyRef `json:"idle,omitempty"`
+}
+
+// IdleKeys returns the candidates never observed used in this trace. A
+// candidate counts as used when its CKA_ID or its label matches a resolved
+// key's. Because this is trace-window evidence, an idle result means "not seen
+// used here", not "never used" — feed a representative trace.
+func (r *KeyUsageReport) IdleKeys(candidates []KeyRef) []KeyRef {
+	usedID := map[string]bool{}
+	usedLabel := map[string]bool{}
+	for _, k := range r.Keys {
+		if !k.Resolved {
+			continue
+		}
+		if k.KeyID != "" {
+			usedID[k.KeyID] = true
+		}
+		if k.Label != "" {
+			usedLabel[k.Label] = true
+		}
+	}
+	var idle []KeyRef
+	for _, c := range candidates {
+		used := (c.KeyID != "" && usedID[c.KeyID]) || (c.Label != "" && usedLabel[c.Label])
+		if !used {
+			idle = append(idle, c)
+		}
+	}
+	return idle
 }
 
 type identity struct {

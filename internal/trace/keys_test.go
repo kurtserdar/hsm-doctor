@@ -88,6 +88,48 @@ func TestKeyUsageMixedAndAggregated(t *testing.T) {
 	}
 }
 
+func TestIdleKeys(t *testing.T) {
+	// signing-key (id 01) is used; idle-key (id 02) and by-label-only are not.
+	r := KeyUsageOf([]Event{
+		findInit("", "01"),
+		found(3),
+		op("C_SignInit", 3, "CKM_ECDSA"),
+		findInit("live-label", ""),
+		found(4),
+		op("C_DecryptInit", 4, "CKM_RSA_PKCS"),
+	})
+	candidates := []KeyRef{
+		{Class: "private-key", Label: "signing-key", KeyID: "01"}, // used by id
+		{Class: "private-key", Label: "live-label", KeyID: "05"},  // used by label
+		{Class: "private-key", Label: "idle-key", KeyID: "02"},    // idle
+		{Class: "secret-key", Label: "aes-idle", KeyID: ""},       // idle (label only)
+	}
+	idle := r.IdleKeys(candidates)
+	if len(idle) != 2 {
+		t.Fatalf("want 2 idle keys, got %d: %+v", len(idle), idle)
+	}
+	got := map[string]bool{}
+	for _, k := range idle {
+		got[k.Label] = true
+	}
+	if !got["idle-key"] || !got["aes-idle"] {
+		t.Errorf("idle set wrong: %+v", idle)
+	}
+	if got["signing-key"] || got["live-label"] {
+		t.Error("a used key must not be reported idle")
+	}
+}
+
+func TestIdleKeysUnresolvedUsageDoesNotCount(t *testing.T) {
+	// A key used only via an unresolved handle cannot vouch for any identity,
+	// so a matching candidate is still reported idle.
+	r := KeyUsageOf([]Event{op("C_SignInit", 9, "CKM_ECDSA")})
+	idle := r.IdleKeys([]KeyRef{{Class: "private-key", Label: "x", KeyID: "01"}})
+	if len(idle) != 1 {
+		t.Errorf("unresolved usage must not clear an idle candidate: %+v", idle)
+	}
+}
+
 func TestKeyUsageEmptyTemplateFindIgnored(t *testing.T) {
 	// A find with no label/id in its template can't name the handle, so a later
 	// operation on that handle is unresolved.

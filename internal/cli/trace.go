@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"sort"
@@ -8,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kurtserdar/hsm-doctor/internal/inventory"
+	"github.com/kurtserdar/hsm-doctor/internal/report"
 	"github.com/kurtserdar/hsm-doctor/internal/trace"
 	"github.com/spf13/cobra"
 )
@@ -137,6 +140,7 @@ Useful for gauging how thoroughly a test suite drives its PKCS#11 module.`,
 
 func newTraceKeysCmd() *cobra.Command {
 	var asJSON bool
+	var inventoryPath string
 	cmd := &cobra.Command{
 		Use:   "keys [trace.jsonl]",
 		Short: "Summarize which keys the trace put to work",
@@ -145,9 +149,13 @@ was used for (sign, verify, encrypt, decrypt, wrap, unwrap) and the mechanisms
 seen. Keys are named by the CKA_LABEL/CKA_ID a find searched for; operations on
 handles never located that way are grouped as unresolved.
 
+With --inventory (a JSON report from 'scan --format json'), it also lists the
+token's private and secret keys that were never observed used — idle keys, the
+candidates for review or retirement.
+
 This reflects only the trace window: a key not listed was simply not used
-during the trace, which is not proof it is never used. Pair a representative
-trace with the token inventory (hsmdoctor scan) to spot idle keys.`,
+during the trace, which is not proof it is never used. Use a representative
+trace.`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			path := ""
@@ -159,24 +167,55 @@ trace with the token inventory (hsmdoctor scan) to spot idle keys.`,
 				return err
 			}
 			report := trace.KeyUsageOf(events)
+			if inventoryPath != "" {
+				candidates, err := inventoryKeyRefs(inventoryPath)
+				if err != nil {
+					return err
+				}
+				report.Idle = report.IdleKeys(candidates)
+			}
 			if asJSON {
 				return jsonEncoder(cmd.OutOrStdout()).Encode(report)
 			}
-			printKeyUsage(cmd, report)
+			printKeyUsage(cmd, report, inventoryPath != "")
 			return nil
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "output as JSON")
+	cmd.Flags().StringVar(&inventoryPath, "inventory", "", "JSON report (from 'scan --format json') to flag idle private/secret keys")
 	return cmd
 }
 
-func printKeyUsage(cmd *cobra.Command, r *trace.KeyUsageReport) {
+// inventoryKeyRefs loads a saved JSON scan report and returns its private and
+// secret keys as idle-analysis candidates.
+func inventoryKeyRefs(path string) ([]trace.KeyRef, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("reading inventory: %w", err)
+	}
+	var rep report.Report
+	if err := json.Unmarshal(data, &rep); err != nil {
+		return nil, fmt.Errorf("parsing inventory report %q: %w", path, err)
+	}
+	if rep.Inventory == nil {
+		return nil, fmt.Errorf("inventory report %q has no inventory", path)
+	}
+	var refs []trace.KeyRef
+	for _, o := range rep.Inventory.Objects {
+		if o.Class == inventory.ClassPrivateKey || o.Class == inventory.ClassSecretKey {
+			refs = append(refs, trace.KeyRef{Class: o.Class, Label: o.Label, KeyID: o.ID})
+		}
+	}
+	return refs, nil
+}
+
+func printKeyUsage(cmd *cobra.Command, r *trace.KeyUsageReport, withInventory bool) {
 	out := cmd.OutOrStdout()
 	if len(r.Keys) == 0 {
 		fmt.Fprintln(out, "No key usage observed in this trace.")
-		return
+	} else {
+		fmt.Fprintf(out, "Keys used in this trace (%d):\n\n", len(r.Keys))
 	}
-	fmt.Fprintf(out, "Keys used in this trace (%d):\n\n", len(r.Keys))
 	for _, k := range r.Keys {
 		name := "handle " + strconv.FormatUint(k.Handle, 10) + " (unresolved)"
 		if k.Resolved {
@@ -199,6 +238,25 @@ func printKeyUsage(cmd *cobra.Command, r *trace.KeyUsageReport) {
 	}
 	if r.Unresolved > 0 {
 		fmt.Fprintf(out, "\n%d key(s) could not be named (used by a handle this trace never found by label/id).\n", r.Unresolved)
+	}
+	if withInventory {
+		if len(r.Idle) == 0 {
+			fmt.Fprintln(out, "\nIdle keys: none — every private/secret key in the inventory was used.")
+		} else {
+			fmt.Fprintf(out, "\nIdle keys (%d) — not observed used in this trace:\n", len(r.Idle))
+			for _, k := range r.Idle {
+				name := k.Label
+				switch {
+				case k.Label != "" && k.KeyID != "":
+					name = fmt.Sprintf("%s (id %s)", k.Label, k.KeyID)
+				case k.Label == "" && k.KeyID != "":
+					name = "id " + k.KeyID
+				case k.Label == "" && k.KeyID == "":
+					name = "(unnamed key)"
+				}
+				fmt.Fprintf(out, "  %-8s %s\n", k.Class, name)
+			}
+		}
 	}
 }
 

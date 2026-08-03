@@ -5,6 +5,17 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [Unreleased]
+
+### Added
+
+- `trace keys --inventory scan.json` completes the unused-key analysis: it
+  diffs the keys a trace used against the token's private and secret keys in a
+  saved JSON report (from `scan --format json`) and lists the idle keys — those
+  never observed used — as candidates for review or retirement. Idle results
+  are trace-window evidence, so pair them with a representative trace. The
+  usage summary's `--json` output gains an `idle` array.
+
 ## [1.11.0] - 2026-08-02
 
 ### Added
