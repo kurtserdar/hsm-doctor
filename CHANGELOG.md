@@ -5,6 +5,16 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [1.15.1] - 2026-08-03
+
+### Changed
+
+- Documentation: refreshed the README highlights, command table and roadmap to
+  cover the current feature set (SARIF/remediation, deep certificate
+  validation, posture-regression detection, full ML-KEM probe, `trace keys`,
+  the `gcp`/`azure-hsm` cloud providers, compliance packs, the bilingual web UI
+  and KMIP), and listed `docs/kmip.md` in the documentation index.
+
 ## [1.15.0] - 2026-08-03
 
 ### Added
