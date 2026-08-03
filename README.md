@@ -38,21 +38,34 @@ list of posture findings.*
 
 - **Security posture scoring** — a metadata-only inventory evaluated against
   customizable YAML rules and curated **policy packs** (`nist`, `cabf`,
-  `strict`, `pqc-migration`), producing a health score and text/JSON/HTML
-  reports.
-- **Drift detection** — snapshot a token and diff it later to catch new or
-  removed objects, attribute flips, and mechanism or firmware changes.
+  `strict`, `pqc-migration`, plus compliance-inspired `fips-140-3`, `pci-hsm`
+  and `cnsa-2.0`), producing a health score with **actionable remediation** on
+  every finding, and text/JSON/HTML/**SARIF** reports (upload findings to
+  GitHub code scanning).
+- **Deep certificate validation** — self-signed leaves, not-yet-valid and weak
+  certificate keys, CA misuse, certificate/key mismatch and opt-in chain
+  validation (`scan --ca-bundle`).
+- **Drift & posture-regression detection** — snapshot a token and diff it later
+  for object/attribute/mechanism changes; the fleet also records a **posture
+  regression** when a score drops or a new critical/high finding appears, and
+  `scan --baseline` gates CI on regression without a database.
 - **Post-quantum readiness** — an ML-KEM/ML-DSA/SLH-DSA support matrix,
-  functional probes and quantum-exposure analysis of your existing keys.
-- **PKCS#11 Flight Recorder** — a shim records a **secret-safe** call trace
-  that the analyzer inspects for session/operation leaks, ordering bugs,
-  errors and slow calls.
-- **Vendor appliance health** — device, HA, partition and tamper status
-  through pluggable providers (SoftHSM stable; Luna/nShield/CloudHSM
-  experimental), folded into the health score.
-- **Fleet platform** — local and central servers with a web UI and REST API,
-  push agents, **SQLite or PostgreSQL** storage, Prometheus metrics, drift
-  webhooks and e-mail notifications.
+  functional probes (a full ML-KEM **encapsulate/decapsulate** round trip) and
+  quantum-exposure analysis of your existing keys.
+- **PKCS#11 Flight Recorder** — a shim records a **secret-safe** call trace the
+  analyzer inspects for session/operation leaks, ordering bugs, errors and slow
+  calls; `trace keys` reports per-key usage and, against an inventory, **idle
+  keys** never observed in use.
+- **Vendor appliance health** — device, HA, partition and tamper status through
+  pluggable providers, folded into the health score. SoftHSM is stable;
+  Luna, nShield, CloudHSM, **Google Cloud HSM (`gcp`)**, **Azure Managed HSM
+  (`azure-hsm`)** and BouncyHsm are experimental.
+- **KMIP diagnostics** (experimental) — `kmip scan` inventories a KMIP
+  key-management server over (mutual) TLS and evaluates its posture (weak keys,
+  compromised or deactivated objects, role mixing).
+- **Fleet platform** — local and central servers with a **bilingual (EN/TR)**
+  web UI and REST API, push agents, **SQLite or PostgreSQL** storage, Prometheus
+  metrics, drift/regression webhooks and e-mail notifications.
 - **Enterprise-ready security** — bearer-token auth (admin/viewer), **OIDC
   Single Sign-On** and **mutual TLS**; secrets never leave the HSM or reach
   logs and traces.
@@ -104,15 +117,16 @@ report — see the [`scan` report above](#hsm-doctor).
 | Command | What it does |
 |---|---|
 | `hsmdoctor discover` | Module, slot, token and mechanism discovery |
-| `hsmdoctor scan` | Key/certificate inventory + security posture rules + health score; text, JSON or single-file HTML report |
+| `hsmdoctor scan` | Key/certificate inventory + security posture rules + health score; text, JSON, single-file HTML or SARIF report; `--baseline` gates CI on posture regression |
 | `hsmdoctor certs` | Certificate expiry monitor with cron/CI-friendly exit codes |
 | `hsmdoctor test` | Safe functional test profiles (key generation, sign/verify, AES-GCM) with ephemeral session objects |
 | `hsmdoctor bench` | Performance measurement with strictly bounded load (duration + op budget caps) |
 | `hsmdoctor snapshot` | Record the full metadata state of a token as JSON |
 | `hsmdoctor diff` | Compare two snapshots and report drift: new/removed objects, attribute flips, mechanism and firmware changes |
-| `hsmdoctor pqc` | Post-quantum readiness: ML-KEM/ML-DSA/SLH-DSA support matrix, quantum-vulnerable inventory exposure, host OpenSSL check |
-| `hsmdoctor vendor` | Appliance-level health via vendor providers: device, HA, partitions, tamper, backup (SoftHSM stable; Luna/nShield/CloudHSM experimental) |
-| `hsmdoctor trace` | Analyze PKCS#11 call traces from the Flight Recorder shim: session/operation leaks, ordering bugs, errors, performance |
+| `hsmdoctor pqc` | Post-quantum readiness: ML-KEM/ML-DSA/SLH-DSA support matrix, functional probes (full ML-KEM encapsulate/decapsulate), quantum-vulnerable inventory exposure, host OpenSSL check |
+| `hsmdoctor vendor` | Appliance-level health via vendor providers: device, HA, partitions, tamper, backup (SoftHSM stable; Luna/nShield/CloudHSM/gcp/azure-hsm/bouncyhsm experimental) |
+| `hsmdoctor trace` | Flight Recorder call traces: `analyze` leaks/ordering/errors/performance, `coverage` exercised functions, `keys` per-key usage and idle keys |
+| `hsmdoctor kmip` | Diagnose a KMIP key-management server over (mutual) TLS: inventory and security posture (experimental, read-only) |
 | `hsmdoctor serve` | Local web interface + REST API with scan history, automatic drift detection, Prometheus metrics and cron-scheduled scans |
 | `hsmdoctor server` | Central fleet server: collects reports pushed by agents, stores history, detects drift, serves the fleet dashboard |
 | `hsmdoctor agent` | Runs where the vendor PKCS#11 client lives; scans on an interval and pushes reports to the central server |
@@ -455,7 +469,11 @@ Flight Recorder's function coverage are explicitly experimental. See the
 
 ## Roadmap
 
-- **Beyond 1.0** — validating the experimental vendor providers against real hardware, broader Flight Recorder coverage with simulator replay, and a stable vendor plugin API.
+- **Beyond 1.0** — validating the experimental vendor providers (Luna, nShield,
+  CloudHSM, `gcp`, `azure-hsm`) and the KMIP integration against real hardware
+  and more servers, and broadening Flight Recorder function coverage. The
+  provider interface stays in-tree by design (extend via pull request — see
+  [docs/compatibility.md](docs/compatibility.md)).
 
 ## Contributing
 

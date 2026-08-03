@@ -12,6 +12,7 @@ start. These documents go deeper:
 | [api.md](api.md) | REST API endpoints and the authentication/security model |
 | [vendors.md](vendors.md) | Vendor providers: configuration, status matrix and how to write one |
 | [trace.md](trace.md) | PKCS#11 Flight Recorder: building the shim, recording and analyzing traces |
+| [kmip.md](kmip.md) | KMIP server diagnostics: connecting, inventory and posture rules (experimental) |
 | [testing.md](testing.md) | Test layers and how to run them |
 | [compatibility.md](compatibility.md) | What is stable under SemVer from 1.0, and what is experimental |
 | [architecture.md](architecture.md) | How the pieces fit together |
