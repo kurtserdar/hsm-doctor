@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { fleet } from "../api";
+import { t } from "../i18n";
 import type { HSMSummary } from "../types";
 
 const hsms = ref<HSMSummary[]>([]);
@@ -28,21 +29,20 @@ function scoreClass(score?: number): string {
 function ago(ts: string): string {
   const ms = Date.now() - new Date(ts).getTime();
   const min = Math.floor(ms / 60000);
-  if (min < 1) return "just now";
-  if (min < 60) return `${min} min ago`;
+  if (min < 1) return t("ago.justNow");
+  if (min < 60) return t("ago.min", { n: min });
   const h = Math.floor(min / 60);
-  if (h < 48) return `${h} h ago`;
-  return `${Math.floor(h / 24)} d ago`;
+  if (h < 48) return t("ago.hour", { n: h });
+  return t("ago.day", { n: Math.floor(h / 24) });
 }
 </script>
 
 <template>
   <div v-if="error" class="error">{{ error }}</div>
-  <p v-if="loading" class="muted">Loading fleet…</p>
+  <p v-if="loading" class="muted">{{ t("fleet.loading") }}</p>
 
   <div v-if="!loading && hsms.length === 0 && !error" class="card">
-    No HSMs recorded yet. Run a scan (local mode) or enroll an agent
-    (central mode) and reports will appear here.
+    {{ t("fleet.empty") }}
   </div>
 
   <div v-if="hsms.length" class="card">
@@ -50,13 +50,13 @@ function ago(ts: string): string {
       <table>
         <thead>
           <tr>
-            <th>Score</th>
-            <th>Token</th>
-            <th>Serial</th>
-            <th>Model</th>
-            <th>Firmware</th>
-            <th>Source</th>
-            <th>Last seen</th>
+            <th>{{ t("th.score") }}</th>
+            <th>{{ t("th.token") }}</th>
+            <th>{{ t("th.serial") }}</th>
+            <th>{{ t("th.model") }}</th>
+            <th>{{ t("th.firmware") }}</th>
+            <th>{{ t("th.source") }}</th>
+            <th>{{ t("th.lastSeen") }}</th>
           </tr>
         </thead>
         <tbody>
@@ -68,7 +68,7 @@ function ago(ts: string): string {
               <span v-else class="muted">—</span>
             </td>
             <td>
-              <RouterLink :to="`/fleet/${h.id}`">{{ h.label || "(unlabeled)" }}</RouterLink>
+              <RouterLink :to="`/fleet/${h.id}`">{{ h.label || t("token.unlabeled") }}</RouterLink>
             </td>
             <td><code>{{ h.serial }}</code></td>
             <td class="muted">{{ h.manufacturer }} {{ h.model }}</td>

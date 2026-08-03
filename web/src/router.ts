@@ -11,13 +11,13 @@ import PQCView from "./views/PQCView.vue";
 export const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: "/", name: "dashboard", component: DashboardView, meta: { title: "Dashboard" } },
-    { path: "/fleet", name: "fleet", component: FleetView, meta: { title: "Fleet" } },
-    { path: "/fleet/:id", name: "hsm-detail", component: HSMDetailView, meta: { title: "HSM History" } },
-    { path: "/inventory", name: "inventory", component: InventoryView, meta: { title: "Inventory" } },
-    { path: "/certificates", name: "certificates", component: CertificatesView, meta: { title: "Certificates" } },
-    { path: "/tests", name: "tests", component: TestsView, meta: { title: "Functional Tests" } },
-    { path: "/bench", name: "bench", component: BenchView, meta: { title: "Performance" } },
-    { path: "/pqc", name: "pqc", component: PQCView, meta: { title: "PQC Readiness" } },
+    { path: "/", name: "dashboard", component: DashboardView, meta: { title: "nav.dashboard" } },
+    { path: "/fleet", name: "fleet", component: FleetView, meta: { title: "nav.fleet" } },
+    { path: "/fleet/:id", name: "hsm-detail", component: HSMDetailView, meta: { title: "route.hsmHistory" } },
+    { path: "/inventory", name: "inventory", component: InventoryView, meta: { title: "nav.inventory" } },
+    { path: "/certificates", name: "certificates", component: CertificatesView, meta: { title: "nav.certificates" } },
+    { path: "/tests", name: "tests", component: TestsView, meta: { title: "nav.tests" } },
+    { path: "/bench", name: "bench", component: BenchView, meta: { title: "nav.bench" } },
+    { path: "/pqc", name: "pqc", component: PQCView, meta: { title: "nav.pqc" } },
   ],
 });

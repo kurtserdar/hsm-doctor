@@ -1,0 +1,388 @@
+// UI chrome translations. Keys are grouped by view. Text that originates from
+// the API (finding titles, remediation, verdicts, vendor detail) is not here —
+// it stays in the language the server produced.
+import type { Locale } from "./i18n";
+
+const en: Record<string, string> = {
+  // Navigation / chrome
+  "nav.dashboard": "Dashboard",
+  "nav.inventory": "Inventory",
+  "nav.certificates": "Certificates",
+  "nav.tests": "Functional Tests",
+  "nav.bench": "Performance",
+  "nav.pqc": "PQC Readiness",
+  "nav.fleet": "Fleet",
+  "brand.tagline": "health · posture · diagnostics",
+  "route.hsmHistory": "HSM History",
+  "topbar.token": "Token",
+  "token.unlabeled": "(unlabeled)",
+  "token.slot": "slot",
+  "lang.label": "Language",
+
+  // Auth
+  "auth.signin": "Sign in",
+  "auth.sso.note": "This server uses Single Sign-On.",
+  "auth.sso.button": "Sign in with SSO",
+  "auth.useToken": "Use an API token instead",
+  "auth.token.placeholder": "API token",
+  "auth.connect": "Connect",
+  "auth.token.note":
+    "This server requires a bearer token. Paste a token from the server's auth configuration.",
+
+  // Common
+  "common.refresh": "Refresh",
+  "common.scanning": "Scanning token…",
+
+  // Shared table headers
+  "th.severity": "Severity",
+  "th.rule": "Rule",
+  "th.finding": "Finding",
+  "th.objectDetail": "Object / detail",
+  "th.class": "Class",
+  "th.label": "Label",
+  "th.id": "ID",
+  "th.type": "Type",
+  "th.size": "Size",
+  "th.flags": "Flags",
+  "th.certificate": "Certificate",
+  "th.status": "Status",
+  "th.subject": "Subject",
+  "th.issuer": "Issuer",
+  "th.expires": "Expires",
+  "th.ca": "CA",
+
+  // Dashboard
+  "dash.healthScore": "health score",
+  "dash.privateKeys": "private keys",
+  "dash.publicKeys": "public keys",
+  "dash.secretKeys": "secret keys",
+  "dash.certificates": "certificates",
+  "dash.findings": "findings",
+  "dash.noPin":
+    "Scanned without a PIN — private objects were not visible. Restart hsmdoctor serve with --pin-env for a complete picture.",
+  "dash.vendor": "Vendor appliance — {provider}",
+  "dash.experimental": "experimental",
+  "dash.disk": "disk",
+  "dash.tampered": "TAMPERED",
+  "dash.clear": "clear",
+  "dash.tamper": "tamper",
+  "dash.haUp": "HA members up",
+  "dash.partitions": "partitions",
+  "dash.findingsTitle": "Findings",
+  "dash.rulePacks": "rule packs: {packs}",
+  "dash.noFindings": "No findings — every object passed the rule set.",
+
+  // Inventory
+  "inv.loading": "Loading inventory…",
+  "inv.objectClass": "Object class",
+  "inv.allClasses": "All classes",
+  "inv.privateKeys": "Private keys",
+  "inv.publicKeys": "Public keys",
+  "inv.secretKeys": "Secret keys",
+  "inv.certificates": "Certificates",
+  "inv.objectCount": "{n} object(s)",
+  "inv.expires": "expires {date}",
+
+  // Certificates
+  "cert.warnWindow": "Warn window (days)",
+  "cert.ok": "ok",
+  "cert.expiringLe": "expiring ≤ {days}d",
+  "cert.expired": "expired",
+  "cert.none": "No certificates found on the token.",
+  "cert.yes": "yes",
+  "cert.status.expired": "expired {days} days ago",
+  "cert.status.expiring": "{days} days left",
+  "cert.status.ok": "ok",
+
+  // Common (continued)
+  "common.running": "Running…",
+
+  // Fleet
+  "fleet.loading": "Loading fleet…",
+  "fleet.empty":
+    "No HSMs recorded yet. Run a scan (local mode) or enroll an agent (central mode) and reports will appear here.",
+  "th.score": "Score",
+  "th.token": "Token",
+  "th.serial": "Serial",
+  "th.model": "Model",
+  "th.firmware": "Firmware",
+  "th.source": "Source",
+  "th.lastSeen": "Last seen",
+  "ago.justNow": "just now",
+  "ago.min": "{n} min ago",
+  "ago.hour": "{n} h ago",
+  "ago.day": "{n} d ago",
+
+  // Functional tests
+  "tests.note":
+    "Functional tests use ephemeral session objects only — nothing is persisted on the token.",
+  "tests.profile": "Profile",
+  "tests.run": "Run tests",
+  "th.step": "Step",
+  "th.duration": "Duration",
+  "th.detail": "Detail",
+
+  // Benchmark
+  "bench.note":
+    "Benchmarks generate sustained load. Every run is capped by duration and an absolute operation budget, but avoid running them against production HSMs serving live traffic.",
+  "bench.duration": "Duration (ms, max 60000)",
+  "bench.maxOps": "Max ops per primitive",
+  "bench.sessions": "Sessions (max 32)",
+  "bench.run": "Run benchmark",
+  "bench.opsPerSec": "{n} ops/sec",
+  "bench.notSupported": "NOT SUPPORTED",
+  "th.primitive": "Primitive",
+  "th.throughput": "Throughput",
+  "th.operations": "Operations",
+  "th.elapsed": "Elapsed",
+  "th.note": "Note",
+
+  // Sparkline
+  "spark.aria": "Health score history",
+
+  // HSM detail / history
+  "detail.loading": "Loading history…",
+  "detail.latestScore": "latest score · {date}",
+  "detail.scoreHistory": "score history ({n} scans)",
+  "detail.device": "Device",
+  "detail.findingsLatest": "findings in latest scan",
+  "detail.regressions": "Posture regressions",
+  "detail.noRegressions": "No posture regressions recorded.",
+  "detail.regBetween": "score {delta} between scan #{old} and #{new}",
+  "detail.driftEvents": "Drift events",
+  "detail.noDrift": "No drift recorded.",
+  "detail.driftBetween": "{n} change(s) between scan #{old} and #{new}",
+  "detail.changed": "changed",
+  "detail.mechanism": "mechanism",
+  "detail.nowAvailable": "now available",
+  "detail.noLongerAvailable": "no longer available",
+  "detail.added": "added",
+  "detail.removed": "removed",
+  "detail.certsLatest": "Certificates (latest scan)",
+  "detail.noCerts": "No certificates on this token.",
+  "detail.scanHistory": "Scan history",
+  "detail.noScans": "No scans recorded for this HSM yet.",
+  "th.takenAt": "Taken at",
+  "th.critical": "Critical",
+  "th.high": "High",
+  "th.medium": "Medium",
+  "th.low": "Low",
+  "th.objects": "Objects",
+
+  // PQC readiness
+  "pqc.probes": "functional probes (ephemeral objects)",
+  "pqc.hostCheck": "host OpenSSL check",
+  "pqc.assessing": "Assessing…",
+  "pqc.assess": "Assess",
+  "pqc.yes": "yes",
+  "pqc.partial": "partial",
+  "pqc.no": "no",
+  "pqc.vendorDefined": "Vendor-defined mechanisms advertised:",
+  "pqc.vendorHint": "— pre-standard PQC may hide here; consult vendor documentation.",
+  "pqc.probesTitle": "Functional probes",
+  "pqc.qvKeys": "quantum-vulnerable private keys",
+  "pqc.hndl": "HNDL-exposed (decrypt/unwrap)",
+  "pqc.pqKeys": "post-quantum keys",
+  "pqc.classicalCerts": "classical certificates",
+  "pqc.hostTitle": "Host OpenSSL",
+  "pqc.noOpenssl": "openssl is not available on the server host.",
+  "pqc.opensslLine": "ML-KEM: {mlkem}, ML-DSA: {mldsa}, SLH-DSA: {slhdsa}",
+  "th.family": "Family",
+  "th.standard": "Standard",
+  "th.advertised": "Advertised",
+  "th.mechanisms": "Mechanisms",
+  "th.paramSet": "Parameter set",
+};
+
+const tr: Record<string, string> = {
+  // Navigation / chrome
+  "nav.dashboard": "Panel",
+  "nav.inventory": "Envanter",
+  "nav.certificates": "Sertifikalar",
+  "nav.tests": "İşlevsel Testler",
+  "nav.bench": "Performans",
+  "nav.pqc": "PQC Hazırlığı",
+  "nav.fleet": "Filo",
+  "brand.tagline": "sağlık · duruş · tanılama",
+  "route.hsmHistory": "HSM Geçmişi",
+  "topbar.token": "Token",
+  "token.unlabeled": "(etiketsiz)",
+  "token.slot": "yuva",
+  "lang.label": "Dil",
+
+  // Auth
+  "auth.signin": "Oturum aç",
+  "auth.sso.note": "Bu sunucu Tekli Oturum Açma (SSO) kullanıyor.",
+  "auth.sso.button": "SSO ile oturum aç",
+  "auth.useToken": "Bunun yerine API token kullan",
+  "auth.token.placeholder": "API token",
+  "auth.connect": "Bağlan",
+  "auth.token.note":
+    "Bu sunucu bir bearer token gerektiriyor. Sunucunun kimlik doğrulama yapılandırmasından bir token yapıştırın.",
+
+  // Common
+  "common.refresh": "Yenile",
+  "common.scanning": "Token taranıyor…",
+
+  // Shared table headers
+  "th.severity": "Önem",
+  "th.rule": "Kural",
+  "th.finding": "Bulgu",
+  "th.objectDetail": "Nesne / ayrıntı",
+  "th.class": "Sınıf",
+  "th.label": "Etiket",
+  "th.id": "Kimlik",
+  "th.type": "Tür",
+  "th.size": "Boyut",
+  "th.flags": "Bayraklar",
+  "th.certificate": "Sertifika",
+  "th.status": "Durum",
+  "th.subject": "Konu",
+  "th.issuer": "Sağlayıcı",
+  "th.expires": "Bitiş",
+  "th.ca": "CA",
+
+  // Dashboard
+  "dash.healthScore": "sağlık skoru",
+  "dash.privateKeys": "özel anahtarlar",
+  "dash.publicKeys": "açık anahtarlar",
+  "dash.secretKeys": "gizli anahtarlar",
+  "dash.certificates": "sertifikalar",
+  "dash.findings": "bulgular",
+  "dash.noPin":
+    "PIN olmadan tarandı — özel nesneler görünmedi. Tam bir görünüm için hsmdoctor serve komutunu --pin-env ile yeniden başlatın.",
+  "dash.vendor": "Üretici cihazı — {provider}",
+  "dash.experimental": "deneysel",
+  "dash.disk": "disk",
+  "dash.tampered": "KURCALANMIŞ",
+  "dash.clear": "temiz",
+  "dash.tamper": "kurcalama",
+  "dash.haUp": "Aktif HA üyeleri",
+  "dash.partitions": "bölümler",
+  "dash.findingsTitle": "Bulgular",
+  "dash.rulePacks": "kural paketleri: {packs}",
+  "dash.noFindings": "Bulgu yok — her nesne kural setini geçti.",
+
+  // Inventory
+  "inv.loading": "Envanter yükleniyor…",
+  "inv.objectClass": "Nesne sınıfı",
+  "inv.allClasses": "Tüm sınıflar",
+  "inv.privateKeys": "Özel anahtarlar",
+  "inv.publicKeys": "Açık anahtarlar",
+  "inv.secretKeys": "Gizli anahtarlar",
+  "inv.certificates": "Sertifikalar",
+  "inv.objectCount": "{n} nesne",
+  "inv.expires": "bitiş {date}",
+
+  // Certificates
+  "cert.warnWindow": "Uyarı penceresi (gün)",
+  "cert.ok": "uygun",
+  "cert.expiringLe": "≤ {days}g içinde bitiyor",
+  "cert.expired": "süresi dolmuş",
+  "cert.none": "Token'da sertifika bulunamadı.",
+  "cert.yes": "evet",
+  "cert.status.expired": "{days} gün önce doldu",
+  "cert.status.expiring": "{days} gün kaldı",
+  "cert.status.ok": "uygun",
+
+  // Common (continued)
+  "common.running": "Çalışıyor…",
+
+  // Fleet
+  "fleet.loading": "Filo yükleniyor…",
+  "fleet.empty":
+    "Henüz kayıtlı HSM yok. Bir tarama çalıştırın (yerel mod) veya bir aracı kaydedin (merkezi mod); raporlar burada görünecek.",
+  "th.score": "Skor",
+  "th.token": "Token",
+  "th.serial": "Seri No",
+  "th.model": "Model",
+  "th.firmware": "Ürün yazılımı",
+  "th.source": "Kaynak",
+  "th.lastSeen": "Son görülme",
+  "ago.justNow": "az önce",
+  "ago.min": "{n} dk önce",
+  "ago.hour": "{n} sa önce",
+  "ago.day": "{n} g önce",
+
+  // Functional tests
+  "tests.note":
+    "İşlevsel testler yalnızca geçici oturum nesneleri kullanır — token'da hiçbir şey kalıcı olmaz.",
+  "tests.profile": "Profil",
+  "tests.run": "Testleri çalıştır",
+  "th.step": "Adım",
+  "th.duration": "Süre",
+  "th.detail": "Ayrıntı",
+
+  // Benchmark
+  "bench.note":
+    "Kıyaslamalar sürekli yük üretir. Her çalıştırma süre ve mutlak işlem bütçesiyle sınırlıdır, ancak canlı trafiğe hizmet veren üretim HSM'lerine karşı çalıştırmaktan kaçının.",
+  "bench.duration": "Süre (ms, en fazla 60000)",
+  "bench.maxOps": "İlkel başına en fazla işlem",
+  "bench.sessions": "Oturumlar (en fazla 32)",
+  "bench.run": "Kıyaslamayı çalıştır",
+  "bench.opsPerSec": "{n} işlem/sn",
+  "bench.notSupported": "DESTEKLENMİYOR",
+  "th.primitive": "İlkel",
+  "th.throughput": "Verim",
+  "th.operations": "İşlemler",
+  "th.elapsed": "Geçen süre",
+  "th.note": "Not",
+
+  // Sparkline
+  "spark.aria": "Sağlık skoru geçmişi",
+
+  // HSM detail / history
+  "detail.loading": "Geçmiş yükleniyor…",
+  "detail.latestScore": "son skor · {date}",
+  "detail.scoreHistory": "skor geçmişi ({n} tarama)",
+  "detail.device": "Cihaz",
+  "detail.findingsLatest": "son taramadaki bulgular",
+  "detail.regressions": "Duruş gerilemeleri",
+  "detail.noRegressions": "Kayıtlı duruş gerilemesi yok.",
+  "detail.regBetween": "tarama #{old} ve #{new} arasında skor {delta}",
+  "detail.driftEvents": "Sürüklenme olayları",
+  "detail.noDrift": "Kayıtlı sürüklenme yok.",
+  "detail.driftBetween": "tarama #{old} ve #{new} arasında {n} değişiklik",
+  "detail.changed": "değişti:",
+  "detail.mechanism": "mekanizma",
+  "detail.nowAvailable": "artık mevcut",
+  "detail.noLongerAvailable": "artık mevcut değil",
+  "detail.added": "eklendi",
+  "detail.removed": "kaldırıldı",
+  "detail.certsLatest": "Sertifikalar (son tarama)",
+  "detail.noCerts": "Bu token'da sertifika yok.",
+  "detail.scanHistory": "Tarama geçmişi",
+  "detail.noScans": "Bu HSM için henüz kayıtlı tarama yok.",
+  "th.takenAt": "Zaman",
+  "th.critical": "Kritik",
+  "th.high": "Yüksek",
+  "th.medium": "Orta",
+  "th.low": "Düşük",
+  "th.objects": "Nesneler",
+
+  // PQC readiness
+  "pqc.probes": "işlevsel testler (geçici nesneler)",
+  "pqc.hostCheck": "ana makine OpenSSL kontrolü",
+  "pqc.assessing": "Değerlendiriliyor…",
+  "pqc.assess": "Değerlendir",
+  "pqc.yes": "evet",
+  "pqc.partial": "kısmi",
+  "pqc.no": "hayır",
+  "pqc.vendorDefined": "Üretici-tanımlı beyan edilen mekanizmalar:",
+  "pqc.vendorHint": "— standart-öncesi PQC burada gizli olabilir; üretici belgelerine bakın.",
+  "pqc.probesTitle": "İşlevsel testler",
+  "pqc.qvKeys": "kuantuma açık özel anahtarlar",
+  "pqc.hndl": "HNDL-açık (şifre çöz/aç)",
+  "pqc.pqKeys": "post-kuantum anahtarlar",
+  "pqc.classicalCerts": "klasik sertifikalar",
+  "pqc.hostTitle": "Ana makine OpenSSL",
+  "pqc.noOpenssl": "Sunucu ana makinesinde openssl mevcut değil.",
+  "pqc.opensslLine": "ML-KEM: {mlkem}, ML-DSA: {mldsa}, SLH-DSA: {slhdsa}",
+  "th.family": "Aile",
+  "th.standard": "Standart",
+  "th.advertised": "Beyan edilen",
+  "th.mechanisms": "Mekanizmalar",
+  "th.paramSet": "Parametre seti",
+};
+
+export const messages: Record<Locale, Record<string, string>> = { en, tr };

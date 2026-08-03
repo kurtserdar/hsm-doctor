@@ -2,6 +2,7 @@
 import { ref } from "vue";
 import { runTest } from "../api";
 import { store } from "../store";
+import { t } from "../i18n";
 import type { TestResult } from "../types";
 
 const profile = ref("sign-verify");
@@ -37,19 +38,18 @@ function ms(ns?: number): string {
 
 <template>
   <p class="muted">
-    Functional tests use ephemeral session objects only — nothing is
-    persisted on the token.
+    {{ t("tests.note") }}
   </p>
 
   <div class="formrow">
     <div>
-      <label>Profile</label>
+      <label>{{ t("tests.profile") }}</label>
       <select v-model="profile">
         <option value="sign-verify">sign-verify</option>
       </select>
     </div>
     <button class="primary" :disabled="running || store.selectedSlot === null" @click="run">
-      {{ running ? "Running…" : "Run tests" }}
+      {{ running ? t("common.running") : t("tests.run") }}
     </button>
   </div>
 
@@ -60,10 +60,10 @@ function ms(ns?: number): string {
       <table>
         <thead>
           <tr>
-            <th>Step</th>
-            <th>Status</th>
-            <th>Duration</th>
-            <th>Detail</th>
+            <th>{{ t("th.step") }}</th>
+            <th>{{ t("th.status") }}</th>
+            <th>{{ t("th.duration") }}</th>
+            <th>{{ t("th.detail") }}</th>
           </tr>
         </thead>
         <tbody>

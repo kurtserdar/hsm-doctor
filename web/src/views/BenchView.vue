@@ -2,6 +2,7 @@
 import { ref } from "vue";
 import { runBench } from "../api";
 import { store } from "../store";
+import { t } from "../i18n";
 import type { BenchResult } from "../types";
 
 const durationMs = ref(3000);
@@ -32,26 +33,24 @@ async function run() {
 
 <template>
   <div class="note">
-    Benchmarks generate sustained load. Every run is capped by duration and
-    an absolute operation budget, but avoid running them against production
-    HSMs serving live traffic.
+    {{ t("bench.note") }}
   </div>
 
   <div class="formrow">
     <div>
-      <label>Duration (ms, max 60000)</label>
+      <label>{{ t("bench.duration") }}</label>
       <input v-model.number="durationMs" type="number" min="100" style="width: 8rem" />
     </div>
     <div>
-      <label>Max ops per primitive</label>
+      <label>{{ t("bench.maxOps") }}</label>
       <input v-model.number="maxOps" type="number" min="1" style="width: 8rem" />
     </div>
     <div>
-      <label>Sessions (max 32)</label>
+      <label>{{ t("bench.sessions") }}</label>
       <input v-model.number="sessions" type="number" min="1" max="32" style="width: 6rem" />
     </div>
     <button class="primary" :disabled="running || store.selectedSlot === null" @click="run">
-      {{ running ? "Running…" : "Run benchmark" }}
+      {{ running ? t("common.running") : t("bench.run") }}
     </button>
   </div>
 
@@ -62,11 +61,11 @@ async function run() {
       <table>
         <thead>
           <tr>
-            <th>Primitive</th>
-            <th>Throughput</th>
-            <th>Operations</th>
-            <th>Elapsed</th>
-            <th>Note</th>
+            <th>{{ t("th.primitive") }}</th>
+            <th>{{ t("th.throughput") }}</th>
+            <th>{{ t("th.operations") }}</th>
+            <th>{{ t("th.elapsed") }}</th>
+            <th>{{ t("th.note") }}</th>
           </tr>
         </thead>
         <tbody>
@@ -74,9 +73,9 @@ async function run() {
             <td>{{ m.name }}</td>
             <td>
               <strong v-if="m.supported && !m.error">
-                {{ m.ops_per_sec.toFixed(1) }} ops/sec
+                {{ t("bench.opsPerSec", { n: m.ops_per_sec.toFixed(1) }) }}
               </strong>
-              <span v-else class="badge skip">NOT SUPPORTED</span>
+              <span v-else class="badge skip">{{ t("bench.notSupported") }}</span>
             </td>
             <td class="muted">{{ m.supported ? m.ops : "" }}</td>
             <td class="muted">

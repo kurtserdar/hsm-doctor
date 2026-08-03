@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 import { hsmDrift, hsmRegressions, hsmScan, hsmScans } from "../api";
 import Sparkline from "../components/Sparkline.vue";
+import { t } from "../i18n";
 import type { DriftEvent, RegressionEvent, ScanReport, ScanSummary } from "../types";
 
 const route = useRoute();
@@ -52,6 +53,10 @@ function fmt(ts: string): string {
   return ts.replace("T", " ").slice(0, 19);
 }
 
+function signed(n: number): string {
+  return n > 0 ? `+${n}` : String(n);
+}
+
 function scoreClass(score: number): string {
   if (score >= 90) return "good";
   if (score >= 70) return "warn";
@@ -61,7 +66,7 @@ function scoreClass(score: number): string {
 
 <template>
   <div v-if="error" class="error">{{ error }}</div>
-  <p v-if="loading" class="muted">Loading history…</p>
+  <p v-if="loading" class="muted">{{ t("detail.loading") }}</p>
 
   <template v-if="latest">
     <div class="card grid">
@@ -69,66 +74,66 @@ function scoreClass(score: number): string {
         <div class="score" :class="scoreClass(latest.score)">
           {{ latest.score }}<span style="font-size: 1rem">/100</span>
         </div>
-        <div class="label">latest score · {{ fmt(latest.taken_at) }}</div>
+        <div class="label">{{ t("detail.latestScore", { date: fmt(latest.taken_at) }) }}</div>
       </div>
       <div>
         <div class="label" style="font-size: 0.72rem; text-transform: uppercase; color: var(--muted)">
-          score history ({{ scans.length }} scans)
+          {{ t("detail.scoreHistory", { n: scans.length }) }}
         </div>
         <Sparkline :values="scoreHistory" />
       </div>
       <dl v-if="token">
-        <dt style="font-size: 0.72rem; text-transform: uppercase; color: var(--muted)">Token</dt>
+        <dt style="font-size: 0.72rem; text-transform: uppercase; color: var(--muted)">{{ t("th.token") }}</dt>
         <dd style="font-weight: 500">{{ token.label }}</dd>
-        <dt style="font-size: 0.72rem; text-transform: uppercase; color: var(--muted)">Device</dt>
+        <dt style="font-size: 0.72rem; text-transform: uppercase; color: var(--muted)">{{ t("detail.device") }}</dt>
         <dd>{{ token.manufacturer }} {{ token.model }} · fw {{ token.firmware_version }}</dd>
       </dl>
       <div class="stat">
         <div class="value">{{ latest.critical + latest.high + latest.medium + latest.low }}</div>
-        <div class="label">findings in latest scan</div>
+        <div class="label">{{ t("detail.findingsLatest") }}</div>
       </div>
     </div>
 
-    <h2>Posture regressions</h2>
-    <div v-if="regressions.length === 0" class="card muted">No posture regressions recorded.</div>
+    <h2>{{ t("detail.regressions") }}</h2>
+    <div v-if="regressions.length === 0" class="card muted">{{ t("detail.noRegressions") }}</div>
     <div v-for="e in regressions" :key="e.id" class="card">
       <strong>{{ fmt(e.detected_at) }}</strong>
-      <span class="muted"> — score {{ e.score_delta > 0 ? "+" : "" }}{{ e.score_delta }} between scan #{{ e.old_scan_id }} and #{{ e.new_scan_id }}</span>
+      <span class="muted"> — {{ t("detail.regBetween", { delta: signed(e.score_delta), old: e.old_scan_id, new: e.new_scan_id }) }}</span>
       <ul style="margin: 0.5rem 0 0; padding-left: 1.25rem">
         <li v-for="(r, i) in e.detail.reasons" :key="'r' + i">{{ r }}</li>
       </ul>
     </div>
 
-    <h2>Drift events</h2>
-    <div v-if="drift.length === 0" class="card muted">No drift recorded.</div>
+    <h2>{{ t("detail.driftEvents") }}</h2>
+    <div v-if="drift.length === 0" class="card muted">{{ t("detail.noDrift") }}</div>
     <div v-for="e in drift" :key="e.id" class="card">
       <strong>{{ fmt(e.detected_at) }}</strong>
-      <span class="muted"> — {{ e.changes }} change(s) between scan #{{ e.old_scan_id }} and #{{ e.new_scan_id }}</span>
+      <span class="muted"> — {{ t("detail.driftBetween", { n: e.changes, old: e.old_scan_id, new: e.new_scan_id }) }}</span>
       <ul style="margin: 0.5rem 0 0; padding-left: 1.25rem">
         <li v-for="(c, i) in e.diff.token_changes ?? []" :key="'t' + i">
-          {{ c.field }} changed <code>{{ c.old }}</code> → <code>{{ c.new }}</code>
+          {{ c.field }} {{ t("detail.changed") }} <code>{{ c.old }}</code> → <code>{{ c.new }}</code>
         </li>
         <li v-for="(m, i) in e.diff.mechanisms_added ?? []" :key="'ma' + i">
-          mechanism <code>{{ m }}</code> now available
+          {{ t("detail.mechanism") }} <code>{{ m }}</code> {{ t("detail.nowAvailable") }}
         </li>
         <li v-for="(m, i) in e.diff.mechanisms_removed ?? []" :key="'mr' + i">
-          mechanism <code>{{ m }}</code> no longer available
+          {{ t("detail.mechanism") }} <code>{{ m }}</code> {{ t("detail.noLongerAvailable") }}
         </li>
-        <li v-for="(o, i) in e.diff.objects_added ?? []" :key="'oa' + i">{{ o }} added</li>
-        <li v-for="(o, i) in e.diff.objects_removed ?? []" :key="'or' + i">{{ o }} removed</li>
+        <li v-for="(o, i) in e.diff.objects_added ?? []" :key="'oa' + i">{{ o }} {{ t("detail.added") }}</li>
+        <li v-for="(o, i) in e.diff.objects_removed ?? []" :key="'or' + i">{{ o }} {{ t("detail.removed") }}</li>
         <li v-for="(c, i) in e.diff.object_changes ?? []" :key="'oc' + i">
-          {{ c.object }}: {{ c.field }} changed <code>{{ c.old }}</code> → <code>{{ c.new }}</code>
+          {{ c.object }}: {{ c.field }} {{ t("detail.changed") }} <code>{{ c.old }}</code> → <code>{{ c.new }}</code>
         </li>
       </ul>
     </div>
 
-    <h2>Certificates (latest scan)</h2>
-    <div v-if="certs.length === 0" class="card muted">No certificates on this token.</div>
+    <h2>{{ t("detail.certsLatest") }}</h2>
+    <div v-if="certs.length === 0" class="card muted">{{ t("detail.noCerts") }}</div>
     <div v-else class="card">
       <div class="tablebox">
         <table>
           <thead>
-            <tr><th>Label</th><th>Subject</th><th>Expires</th></tr>
+            <tr><th>{{ t("th.label") }}</th><th>{{ t("th.subject") }}</th><th>{{ t("th.expires") }}</th></tr>
           </thead>
           <tbody>
             <tr v-for="(o, i) in certs" :key="i">
@@ -141,19 +146,19 @@ function scoreClass(score: number): string {
       </div>
     </div>
 
-    <h2>Scan history</h2>
+    <h2>{{ t("detail.scanHistory") }}</h2>
     <div class="card">
       <div class="tablebox">
         <table>
           <thead>
             <tr>
-              <th>Taken at</th>
-              <th>Score</th>
-              <th>Critical</th>
-              <th>High</th>
-              <th>Medium</th>
-              <th>Low</th>
-              <th>Objects</th>
+              <th>{{ t("th.takenAt") }}</th>
+              <th>{{ t("th.score") }}</th>
+              <th>{{ t("th.critical") }}</th>
+              <th>{{ t("th.high") }}</th>
+              <th>{{ t("th.medium") }}</th>
+              <th>{{ t("th.low") }}</th>
+              <th>{{ t("th.objects") }}</th>
             </tr>
           </thead>
           <tbody>
@@ -174,5 +179,5 @@ function scoreClass(score: number): string {
     </div>
   </template>
 
-  <div v-else-if="!loading" class="card muted">No scans recorded for this HSM yet.</div>
+  <div v-else-if="!loading" class="card muted">{{ t("detail.noScans") }}</div>
 </template>

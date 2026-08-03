@@ -2,6 +2,7 @@
 import { computed, ref, watch } from "vue";
 import { scan } from "../api";
 import { store } from "../store";
+import { t } from "../i18n";
 import type { InventoryObject, ScanReport } from "../types";
 
 const report = ref<ScanReport | null>(null);
@@ -47,22 +48,22 @@ function flags(o: InventoryObject): string {
 
 <template>
   <div v-if="error" class="error">{{ error }}</div>
-  <p v-if="loading" class="muted">Loading inventory…</p>
+  <p v-if="loading" class="muted">{{ t("inv.loading") }}</p>
 
   <template v-if="report">
     <div class="formrow">
       <div>
-        <label>Object class</label>
+        <label>{{ t("inv.objectClass") }}</label>
         <select v-model="classFilter">
-          <option value="all">All classes</option>
-          <option value="private-key">Private keys</option>
-          <option value="public-key">Public keys</option>
-          <option value="secret-key">Secret keys</option>
-          <option value="certificate">Certificates</option>
+          <option value="all">{{ t("inv.allClasses") }}</option>
+          <option value="private-key">{{ t("inv.privateKeys") }}</option>
+          <option value="public-key">{{ t("inv.publicKeys") }}</option>
+          <option value="secret-key">{{ t("inv.secretKeys") }}</option>
+          <option value="certificate">{{ t("inv.certificates") }}</option>
         </select>
       </div>
       <div class="muted" style="padding-bottom: 0.5rem">
-        {{ objects.length }} object(s)
+        {{ t("inv.objectCount", { n: objects.length }) }}
       </div>
     </div>
 
@@ -71,13 +72,13 @@ function flags(o: InventoryObject): string {
         <table>
           <thead>
             <tr>
-              <th>Class</th>
-              <th>Label</th>
-              <th>ID</th>
-              <th>Type</th>
-              <th>Size</th>
-              <th>Flags</th>
-              <th>Certificate</th>
+              <th>{{ t("th.class") }}</th>
+              <th>{{ t("th.label") }}</th>
+              <th>{{ t("th.id") }}</th>
+              <th>{{ t("th.type") }}</th>
+              <th>{{ t("th.size") }}</th>
+              <th>{{ t("th.flags") }}</th>
+              <th>{{ t("th.certificate") }}</th>
             </tr>
           </thead>
           <tbody>
@@ -92,7 +93,7 @@ function flags(o: InventoryObject): string {
                 <template v-if="o.certificate">
                   {{ o.certificate.subject }}
                   <div class="muted">
-                    expires {{ o.certificate.not_after.slice(0, 10) }}
+                    {{ t("inv.expires", { date: o.certificate.not_after.slice(0, 10) }) }}
                   </div>
                 </template>
               </td>

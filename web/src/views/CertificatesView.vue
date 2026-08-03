@@ -2,6 +2,7 @@
 import { ref, watch } from "vue";
 import { certs } from "../api";
 import { store } from "../store";
+import { t } from "../i18n";
 import type { CertsResponse } from "../types";
 
 const data = ref<CertsResponse | null>(null);
@@ -25,9 +26,9 @@ async function load() {
 watch(() => store.selectedSlot, load, { immediate: true });
 
 function statusText(status: string, daysLeft: number): string {
-  if (status === "expired") return `expired ${-daysLeft} days ago`;
-  if (status === "expiring") return `${daysLeft} days left`;
-  return "ok";
+  if (status === "expired") return t("cert.status.expired", { days: -daysLeft });
+  if (status === "expiring") return t("cert.status.expiring", { days: daysLeft });
+  return t("cert.status.ok");
 }
 </script>
 
@@ -36,42 +37,42 @@ function statusText(status: string, daysLeft: number): string {
 
   <div class="formrow">
     <div>
-      <label>Warn window (days)</label>
+      <label>{{ t("cert.warnWindow") }}</label>
       <input v-model.number="warnDays" type="number" min="0" style="width: 6rem" />
     </div>
-    <button class="primary" :disabled="loading" @click="load">Refresh</button>
+    <button class="primary" :disabled="loading" @click="load">{{ t("common.refresh") }}</button>
   </div>
 
   <template v-if="data">
     <div class="card grid">
       <div class="stat">
         <div class="value">{{ data.counts.ok }}</div>
-        <div class="label">ok</div>
+        <div class="label">{{ t("cert.ok") }}</div>
       </div>
       <div class="stat">
         <div class="value">{{ data.counts.expiring }}</div>
-        <div class="label">expiring ≤ {{ data.warn_days }}d</div>
+        <div class="label">{{ t("cert.expiringLe", { days: data.warn_days }) }}</div>
       </div>
       <div class="stat">
         <div class="value">{{ data.counts.expired }}</div>
-        <div class="label">expired</div>
+        <div class="label">{{ t("cert.expired") }}</div>
       </div>
     </div>
 
     <div class="card">
       <p v-if="!(data.certificates ?? []).length" class="muted">
-        No certificates found on the token.
+        {{ t("cert.none") }}
       </p>
       <div v-else class="tablebox">
         <table>
           <thead>
             <tr>
-              <th>Status</th>
-              <th>Label</th>
-              <th>Subject</th>
-              <th>Issuer</th>
-              <th>Expires</th>
-              <th>CA</th>
+              <th>{{ t("th.status") }}</th>
+              <th>{{ t("th.label") }}</th>
+              <th>{{ t("th.subject") }}</th>
+              <th>{{ t("th.issuer") }}</th>
+              <th>{{ t("th.expires") }}</th>
+              <th>{{ t("th.ca") }}</th>
             </tr>
           </thead>
           <tbody>
@@ -85,7 +86,7 @@ function statusText(status: string, daysLeft: number): string {
               <td>{{ c.subject }}</td>
               <td class="muted">{{ c.issuer }}</td>
               <td>{{ c.not_after.slice(0, 10) }}</td>
-              <td>{{ c.is_ca ? "yes" : "" }}</td>
+              <td>{{ c.is_ca ? t("cert.yes") : "" }}</td>
             </tr>
           </tbody>
         </table>

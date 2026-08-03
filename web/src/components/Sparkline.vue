@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { t } from "../i18n";
 
 // Renders a dependency-free SVG sparkline for values in the 0..100 range
 // (health scores), oldest to newest.
@@ -41,7 +42,7 @@ const lastPoint = computed(() => {
     :width="W"
     :height="H"
     role="img"
-    aria-label="Health score history"
+    :aria-label="t('spark.aria')"
   >
     <polyline
       :points="points"

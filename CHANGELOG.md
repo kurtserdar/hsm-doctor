@@ -5,6 +5,18 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [Unreleased]
+
+### Added
+
+- Web UI internationalization with English and Turkish. A language switcher in
+  the sidebar persists the choice and defaults to the browser's language; the
+  document `lang` follows the selection. Translation covers the UI chrome
+  across every view (navigation, headings, table headers, buttons, labels and
+  static help text) via a small dependency-free composable — no new frontend
+  dependency. Text produced by the API (finding titles, remediation, verdicts,
+  vendor detail) stays in the language the server produced it in.
+
 ## [1.13.0] - 2026-08-03
 
 ### Added

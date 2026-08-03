@@ -2,6 +2,7 @@
 import { ref, watch } from "vue";
 import { pqcAssess } from "../api";
 import { store } from "../store";
+import { t } from "../i18n";
 import type { PQCResponse } from "../types";
 
 const data = ref<PQCResponse | null>(null);
@@ -39,20 +40,24 @@ function testBadge(status: string): string {
   if (status === "FAIL") return "fail";
   return "skip";
 }
+
+function yn(v: boolean): string {
+  return v ? t("pqc.yes") : t("pqc.no");
+}
 </script>
 
 <template>
   <div class="formrow">
     <label style="display: flex; align-items: center; gap: 0.4rem; margin: 0">
       <input v-model="withTest" type="checkbox" />
-      functional probes (ephemeral objects)
+      {{ t("pqc.probes") }}
     </label>
     <label style="display: flex; align-items: center; gap: 0.4rem; margin: 0">
       <input v-model="withHost" type="checkbox" />
-      host OpenSSL check
+      {{ t("pqc.hostCheck") }}
     </label>
     <button class="primary" :disabled="loading || store.selectedSlot === null" @click="load">
-      {{ loading ? "Assessing…" : "Assess" }}
+      {{ loading ? t("pqc.assessing") : t("pqc.assess") }}
     </button>
   </div>
 
@@ -73,16 +78,16 @@ function testBadge(status: string): string {
       <div class="tablebox">
         <table>
           <thead>
-            <tr><th>Family</th><th>Standard</th><th>Advertised</th><th>Mechanisms</th></tr>
+            <tr><th>{{ t("th.family") }}</th><th>{{ t("th.standard") }}</th><th>{{ t("th.advertised") }}</th><th>{{ t("th.mechanisms") }}</th></tr>
           </thead>
           <tbody>
             <tr v-for="f in data.detection.families" :key="f.family">
               <td><strong>{{ f.family }}</strong> <span class="muted">({{ f.kind }})</span></td>
               <td class="muted">{{ f.fips }}</td>
               <td>
-                <span v-if="f.advertised" class="badge ok">yes</span>
-                <span v-else-if="f.incomplete" class="badge medium">partial</span>
-                <span v-else class="muted">no</span>
+                <span v-if="f.advertised" class="badge ok">{{ t("pqc.yes") }}</span>
+                <span v-else-if="f.incomplete" class="badge medium">{{ t("pqc.partial") }}</span>
+                <span v-else class="muted">{{ t("pqc.no") }}</span>
               </td>
               <td class="muted">
                 <code v-for="(m, i) in f.mechanisms ?? []" :key="i" style="margin-right: 0.3rem">{{ m }}</code>
@@ -92,22 +97,22 @@ function testBadge(status: string): string {
         </table>
       </div>
       <p v-if="data.detection.vendor_defined?.length" class="muted" style="margin-bottom: 0; font-size: 0.85rem">
-        Vendor-defined mechanisms advertised:
+        {{ t("pqc.vendorDefined") }}
         <code v-for="(v, i) in data.detection.vendor_defined" :key="i" style="margin-right: 0.3rem">{{ v }}</code>
-        — pre-standard PQC may hide here; consult vendor documentation.
+        {{ t("pqc.vendorHint") }}
       </p>
     </div>
 
     <div v-if="data.tests?.length" class="card">
-      <h2 style="margin-top: 0; font-size: 1rem">Functional probes</h2>
+      <h2 style="margin-top: 0; font-size: 1rem">{{ t("pqc.probesTitle") }}</h2>
       <div class="tablebox">
         <table>
-          <thead><tr><th>Parameter set</th><th>Status</th><th>Detail</th></tr></thead>
+          <thead><tr><th>{{ t("th.paramSet") }}</th><th>{{ t("th.status") }}</th><th>{{ t("th.detail") }}</th></tr></thead>
           <tbody>
-            <tr v-for="(t, i) in data.tests" :key="i">
-              <td>{{ t.set }}</td>
-              <td><span class="badge" :class="testBadge(t.status)">{{ t.status }}</span></td>
-              <td class="muted">{{ t.detail }}</td>
+            <tr v-for="(probe, i) in data.tests" :key="i">
+              <td>{{ probe.set }}</td>
+              <td><span class="badge" :class="testBadge(probe.status)">{{ probe.status }}</span></td>
+              <td class="muted">{{ probe.detail }}</td>
             </tr>
           </tbody>
         </table>
@@ -117,33 +122,31 @@ function testBadge(status: string): string {
     <div class="card grid">
       <div class="stat">
         <div class="value">{{ data.exposure.classical_private_keys }}/{{ data.exposure.total_private_keys }}</div>
-        <div class="label">quantum-vulnerable private keys</div>
+        <div class="label">{{ t("pqc.qvKeys") }}</div>
       </div>
       <div class="stat">
         <div class="value">{{ data.exposure.harvest_now_decrypt_later }}</div>
-        <div class="label">HNDL-exposed (decrypt/unwrap)</div>
+        <div class="label">{{ t("pqc.hndl") }}</div>
       </div>
       <div class="stat">
         <div class="value">{{ data.exposure.pqc_private_keys }}</div>
-        <div class="label">post-quantum keys</div>
+        <div class="label">{{ t("pqc.pqKeys") }}</div>
       </div>
       <div class="stat">
         <div class="value">{{ data.exposure.classical_certificates }}</div>
-        <div class="label">classical certificates</div>
+        <div class="label">{{ t("pqc.classicalCerts") }}</div>
       </div>
     </div>
 
     <div v-if="data.host_openssl" class="card">
-      <h2 style="margin-top: 0; font-size: 1rem">Host OpenSSL</h2>
+      <h2 style="margin-top: 0; font-size: 1rem">{{ t("pqc.hostTitle") }}</h2>
       <p v-if="!data.host_openssl.available" class="muted" style="margin: 0">
-        openssl is not available on the server host.
+        {{ t("pqc.noOpenssl") }}
       </p>
       <p v-else style="margin: 0">
         <code>{{ data.host_openssl.version }}</code>
         <span class="muted">
-          — ML-KEM: {{ data.host_openssl.ml_kem ? "yes" : "no" }},
-          ML-DSA: {{ data.host_openssl.ml_dsa ? "yes" : "no" }},
-          SLH-DSA: {{ data.host_openssl.slh_dsa ? "yes" : "no" }}
+          — {{ t("pqc.opensslLine", { mlkem: yn(data.host_openssl.ml_kem), mldsa: yn(data.host_openssl.ml_dsa), slhdsa: yn(data.host_openssl.slh_dsa) }) }}
         </span>
       </p>
     </div>
