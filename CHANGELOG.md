@@ -5,6 +5,15 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [Unreleased]
+
+### Changed
+
+- Fitted the Inventory, Certificates, Tests and Bench views into the refreshed
+  design system: object flags render as chips (risky ones tinted), benchmark
+  throughput shows a proportional mini-bar per primitive, and the views gain
+  skeleton loading and proper empty states.
+
 ## [1.17.0] - 2026-08-04
 
 ### Added
