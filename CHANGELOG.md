@@ -5,6 +5,19 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [1.21.0] - 2026-08-05
+
+### Added
+
+- `hsmdoctor evidence --pack <name>` — an auditor-facing compliance evidence
+  report. Evaluates a token against one or more policy packs and renders, per
+  control, a pass / fail / not-applicable verdict with the objects behind each
+  failure, as single-file HTML or structured JSON. A control fails exactly when
+  a `scan` with the same pack produces a finding for its rule; a control is
+  not-applicable when the token holds no object of the kind it checks.
+- `docs/how-it-works.md` — a diagram-driven walkthrough of the pieces, the
+  journey of a scan, the fleet data path, the Flight Recorder and the reports.
+
 ## [1.20.0] - 2026-08-04
 
 ### Added

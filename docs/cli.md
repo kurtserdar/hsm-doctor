@@ -107,6 +107,38 @@ Flags:
       --warn-days int    days before expiry to flag a certificate as expiring (default 30)
 ```
 
+## hsmdoctor evidence
+
+```
+Evaluates a token against one or more compliance packs and produces an
+evidence report with a pass / fail / not-applicable verdict per control and the
+objects behind each failure.
+
+Controls map directly to the pack's rules: a control fails when a scan with the
+same pack produces a finding for its rule. The report is guidance, not a
+certification statement.
+
+Only object metadata is read; private key material never leaves the HSM.
+
+Usage:
+  hsmdoctor evidence [flags]
+
+Flags:
+      --format string      output format: html or json (default "html")
+  -h, --help               help for evidence
+      --module string      path to the PKCS#11 library
+      --out string         output file ('-' for stdout) (default "-")
+      --pack stringArray   compliance pack to assess (embedded name or file path; repeatable, required)
+      --pin string         user PIN (WARNING: visible in shell history; prefer --pin-env)
+      --pin-env string     name of the environment variable holding the user PIN
+      --slot uint          slot ID to operate on
+      --uri string         RFC 7512 PKCS#11 URI, e.g. "pkcs11:token=PROD?module-path=/usr/lib/libpkcs11.so"
+```
+
+A control is **not-applicable** when the token holds no object of the kind it
+checks (for example a certificate rule on a token with no certificates), which
+keeps a trivial pass distinct from an actively satisfied one.
+
 ## hsmdoctor preflight
 
 ```

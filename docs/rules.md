@@ -33,6 +33,12 @@ NIST-/CABF-/STRICT-/PQCM- prefixes). Reports record the applied packs in
 statements. `--rules FILE` still replaces everything for backward
 compatibility and is mutually exclusive with `--pack`.
 
+For an auditor-facing view of a pack, `hsmdoctor evidence --pack fips-140-3`
+renders a report with every control marked pass / fail / not-applicable and the
+objects behind each failure (HTML or JSON). A control fails exactly when a
+`scan` with the same pack produces a finding for its rule, so the two views
+stay consistent.
+
 A pack may declare metadata shown by `hsmdoctor packs`:
 
 ```yaml

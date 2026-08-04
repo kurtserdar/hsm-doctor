@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HSM Doctor compliance evidence — {{if .Token.Label}}{{.Token.Label}}{{else}}{{.Token.SerialNumber}}{{end}}</title>
+<style>
+  :root {
+    --fg: #1a202c; --muted: #64748b; --bg: #f8fafc; --card: #ffffff;
+    --border: #e2e8f0;
+    --pass: #15803d; --fail: #b91c1c; --na: #64748b;
+    --critical: #b91c1c; --high: #c2410c; --medium: #a16207; --low: #475569;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+         color: var(--fg); background: var(--bg); }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+  header { display: flex; align-items: baseline; justify-content: space-between;
+           flex-wrap: wrap; gap: .5rem; margin-bottom: 1.5rem; }
+  header h1 { font-size: 1.35rem; margin: 0; }
+  header .meta { color: var(--muted); font-size: .85rem; }
+  .card { background: var(--card); border: 1px solid var(--border);
+          border-radius: 8px; padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+  dl { margin: 0; } dt { font-size: .72rem; text-transform: uppercase;
+       letter-spacing: .05em; color: var(--muted); }
+  dd { margin: 0 0 .75rem; font-weight: 500; overflow-wrap: anywhere; }
+  h2 { font-size: 1.1rem; margin: 2.5rem 0 .35rem; }
+  .packdesc { color: var(--muted); font-size: .9rem; margin: 0 0 1rem; }
+  .summary { display: flex; gap: 1.5rem; margin-bottom: 1rem; }
+  .summary .n { font-size: 1.8rem; font-weight: 700; line-height: 1; }
+  .summary .pass { color: var(--pass); } .summary .fail { color: var(--fail); }
+  .summary .na { color: var(--na); }
+  .summary .lbl { color: var(--muted); font-size: .8rem; }
+  table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+  th, td { text-align: left; padding: .5rem .65rem; border-bottom: 1px solid var(--border);
+           vertical-align: top; }
+  th { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  .tablebox { overflow-x: auto; }
+  .status { display: inline-block; padding: .1rem .55rem; border-radius: 999px;
+            font-size: .72rem; font-weight: 700; color: #fff; }
+  .status.pass { background: var(--pass); } .status.fail { background: var(--fail); }
+  .status.na { background: var(--na); }
+  .sev { font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; }
+  .sev.critical { color: var(--critical); } .sev.high { color: var(--high); }
+  .sev.medium { color: var(--medium); } .sev.low { color: var(--low); }
+  .muted { color: var(--muted); }
+  .viol { color: var(--fail); font-size: .82rem; margin-top: .25rem; }
+  .fix { color: var(--muted); font-style: italic; font-size: .82rem; margin-top: .15rem; }
+  code { background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+         padding: 0 .3rem; font-size: .85em; }
+  .disclaimer { background: #fffbeb; border: 1px solid #fde68a; color: #92400e;
+                border-radius: 8px; padding: .75rem 1rem; font-size: .85rem; margin-bottom: 1.5rem; }
+  footer { margin-top: 3rem; color: var(--muted); font-size: .8rem; }
+  a { color: #0369a1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>HSM Doctor — compliance evidence</h1>
+    <div class="meta">generated {{.GeneratedAt}} by hsmdoctor {{.Version}}</div>
+  </header>
+
+  <div class="disclaimer">
+    This report is generated tooling output intended as evidence of technical
+    checks. It is guidance, not a compliance or certification statement, and
+    does not by itself establish conformance to any standard.
+  </div>
+
+  <div class="card grid">
+    <div><dl><dt>Token</dt><dd>{{if .Token.Label}}{{.Token.Label}}{{else}}—{{end}}</dd></dl></div>
+    <div><dl><dt>Serial</dt><dd>{{if .Token.SerialNumber}}<code>{{.Token.SerialNumber}}</code>{{else}}—{{end}}</dd></dl></div>
+    <div><dl><dt>Model</dt><dd>{{.Token.Manufacturer}} {{.Token.Model}}</dd></dl></div>
+    <div><dl><dt>Firmware</dt><dd>{{if .Token.Firmware}}{{.Token.Firmware}}{{else}}—{{end}}</dd></dl></div>
+  </div>
+
+  {{range .Packs}}
+  <h2>{{.Name}}</h2>
+  {{if .Description}}<p class="packdesc">{{.Description}}</p>{{end}}
+  <div class="summary">
+    <div><div class="n pass">{{.Passed}}</div><div class="lbl">passed</div></div>
+    <div><div class="n fail">{{.Failed}}</div><div class="lbl">failed</div></div>
+    <div><div class="n na">{{.NotApplicable}}</div><div class="lbl">not applicable</div></div>
+  </div>
+  <div class="card">
+    <div class="tablebox">
+      <table>
+        <thead>
+          <tr><th>Status</th><th>Control</th><th>Severity</th><th>Detail</th></tr>
+        </thead>
+        <tbody>
+          {{range .Controls}}
+          <tr>
+            <td><span class="status {{statusClass .Status}}">{{statusLabel .Status}}</span></td>
+            <td>
+              <code>{{.RuleID}}</code> {{.Title}}
+              {{if .Description}}<div class="muted">{{.Description}}</div>{{end}}
+            </td>
+            <td><span class="sev {{.Severity}}">{{.Severity}}</span></td>
+            <td>
+              {{if eq (statusLabel .Status) "FAIL"}}
+                {{range .Violations}}<div class="viol">{{if .Object}}{{.Object}} — {{end}}{{.Detail}}</div>{{end}}
+                {{if .Remediation}}<div class="fix">{{.Remediation}}</div>{{end}}
+              {{else if eq (statusLabel .Status) "N/A"}}
+                <span class="muted">no applicable objects on this token</span>
+              {{else}}
+                <span class="muted">no violations detected</span>
+              {{end}}
+              {{if .Reference}}<div><a href="{{.Reference}}">{{.Reference}}</a></div>{{end}}
+            </td>
+          </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {{end}}
+
+  <footer>
+    Controls map directly to HSM Doctor policy rules; a control fails when a
+    <code>scan</code> with the same pack produces a finding for its rule.
+  </footer>
+</div>
+</body>
+</html>

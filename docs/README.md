@@ -6,6 +6,7 @@ start. These documents go deeper:
 | Document | What it covers |
 |---|---|
 | [getting-started.html](getting-started.html) | Illustrated beginner's guide — what HSM Doctor is, why, install and first run (open in a browser) |
+| [how-it-works.md](how-it-works.md) | Diagram-driven walkthrough: the pieces, the journey of a scan, the fleet data path and the Flight Recorder |
 | [cli.md](cli.md) | Command reference — every command and its flags |
 | [deployment.md](deployment.md) | Running the CLI, local server, and central server + agents; storage backends, authentication, SSO, mutual TLS, webhooks, e-mail notifications, Prometheus, systemd |
 | [rules.md](rules.md) | Security posture rules, conditions and policy packs |
