@@ -5,6 +5,16 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [1.17.2] - 2026-08-04
+
+### Changed
+
+- Documentation: refreshed every README screenshot for the current release —
+  the web UI shots (dashboard, inventory, certificates, tests, bench, PQC,
+  fleet, HSM history and vendor card) now show the polished design system and
+  dark-aware components, and the CLI shots (scan, trace, discover) reflect the
+  current output including per-finding remediation.
+
 ## [1.17.1] - 2026-08-04
 
 ### Changed
