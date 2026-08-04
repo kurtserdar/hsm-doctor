@@ -1,6 +1,5 @@
 # HSM Doctor
 
-[![Version](https://img.shields.io/badge/version-v1.0.0-brightgreen.svg)](https://github.com/kurtserdar/hsm-doctor/releases/tag/v1.0.0)
 [![Release](https://img.shields.io/github/v/release/kurtserdar/hsm-doctor?sort=semver&label=release)](https://github.com/kurtserdar/hsm-doctor/releases/latest)
 [![CI](https://github.com/kurtserdar/hsm-doctor/actions/workflows/ci.yml/badge.svg)](https://github.com/kurtserdar/hsm-doctor/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
@@ -63,8 +62,9 @@ list of posture findings.*
 - **KMIP diagnostics** (experimental) — `kmip scan` inventories a KMIP
   key-management server over (mutual) TLS and evaluates its posture (weak keys,
   compromised or deactivated objects, role mixing).
-- **Fleet platform** — local and central servers with a **bilingual (EN/TR)**
-  web UI and REST API, push agents, **SQLite or PostgreSQL** storage, Prometheus
+- **Fleet platform** — local and central servers with a **bilingual (EN/TR),
+  light/dark** web UI and REST API, push agents, **SQLite or PostgreSQL**
+  storage, Prometheus
   metrics, drift/regression webhooks and e-mail notifications.
 - **Enterprise-ready security** — bearer-token auth (admin/viewer), **OIDC
   Single Sign-On** and **mutual TLS**; secrets never leave the HSM or reach
@@ -463,8 +463,9 @@ the [architecture overview](docs/architecture.md).
 
 From 1.0, HSM Doctor follows [Semantic Versioning](https://semver.org). CLI
 flags, JSON output, the trace format and config file formats are stable
-within a major version; the Luna/nShield/CloudHSM vendor providers and the
-Flight Recorder's function coverage are explicitly experimental. See the
+within a major version; the Luna/nShield/CloudHSM/gcp/azure-hsm/bouncyhsm
+vendor providers, the KMIP integration and the Flight Recorder's function
+coverage are explicitly experimental. See the
 [compatibility policy](docs/compatibility.md).
 
 ## Roadmap

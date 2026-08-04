@@ -5,6 +5,15 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [Unreleased]
+
+### Changed
+
+- README: removed the hard-coded `v1.0.0` version badge (the dynamic release
+  badge already tracks the latest version), listed the `gcp`/`azure-hsm`/
+  `bouncyhsm` providers and KMIP in the stability summary, and noted the web
+  UI's light/dark theme.
+
 ## [1.17.3] - 2026-08-04
 
 ### Changed
