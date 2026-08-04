@@ -39,6 +39,41 @@ Flags:
       --uri string      RFC 7512 PKCS#11 URI, e.g. "pkcs11:token=PROD?module-path=/usr/lib/libpkcs11.so"
 ```
 
+## hsmdoctor doctor
+
+```
+Runs the core checks against a token and distills them into a single
+prioritized diagnosis: an overall verdict (healthy / attention / critical), the
+health score and the most important issues first, each with a suggested action.
+
+By default it is read-only and fast (inventory, posture, certificate expiry and
+post-quantum exposure). --with-tests adds an ephemeral key-generation and
+signing smoke test; --vendor-config folds in appliance health.
+
+Only object metadata is read; private key material never leaves the HSM.
+
+Usage:
+  hsmdoctor doctor [flags]
+
+Flags:
+      --fail-on string         exit non-zero when the verdict is at or above this level (attention or critical)
+      --format string          output format: text or json (default "text")
+  -h, --help                   help for doctor
+      --module string          path to the PKCS#11 library
+      --pack stringArray       policy pack to apply (embedded name or file path; repeatable)
+      --pin string             user PIN (WARNING: visible in shell history; prefer --pin-env)
+      --pin-env string         name of the environment variable holding the user PIN
+      --slot uint              slot ID to operate on
+      --uri string             RFC 7512 PKCS#11 URI, e.g. "pkcs11:token=PROD?module-path=/usr/lib/libpkcs11.so"
+      --vendor-config string   vendor configuration file enabling appliance-level checks
+      --with-tests             also run an ephemeral key-generation and signing smoke test
+```
+
+`doctor` aggregates the other checks rather than adding new ones — a control it
+reports as critical is the same finding `scan` would produce. Certificate
+expiry surfaces through the posture rules (the default and standard packs carry
+expiry rules), so it is not double-counted.
+
 ## hsmdoctor scan
 
 ```

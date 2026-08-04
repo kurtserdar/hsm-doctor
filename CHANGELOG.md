@@ -5,6 +5,19 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [1.22.0] - 2026-08-05
+
+### Added
+
+- `hsmdoctor doctor` — a one-shot health diagnosis that aggregates the core
+  checks (inventory, posture, certificate expiry, post-quantum exposure, and
+  optionally functional tests with `--with-tests` and vendor health with
+  `--vendor-config`) into a single verdict (healthy / attention / critical), the
+  health score and the most important issues first, each with a suggested
+  action. `--fail-on attention|critical` turns overall health into a CI gate;
+  `--format json` for machine consumption. It aggregates the other checks
+  rather than adding new ones, so its findings match `scan`.
+
 ## [1.21.0] - 2026-08-05
 
 ### Added

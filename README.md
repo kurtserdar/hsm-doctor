@@ -35,6 +35,10 @@ list of posture findings.*
 
 ## Highlights
 
+- **One-shot diagnosis** — `hsmdoctor doctor` aggregates the individual checks
+  into a single verdict (healthy / attention / critical), the health score and
+  the most important issues first, each with a suggested action. `--fail-on`
+  turns overall health into a CI gate.
 - **Security posture scoring** — a metadata-only inventory evaluated against
   customizable YAML rules and curated **policy packs** (`nist`, `cabf`,
   `strict`, `pqc-migration`, plus compliance-inspired `fips-140-3`, `pci-hsm`
@@ -136,6 +140,7 @@ report — see the [`scan` report above](#hsm-doctor).
 
 | Command | What it does |
 |---|---|
+| `hsmdoctor doctor` | One-shot health diagnosis: aggregates inventory, posture, certificate expiry and PQC (optionally functional tests and vendor health) into a single verdict, prioritized issues and suggested actions; `--fail-on` gates CI |
 | `hsmdoctor discover` | Module, slot, token and mechanism discovery |
 | `hsmdoctor scan` | Key/certificate inventory + security posture rules + health score; text, JSON, single-file HTML, SARIF or **CBOM** (CycloneDX 1.6) report; `--baseline` gates CI on posture regression |
 | `hsmdoctor certs` | Certificate expiry monitor with cron/CI-friendly exit codes |
