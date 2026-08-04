@@ -5,6 +5,19 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [Unreleased]
+
+### Added
+
+- Fleet view summary strip: total HSMs, how many need attention (score below
+  70) and the average score, above the fleet table.
+
+### Changed
+
+- Fitted the PQC and Fleet views onto the refreshed design system (utility
+  classes for checkbox labels and mechanism chips, a prominent PQC verdict
+  badge, a proper empty state and skeleton loading on Fleet).
+
 ## [1.16.0] - 2026-08-04
 
 ### Added
