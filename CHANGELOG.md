@@ -5,6 +5,15 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [Unreleased]
+
+### Changed
+
+- Compatibility policy (`docs/compatibility.md`): list the `gcp` and
+  `azure-hsm` cloud providers among the experimental providers, note that the
+  `scan --format sarif` output follows the OASIS SARIF 2.1.0 schema, and state
+  that the embedded web UI is not a stable interface.
+
 ## [1.17.2] - 2026-08-04
 
 ### Changed

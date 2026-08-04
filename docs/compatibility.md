@@ -30,6 +30,9 @@ Which part of the version bumps follows directly from the interfaces below:
   `certs`, `pqc`, `test`, `bench`, `snapshot`, `diff`, `vendor`, `trace` and
   the `/api/v1` REST endpoints. Fields may be **added**; existing fields keep
   their name and meaning. Consumers should ignore unknown fields.
+- **SARIF output.** `scan --format sarif` conforms to the OASIS SARIF 2.1.0
+  schema, so its shape is fixed by that standard; the mapping of severities to
+  SARIF levels and `security-severity` scores is stable within a major version.
 - **Trace format.** The Flight Recorder JSON Lines schema (`internal/trace`
   `Event`). New fields may be added; existing ones are stable.
 - **Configuration file formats.** The rules/policy-pack YAML, the auth config
@@ -46,11 +49,14 @@ Which part of the version bumps follows directly from the interfaces below:
 These may change or be replaced in a minor release. They are clearly labeled
 in output and docs:
 
-- **Vendor providers `luna`, `nshield`, `cloudhsm` and `bouncyhsm`.** The
-  first three are built against public documentation and **not validated
-  against real hardware**; `bouncyhsm` targets a software simulator through
-  its REST API. Their findings, parsing and configuration keys may change as
-  they are hardened. The `softhsm` reference provider is stable.
+- **Vendor providers `luna`, `nshield`, `cloudhsm`, `gcp`, `azure-hsm` and
+  `bouncyhsm`.** `luna`, `nshield` and `cloudhsm` are built against public
+  documentation and **not validated against real hardware**; `gcp` (Google
+  Cloud HSM) and `azure-hsm` (Azure Managed HSM) shell out to the cloud CLI and
+  are **not validated against live accounts**; `bouncyhsm` targets a software
+  simulator through its REST API. Their findings, parsing and configuration
+  keys may change as they are hardened. The `softhsm` reference provider is
+  stable.
 - **Flight Recorder shim function coverage.** The shim instruments a curated,
   growing subset of the PKCS#11 API. Which functions are traced may expand
   between minor releases (the trace *format* is stable). Because that set is
@@ -74,9 +80,10 @@ against the signed `SHA256SUMS.txt` — see [SECURITY.md](../SECURITY.md).
 
 ## Not an interface
 
-Log line wording, human-readable text/HTML report layout, exact wording of
-error messages, and internal Go packages (`internal/...`) are not stable
-interfaces and may change at any time.
+Log line wording, human-readable text/HTML report layout, the embedded web UI
+(its layout, styling, themes and translations), exact wording of error
+messages, and internal Go packages (`internal/...`) are not stable interfaces
+and may change at any time.
 
 ## Go module
 
