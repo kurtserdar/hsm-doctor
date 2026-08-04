@@ -61,11 +61,14 @@ type Condition struct {
 	CurveIn    []string `yaml:"curve_in,omitempty" json:"curve_in,omitempty"`
 	CurveNotIn []string `yaml:"curve_not_in,omitempty" json:"curve_not_in,omitempty"`
 
-	CertExpired           *bool    `yaml:"cert_expired,omitempty" json:"cert_expired,omitempty"`
-	CertExpiresWithinDays int      `yaml:"cert_expires_within_days,omitempty" json:"cert_expires_within_days,omitempty"`
-	CertValidityDaysGT    int      `yaml:"cert_validity_days_gt,omitempty" json:"cert_validity_days_gt,omitempty"`
-	CertSigAlgIn          []string `yaml:"cert_sig_alg_in,omitempty" json:"cert_sig_alg_in,omitempty"`
-	CertIsCA              *bool    `yaml:"cert_is_ca,omitempty" json:"cert_is_ca,omitempty"`
+	CertExpired                *bool `yaml:"cert_expired,omitempty" json:"cert_expired,omitempty"`
+	CertExpiresWithinDays      int   `yaml:"cert_expires_within_days,omitempty" json:"cert_expires_within_days,omitempty"`
+	CertValidityDaysGT         int   `yaml:"cert_validity_days_gt,omitempty" json:"cert_validity_days_gt,omitempty"`
+	CertValidityDaysLT         int   `yaml:"cert_validity_days_lt,omitempty" json:"cert_validity_days_lt,omitempty"`
+	CertLifetimeRemainingPctLT int   `yaml:"cert_lifetime_remaining_pct_lt,omitempty" json:"cert_lifetime_remaining_pct_lt,omitempty"`
+
+	CertSigAlgIn []string `yaml:"cert_sig_alg_in,omitempty" json:"cert_sig_alg_in,omitempty"`
+	CertIsCA     *bool    `yaml:"cert_is_ca,omitempty" json:"cert_is_ca,omitempty"`
 
 	CertSelfSigned           *bool    `yaml:"cert_self_signed,omitempty" json:"cert_self_signed,omitempty"`
 	CertNotYetValid          *bool    `yaml:"cert_not_yet_valid,omitempty" json:"cert_not_yet_valid,omitempty"`
@@ -101,7 +104,9 @@ func (c *Condition) empty() bool {
 		c.Decrypt == nil && c.Derive == nil && c.Wrap == nil && c.Unwrap == nil &&
 		c.KeySizeLT == 0 && len(c.CurveIn) == 0 && len(c.CurveNotIn) == 0 &&
 		c.CertExpired == nil && c.CertExpiresWithinDays == 0 &&
-		c.CertValidityDaysGT == 0 && len(c.CertSigAlgIn) == 0 && c.CertIsCA == nil &&
+		c.CertValidityDaysGT == 0 && c.CertValidityDaysLT == 0 &&
+		c.CertLifetimeRemainingPctLT == 0 &&
+		len(c.CertSigAlgIn) == 0 && c.CertIsCA == nil &&
 		c.CertSelfSigned == nil && c.CertNotYetValid == nil && c.CertKeySizeLT == 0 &&
 		len(c.CertPubKeyAlgIn) == 0 && c.CertCAWithoutKeyCertSign == nil &&
 		c.CertKeyMismatch == nil && c.CertChainBroken == nil &&

@@ -5,6 +5,24 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [1.18.0] - 2026-08-04
+
+### Added
+
+- `hsmdoctor preflight` — a renewal-readiness gate that checks a token is
+  present and initialized, the PIN logs in, the required mechanisms are
+  available (`--mechanism`) and enough sessions are free (`--min-free-sessions`),
+  with an optional ephemeral keygen/sign probe (`--probe`) and vendor tamper/HA
+  input (`--vendor-config`). Machine-friendly exit codes: 0 ready, 4 postpone,
+  1 error. Intended as the check a certificate-lifecycle system runs before an
+  HSM-backed reissue.
+- Policy conditions `cert_validity_days_lt` (short-lived certificate) and
+  `cert_lifetime_remaining_pct_lt` (percentage-of-lifetime renewal threshold,
+  correct across mixed 47/100/200/398-day validities). The `cabf` pack gains
+  CABF-007 (past 80% of lifetime) and CABF-008 (short-lived certificate without
+  renewal automation).
+- `TokenInfo` now reports `max_session_count`/`session_count`.
+
 ## [1.17.4] - 2026-08-04
 
 ### Changed

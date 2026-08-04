@@ -100,6 +100,8 @@ instead of producing rules that never match.
 | `cert_expired` | bool | Certificate validity has ended |
 | `cert_expires_within_days` | int | Certificate expires within N days (excludes already-expired) |
 | `cert_validity_days_gt` | int | Certificate validity period exceeds N days |
+| `cert_validity_days_lt` | int | Certificate total validity period is under N days (short-lived) |
+| `cert_lifetime_remaining_pct_lt` | int | Less than N% of the certificate's lifetime remains (renewal threshold; excludes already-expired) |
 | `cert_sig_alg_in` | list | Certificate signature algorithm is listed (Go x509 names, e.g. `SHA1-RSA`) |
 | `cert_is_ca` | bool | Certificate basic constraints CA flag |
 | `cert_self_signed` | bool | Certificate issuer equals subject (self-signed) |

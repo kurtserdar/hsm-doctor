@@ -2,11 +2,22 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
 )
+
+// exitError lets a command request a specific process exit code. When msg is
+// empty the command has already reported everything to the user, so Execute
+// exits with the code without printing an "Error:" line.
+type exitError struct {
+	code int
+	msg  string
+}
+
+func (e *exitError) Error() string { return e.msg }
 
 var rootCmd = &cobra.Command{
 	Use:   "hsmdoctor",
@@ -21,6 +32,13 @@ through the standard PKCS#11 interface.`,
 // Execute runs the root command and exits with a non-zero status on error.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
+		var ee *exitError
+		if errors.As(err, &ee) {
+			if ee.msg != "" {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", ee.msg)
+			}
+			os.Exit(ee.code)
+		}
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}

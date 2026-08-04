@@ -44,6 +44,13 @@ list of posture findings.*
 - **Deep certificate validation** — self-signed leaves, not-yet-valid and weak
   certificate keys, CA misuse, certificate/key mismatch and opt-in chain
   validation (`scan --ca-bundle`).
+- **Certificate-lifecycle readiness** — a `preflight` gate that answers "is this
+  token ready to mint a key and sign, right now?" (present, login, required
+  mechanisms, session headroom, optional keygen/sign probe, vendor tamper/HA)
+  with machine-friendly exit codes — the check a renewal system runs before an
+  HSM-backed reissue. As TLS validity shrinks toward the **47-day** era, the
+  `cabf` pack flags certificates past a share of their **lifetime** (not a fixed
+  day count) and short-lived certificates that need automated renewal.
 - **Drift & posture-regression detection** — snapshot a token and diff it later
   for object/attribute/mechanism changes; the fleet also records a **posture
   regression** when a score drops or a new critical/high finding appears, and
@@ -119,6 +126,7 @@ report — see the [`scan` report above](#hsm-doctor).
 | `hsmdoctor discover` | Module, slot, token and mechanism discovery |
 | `hsmdoctor scan` | Key/certificate inventory + security posture rules + health score; text, JSON, single-file HTML or SARIF report; `--baseline` gates CI on posture regression |
 | `hsmdoctor certs` | Certificate expiry monitor with cron/CI-friendly exit codes |
+| `hsmdoctor preflight` | Renewal-readiness gate: token present, login, required mechanisms, session headroom, optional keygen/sign probe and vendor tamper/HA — exit 0 ready, 4 postpone, 1 error |
 | `hsmdoctor test` | Safe functional test profiles (key generation, sign/verify, AES-GCM) with ephemeral session objects |
 | `hsmdoctor bench` | Performance measurement with strictly bounded load (duration + op budget caps) |
 | `hsmdoctor snapshot` | Record the full metadata state of a token as JSON |

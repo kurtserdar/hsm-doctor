@@ -332,6 +332,35 @@ func matchObject(rule *Rule, o *inventory.Object, f *facts) (bool, string) {
 		details = append(details, fmt.Sprintf("validity %d days > %d",
 			int(validity.Hours()/24), c.CertValidityDaysGT))
 	}
+	if c.CertValidityDaysLT > 0 {
+		if o.Certificate == nil {
+			return false, ""
+		}
+		validity := o.Certificate.NotAfter.Sub(o.Certificate.NotBefore)
+		if validity <= 0 || validity >= time.Duration(c.CertValidityDaysLT)*24*time.Hour {
+			return false, ""
+		}
+		details = append(details, fmt.Sprintf("short-lived: validity %d days < %d",
+			int(validity.Hours()/24), c.CertValidityDaysLT))
+	}
+	if c.CertLifetimeRemainingPctLT > 0 {
+		if o.Certificate == nil {
+			return false, ""
+		}
+		lifetime := o.Certificate.NotAfter.Sub(o.Certificate.NotBefore)
+		remaining := o.Certificate.NotAfter.Sub(f.now)
+		// Only meaningful for a positive lifetime that has not already
+		// expired; expiry is covered by cert_expired rules.
+		if lifetime <= 0 || remaining <= 0 {
+			return false, ""
+		}
+		pct := float64(remaining) / float64(lifetime) * 100
+		if pct >= float64(c.CertLifetimeRemainingPctLT) {
+			return false, ""
+		}
+		details = append(details, fmt.Sprintf("%.0f%% of lifetime remaining (< %d%%)",
+			pct, c.CertLifetimeRemainingPctLT))
+	}
 	if len(c.CertSigAlgIn) > 0 {
 		if o.Certificate == nil || !contains(c.CertSigAlgIn, o.Certificate.SignatureAlgorithm) {
 			return false, ""

@@ -151,3 +151,49 @@ func TestInfoSeverityIsValidAndSortsLast(t *testing.T) {
 		t.Errorf("only the high finding should cost points: %d", res.Score)
 	}
 }
+
+func TestCertLifecycleConditions(t *testing.T) {
+	now := time.Date(2026, 7, 29, 12, 0, 0, 0, time.UTC)
+	day := 24 * time.Hour
+
+	shortLived := Rule{ID: "SL", Title: "short-lived certificate", Severity: SevInfo,
+		Match: Condition{Class: inventory.ClassCertificate, CertValidityDaysLT: 48}}
+
+	// 41-day validity matches; a 100-day certificate does not.
+	c41 := inventory.Object{Class: inventory.ClassCertificate,
+		Certificate: &inventory.CertInfo{NotBefore: now.Add(-1 * day), NotAfter: now.Add(40 * day)}}
+	if res := Evaluate(single(c41), &Config{Rules: []Rule{shortLived}}, now); len(res.Findings) != 1 {
+		t.Errorf("41-day cert should be short-lived: %+v", res.Findings)
+	}
+	c100 := inventory.Object{Class: inventory.ClassCertificate,
+		Certificate: &inventory.CertInfo{NotBefore: now.Add(-1 * day), NotAfter: now.Add(99 * day)}}
+	if res := Evaluate(single(c100), &Config{Rules: []Rule{shortLived}}, now); len(res.Findings) != 0 {
+		t.Errorf("100-day cert is not short-lived: %+v", res.Findings)
+	}
+
+	pastPct := Rule{ID: "PP", Title: "past renewal threshold", Severity: SevMedium,
+		Match: Condition{Class: inventory.ClassCertificate, CertLifetimeRemainingPctLT: 20}}
+
+	// 100-day lifetime with 10 days left = 10% remaining -> matches < 20%.
+	c10pct := inventory.Object{Class: inventory.ClassCertificate,
+		Certificate: &inventory.CertInfo{NotBefore: now.Add(-90 * day), NotAfter: now.Add(10 * day)}}
+	if res := Evaluate(single(c10pct), &Config{Rules: []Rule{pastPct}}, now); len(res.Findings) != 1 {
+		t.Errorf("10%% remaining should match past-threshold: %+v", res.Findings)
+	}
+	// 50% remaining does not match.
+	c50pct := inventory.Object{Class: inventory.ClassCertificate,
+		Certificate: &inventory.CertInfo{NotBefore: now.Add(-50 * day), NotAfter: now.Add(50 * day)}}
+	if res := Evaluate(single(c50pct), &Config{Rules: []Rule{pastPct}}, now); len(res.Findings) != 0 {
+		t.Errorf("50%% remaining should not match: %+v", res.Findings)
+	}
+	// Already-expired certificates are left to cert_expired rules.
+	cExpired := inventory.Object{Class: inventory.ClassCertificate,
+		Certificate: &inventory.CertInfo{NotBefore: now.Add(-100 * day), NotAfter: now.Add(-1 * day)}}
+	if res := Evaluate(single(cExpired), &Config{Rules: []Rule{pastPct}}, now); len(res.Findings) != 0 {
+		t.Errorf("expired cert must not match lifetime-percentage rule: %+v", res.Findings)
+	}
+}
+
+func single(obj inventory.Object) *inventory.Inventory {
+	return &inventory.Inventory{Objects: []inventory.Object{obj}}
+}

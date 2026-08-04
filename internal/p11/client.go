@@ -109,6 +109,8 @@ func (c *Client) Slots() ([]SlotInfo, error) {
 				FirmwareVersion: fmt.Sprintf("%d.%d", ti.FirmwareVersion.Major, ti.FirmwareVersion.Minor),
 				Initialized:     ti.Flags&pkcs11.CKF_TOKEN_INITIALIZED != 0,
 				LoginRequired:   ti.Flags&pkcs11.CKF_LOGIN_REQUIRED != 0,
+				MaxSessionCount: uint(ti.MaxSessionCount),
+				SessionCount:    uint(ti.SessionCount),
 			}
 		}
 		slots = append(slots, slot)

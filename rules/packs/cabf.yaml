@@ -72,3 +72,34 @@ rules:
     match:
       class: certificate
       cert_expires_within_days: 30
+
+  - id: CABF-007
+    title: Certificate past 80% of its lifetime
+    severity: medium
+    description: >-
+      Renewal should start well before expiry. Judging by percentage of the
+      lifetime — rather than a fixed number of days — keeps the same policy
+      correct across 47-, 100-, 200- and 398-day certificates as the CA/Browser
+      Forum shortens maximum validity.
+    remediation: >-
+      Renew now so the new certificate is deployed and verified with margin to
+      spare before the current one expires.
+    reference: https://www.digicert.com/blog/tls-certificate-lifetimes-will-officially-reduce-to-47-days
+    match:
+      class: certificate
+      cert_lifetime_remaining_pct_lt: 20
+
+  - id: CABF-008
+    title: Short-lived certificate without renewal automation
+    severity: info
+    description: >-
+      This certificate's total validity is short enough that manual renewal is
+      not sustainable; from 2029 public TLS certificates are capped at 47 days.
+      Ensure an automated enrollment and deployment path exists for it.
+    remediation: >-
+      Put this certificate on an automated (e.g. ACME) issuance and deployment
+      pipeline so it renews without manual steps.
+    reference: https://www.digicert.com/blog/tls-certificate-lifetimes-will-officially-reduce-to-47-days
+    match:
+      class: certificate
+      cert_validity_days_lt: 48

@@ -27,6 +27,30 @@ type TokenInfo struct {
 	FirmwareVersion string `json:"firmware_version"`
 	Initialized     bool   `json:"initialized"`
 	LoginRequired   bool   `json:"login_required"`
+	// MaxSessionCount and SessionCount come from CK_TOKEN_INFO. A max of 0
+	// means "effectively unlimited" and a max of CK_UNAVAILABLE_INFORMATION
+	// means the token does not report it; callers should treat both as
+	// "no meaningful session cap".
+	MaxSessionCount uint `json:"max_session_count,omitempty"`
+	SessionCount    uint `json:"session_count,omitempty"`
+}
+
+// sessionInfoUnavailable is CK_UNAVAILABLE_INFORMATION: a token uses it when
+// it cannot or will not report a count.
+const sessionInfoUnavailable = ^uint(0)
+
+// SessionCapacity returns the number of additional sessions the token can
+// still open and whether that figure is meaningful. It is not meaningful when
+// the token advertises no limit (max 0) or does not report the counts.
+func (t *TokenInfo) SessionCapacity() (free uint, known bool) {
+	if t.MaxSessionCount == 0 || t.MaxSessionCount == sessionInfoUnavailable ||
+		t.SessionCount == sessionInfoUnavailable {
+		return 0, false
+	}
+	if t.SessionCount >= t.MaxSessionCount {
+		return 0, true
+	}
+	return t.MaxSessionCount - t.SessionCount, true
 }
 
 // SlotInfo describes a PKCS#11 slot and, when present, its token.

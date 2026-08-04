@@ -107,6 +107,40 @@ Flags:
       --warn-days int    days before expiry to flag a certificate as expiring (default 30)
 ```
 
+## hsmdoctor preflight
+
+```
+Runs a fast readiness gate against a token: the module loads, the
+token is present and initialized, the PIN logs in, the required mechanisms are
+available and enough sessions are free. With --probe it also runs an ephemeral
+key-generation and signing smoke test. With --vendor-config it factors in
+tamper state and HA member health.
+
+Intended as the gate a certificate-lifecycle system calls before starting an
+HSM-backed renewal. Exit codes: 0 = ready, 4 = postpone (not ready, retry
+later), 1 = error talking to the module.
+
+Usage:
+  hsmdoctor preflight [flags]
+
+Flags:
+  -h, --help                    help for preflight
+      --json                    output as JSON
+      --mechanism stringArray   required mechanism by CKM_* name or hex code (repeatable), e.g. CKM_RSA_PKCS_KEY_PAIR_GEN
+      --min-free-sessions int   require at least this many free sessions on the token
+      --module string           path to the PKCS#11 library
+      --pin string              user PIN (WARNING: visible in shell history; prefer --pin-env)
+      --pin-env string          name of the environment variable holding the user PIN
+      --probe                   run an ephemeral key-generation and signing smoke test
+      --slot uint               slot ID to operate on
+      --uri string              RFC 7512 PKCS#11 URI, e.g. "pkcs11:token=PROD?module-path=/usr/lib/libpkcs11.so"
+      --vendor-config string    vendor config file; factors tamper and HA state into the verdict
+```
+
+A "postpone" verdict (exit 4) means the token is not ready right now — retry
+later; it is deliberately distinct from a general error (exit 1) so an
+orchestrator can tell "wait and retry" apart from "a human must intervene".
+
 ## hsmdoctor test
 
 ```

@@ -4,7 +4,11 @@
 // as the c-shared trace shim.
 package p11names
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+	"strings"
+)
 
 // supplementalMechanismNames names mechanisms standardized after the
 // PKCS#11 v2.40 constant set the generated table is built from (values from
@@ -34,6 +38,36 @@ func Mechanism(code uint) string {
 		return fmt.Sprintf("CKM_VENDOR_DEFINED_0x%08X", code)
 	}
 	return fmt.Sprintf("CKM_UNKNOWN_0x%08X", code)
+}
+
+// mechanismCodes is the reverse of the mechanism name tables, built lazily
+// on first use so it costs nothing for the common code->name direction.
+var mechanismCodes map[string]uint
+
+// MechanismCode resolves a canonical CKM_* name (case-insensitive) to its
+// numeric value. It also accepts a raw hexadecimal code ("0x00000001").
+func MechanismCode(name string) (uint, bool) {
+	if mechanismCodes == nil {
+		mechanismCodes = make(map[string]uint, len(mechanismNames)+len(supplementalMechanismNames))
+		for code, n := range mechanismNames {
+			mechanismCodes[n] = code
+		}
+		for code, n := range supplementalMechanismNames {
+			if _, ok := mechanismCodes[n]; !ok {
+				mechanismCodes[n] = code
+			}
+		}
+	}
+	key := strings.ToUpper(strings.TrimSpace(name))
+	if code, ok := mechanismCodes[key]; ok {
+		return code, true
+	}
+	if strings.HasPrefix(key, "0X") {
+		if v, err := strconv.ParseUint(key[2:], 16, 32); err == nil {
+			return uint(v), true
+		}
+	}
+	return 0, false
 }
 
 // ReturnCode returns the canonical CKR_* name for a return value, or a
