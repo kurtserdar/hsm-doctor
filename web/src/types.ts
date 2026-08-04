@@ -293,3 +293,19 @@ export interface RegressionEvent {
   score_delta: number;
   detail: RegressionDetail;
 }
+
+export interface SharedKeyLocation {
+  hsm_id: number;
+  hsm_label?: string;
+  serial?: string;
+  source?: string;
+  object: string;
+  key_type?: string;
+}
+
+export interface SharedKey {
+  fingerprint: string;
+  key_type?: string;
+  hsm_count: number;
+  locations: SharedKeyLocation[];
+}

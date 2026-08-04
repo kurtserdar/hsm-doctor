@@ -59,6 +59,11 @@ list of posture findings.*
   for object/attribute/mechanism changes; the fleet also records a **posture
   regression** when a score drops or a new critical/high finding appears, and
   `scan --baseline` gates CI on regression without a database.
+- **Shared-key detection** — across the fleet, the central server flags a
+  **private key whose fingerprint appears on more than one HSM** — a sign the
+  key material left its hardware boundary — via `GET /api/v1/shared-keys`, the
+  dashboard and a Prometheus metric. Public metadata only; no key material is
+  read.
 - **Post-quantum readiness** — an ML-KEM/ML-DSA/SLH-DSA support matrix,
   functional probes (a full ML-KEM **encapsulate/decapsulate** round trip) and
   quantum-exposure analysis of your existing keys.

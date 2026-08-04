@@ -16,13 +16,14 @@ import (
 type metrics struct {
 	registry *prometheus.Registry
 
-	healthScore      *prometheus.GaugeVec
-	findings         *prometheus.GaugeVec
-	objects          *prometheus.GaugeVec
-	certMinDays      *prometheus.GaugeVec
-	lastScanTime     *prometheus.GaugeVec
-	scansTotal       *prometheus.CounterVec
-	regressionsTotal *prometheus.CounterVec
+	healthScore       *prometheus.GaugeVec
+	findings          *prometheus.GaugeVec
+	objects           *prometheus.GaugeVec
+	certMinDays       *prometheus.GaugeVec
+	lastScanTime      *prometheus.GaugeVec
+	scansTotal        *prometheus.CounterVec
+	regressionsTotal  *prometheus.CounterVec
+	sharedPrivateKeys prometheus.Gauge
 
 	pqcAdvertised *prometheus.GaugeVec
 	pqcVulnerable *prometheus.GaugeVec
@@ -66,6 +67,10 @@ func newMetrics(version string) *metrics {
 			Name: "hsmdoctor_posture_regressions_total",
 			Help: "Total number of posture regressions detected since process start.",
 		}, []string{"serial", "label"}),
+		sharedPrivateKeys: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "hsmdoctor_shared_private_keys",
+			Help: "Number of private keys whose fingerprint appears on more than one HSM in the fleet.",
+		}),
 		pqcAdvertised: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "hsmdoctor_pqc_family_advertised",
 			Help: "1 when the token advertises the PQC family's mechanisms (ML-KEM, ML-DSA, SLH-DSA).",
@@ -96,7 +101,7 @@ func newMetrics(version string) *metrics {
 		}, []string{"serial", "label", "provider"}),
 	}
 	reg.MustRegister(m.healthScore, m.findings, m.objects, m.certMinDays, m.lastScanTime, m.scansTotal,
-		m.regressionsTotal,
+		m.regressionsTotal, m.sharedPrivateKeys,
 		m.pqcAdvertised, m.pqcVulnerable, m.pqcHNDL,
 		m.vendorTamper, m.vendorDiskPercent, m.vendorHAMembersUp, m.vendorHAMembers)
 

@@ -234,7 +234,9 @@ Useful alerts: `hsmdoctor_health_score < 70`,
 `hsmdoctor_findings{severity="critical"} > 0`,
 `hsmdoctor_certificate_min_days_to_expiry < 14`,
 `time() - hsmdoctor_last_scan_timestamp_seconds > 3600`,
-`increase(hsmdoctor_posture_regressions_total[1h]) > 0` (posture worsened).
+`increase(hsmdoctor_posture_regressions_total[1h]) > 0` (posture worsened),
+`hsmdoctor_shared_private_keys > 0` (a private key was found on more than one
+HSM — see `GET /api/v1/shared-keys` and the fleet dashboard for the locations).
 
 ## Webhooks
 

@@ -47,6 +47,7 @@ History and fleet endpoints (need persistence; both modes):
 | GET | `/api/v1/hsms/{id}/scans/{scanID}` | One stored scan with the full report |
 | GET | `/api/v1/hsms/{id}/drift` | Drift events, newest first (`?limit=100`) |
 | GET | `/api/v1/hsms/{id}/regressions` | Posture-regression events, newest first (`?limit=100`) |
+| GET | `/api/v1/shared-keys` | Private keys whose fingerprint appears on more than one HSM in the fleet |
 
 Agent ingest endpoints (authenticated by agent credentials, exempt from
 user bearer tokens):

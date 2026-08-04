@@ -27,6 +27,7 @@ func (s *Server) registerHistoryAPI(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/hsms/{id}/scans/{scanID}", s.handleHSMScan)
 	mux.HandleFunc("GET /api/v1/hsms/{id}/drift", s.handleHSMDrift)
 	mux.HandleFunc("GET /api/v1/hsms/{id}/regressions", s.handleHSMRegressions)
+	mux.HandleFunc("GET /api/v1/shared-keys", s.handleSharedKeys)
 }
 
 // requireStore returns the store or writes a 503 when persistence is off.
@@ -254,6 +255,9 @@ func (s *Server) persistScan(rep *report.Report, source string) {
 		log.Printf("warning: persisting scan: %v", err)
 		return
 	}
+
+	// A new inventory may change the fleet-wide shared-key picture.
+	s.refreshSharedKeysMetric()
 
 	if prev == nil {
 		return

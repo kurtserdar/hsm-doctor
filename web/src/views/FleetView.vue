@@ -1,23 +1,28 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import { fleet } from "../api";
+import { fleet, sharedKeys } from "../api";
 import { t } from "../i18n";
-import type { HSMSummary } from "../types";
+import type { HSMSummary, SharedKey } from "../types";
 
 const hsms = ref<HSMSummary[]>([]);
+const shared = ref<SharedKey[]>([]);
 const loading = ref(false);
 const error = ref("");
 
 onMounted(async () => {
   loading.value = true;
   try {
-    hsms.value = await fleet();
+    [hsms.value, shared.value] = await Promise.all([fleet(), sharedKeys()]);
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e);
   } finally {
     loading.value = false;
   }
 });
+
+function shortFp(fp: string): string {
+  return fp.length > 20 ? fp.slice(0, 20) + "…" : fp;
+}
 
 const scored = computed(() =>
   hsms.value.filter((h) => h.latest_score !== undefined) as (HSMSummary & { latest_score: number })[],
@@ -80,6 +85,22 @@ function ago(ts: string): string {
       <div class="stat" v-if="avgScore !== null">
         <div class="value" :class="avgClass(avgScore)">{{ avgScore }}</div>
         <div class="label">{{ t("fleet.avgScore") }}</div>
+      </div>
+    </div>
+
+    <div v-if="shared.length" class="card">
+      <h2 class="card-title">{{ t("shared.title") }}</h2>
+      <p class="muted">{{ t("shared.subtitle") }}</p>
+      <div v-for="k in shared" :key="k.fingerprint" class="finding">
+        <span class="badge critical">{{ t("shared.onN", { n: k.hsm_count }) }}</span>
+        <div>
+          <div><code class="risk">{{ shortFp(k.fingerprint) }}</code> <span class="muted">{{ k.key_type }}</span></div>
+          <div class="meta">
+            <span v-for="(loc, i) in k.locations" :key="i">
+              {{ loc.hsm_label || loc.serial }} · {{ loc.object }}<span v-if="i < k.locations.length - 1">, </span>
+            </span>
+          </div>
+        </div>
       </div>
     </div>
 

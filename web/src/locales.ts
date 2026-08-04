@@ -110,6 +110,10 @@ const en: Record<string, string> = {
   "fleet.totalHsms": "HSMs",
   "fleet.needAttention": "need attention",
   "fleet.avgScore": "avg score",
+  "shared.title": "Shared private keys",
+  "shared.subtitle":
+    "The same private key fingerprint was found on more than one HSM — a sign the key material left its hardware boundary.",
+  "shared.onN": "on {n} HSMs",
   "th.score": "Score",
   "th.token": "Token",
   "th.serial": "Serial",
@@ -310,6 +314,10 @@ const tr: Record<string, string> = {
   "fleet.totalHsms": "HSM",
   "fleet.needAttention": "dikkat gerekiyor",
   "fleet.avgScore": "ort. skor",
+  "shared.title": "Paylaşılan özel anahtarlar",
+  "shared.subtitle":
+    "Aynı özel anahtar parmak izi birden çok HSM'de bulundu — anahtar materyalinin donanım sınırından çıktığının işareti.",
+  "shared.onN": "{n} HSM'de",
   "th.score": "Skor",
   "th.token": "Token",
   "th.serial": "Seri No",

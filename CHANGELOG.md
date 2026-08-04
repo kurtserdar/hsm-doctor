@@ -5,6 +5,18 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [1.20.0] - 2026-08-04
+
+### Added
+
+- Fleet shared-key detection — the central server correlates the latest scan of
+  every HSM and flags a private key whose public-key fingerprint appears on more
+  than one HSM (a sign the key material was copied out of hardware). Exposed via
+  `GET /api/v1/shared-keys`, a "Shared private keys" section on the fleet
+  dashboard and the `hsmdoctor_shared_private_keys` Prometheus gauge. Uses only
+  the public fingerprint already in the inventory; no private key material is
+  read. Symmetric secret keys expose no fingerprint and are out of scope.
+
 ## [1.19.0] - 2026-08-04
 
 ### Added

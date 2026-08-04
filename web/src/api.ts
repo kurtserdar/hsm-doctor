@@ -9,6 +9,7 @@ import type {
   ScanReport,
   ScanSummary,
   ServerInfo,
+  SharedKey,
   TestResult,
 } from "./types";
 
@@ -68,6 +69,10 @@ export function hsmDrift(id: number, limit = 20): Promise<DriftEvent[]> {
 
 export function hsmRegressions(id: number, limit = 20): Promise<RegressionEvent[]> {
   return request(`/api/v1/hsms/${id}/regressions?limit=${limit}`);
+}
+
+export function sharedKeys(): Promise<SharedKey[]> {
+  return request("/api/v1/shared-keys");
 }
 
 export function pqcAssess(
