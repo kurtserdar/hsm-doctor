@@ -31,24 +31,24 @@ const objects = computed<InventoryObject[]>(() => {
   return all.filter((o) => o.class === classFilter.value);
 });
 
-function flags(o: InventoryObject): string {
-  const out: string[] = [];
-  if (o.sensitive === false) out.push("sensitive=false");
-  if (o.extractable) out.push("extractable");
-  if (o.sign) out.push("sign");
-  if (o.verify) out.push("verify");
-  if (o.encrypt) out.push("encrypt");
-  if (o.decrypt) out.push("decrypt");
-  if (o.wrap) out.push("wrap");
-  if (o.unwrap) out.push("unwrap");
-  if (o.derive) out.push("derive");
-  return out.join(", ");
+// Attribute flags, marking the risky ones (extractable, non-sensitive).
+function flags(o: InventoryObject): { name: string; risk: boolean }[] {
+  const out: { name: string; risk: boolean }[] = [];
+  if (o.sensitive === false) out.push({ name: "sensitive=false", risk: true });
+  if (o.extractable) out.push({ name: "extractable", risk: true });
+  for (const k of ["sign", "verify", "encrypt", "decrypt", "wrap", "unwrap", "derive"] as const) {
+    if (o[k]) out.push({ name: k, risk: false });
+  }
+  return out;
 }
 </script>
 
 <template>
   <div v-if="error" class="error">{{ error }}</div>
-  <p v-if="loading" class="muted">{{ t("inv.loading") }}</p>
+
+  <div v-if="loading && !report" class="card">
+    <div v-for="n in 6" :key="n" class="skeleton skel-line" style="width: 100%; height: 1.3rem; margin-bottom: 0.6rem"></div>
+  </div>
 
   <template v-if="report">
     <div class="formrow">
@@ -62,13 +62,12 @@ function flags(o: InventoryObject): string {
           <option value="certificate">{{ t("inv.certificates") }}</option>
         </select>
       </div>
-      <div class="muted" style="padding-bottom: 0.5rem">
-        {{ t("inv.objectCount", { n: objects.length }) }}
-      </div>
+      <div class="muted">{{ t("inv.objectCount", { n: objects.length }) }}</div>
     </div>
 
     <div class="card">
-      <div class="tablebox">
+      <div v-if="objects.length === 0" class="empty">{{ t("inv.objectCount", { n: 0 }) }}</div>
+      <div v-else class="tablebox">
         <table>
           <thead>
             <tr>
@@ -88,7 +87,11 @@ function flags(o: InventoryObject): string {
               <td><code v-if="o.id">{{ o.id }}</code></td>
               <td>{{ o.key_type }}<template v-if="o.curve"> {{ o.curve }}</template></td>
               <td>{{ o.key_bits || "" }}</td>
-              <td class="muted">{{ flags(o) }}</td>
+              <td>
+                <span class="codes">
+                  <code v-for="(f, j) in flags(o)" :key="j" :class="{ risk: f.risk }">{{ f.name }}</code>
+                </span>
+              </td>
               <td>
                 <template v-if="o.certificate">
                   {{ o.certificate.subject }}

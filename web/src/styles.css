@@ -323,11 +323,42 @@ main a:not(.primary):hover {
   accent-color: var(--accent);
 }
 
-/* Group of code chips (mechanism lists). */
+/* Group of code chips (mechanism lists / flags). */
 .codes {
   display: inline-flex;
   flex-wrap: wrap;
   gap: var(--sp-1);
+}
+
+/* A code chip highlighting a risky attribute (extractable, sensitive=false). */
+code.risk {
+  color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 10%, transparent);
+  border-color: color-mix(in srgb, var(--bad) 30%, transparent);
+}
+
+/* Inline proportional bar (benchmark throughput). */
+.minibar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.minibar .track {
+  flex: 1;
+  min-width: 40px;
+  max-width: 120px;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: var(--raise);
+  overflow: hidden;
+}
+
+.minibar .track span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: var(--r-pill);
 }
 
 button.primary:disabled {

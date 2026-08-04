@@ -55,6 +55,10 @@ function ms(ns?: number): string {
 
   <div v-if="error" class="error">{{ error }}</div>
 
+  <div v-if="running" class="card">
+    <div v-for="n in 3" :key="n" class="skeleton skel-line" style="width: 100%; height: 1.3rem; margin-bottom: 0.6rem"></div>
+  </div>
+
   <div v-if="result" class="card">
     <div class="tablebox">
       <table>

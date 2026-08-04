@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { runBench } from "../api";
 import { store } from "../store";
 import { t } from "../i18n";
@@ -29,6 +29,11 @@ async function run() {
     running.value = false;
   }
 }
+
+const maxThroughput = computed(() => {
+  const ms = result.value?.measurements ?? [];
+  return Math.max(1, ...ms.filter((m) => m.supported && !m.error).map((m) => m.ops_per_sec));
+});
 </script>
 
 <template>
@@ -56,6 +61,10 @@ async function run() {
 
   <div v-if="error" class="error">{{ error }}</div>
 
+  <div v-if="running" class="card">
+    <div v-for="n in 4" :key="n" class="skeleton skel-line" style="width: 100%; height: 1.3rem; margin-bottom: 0.6rem"></div>
+  </div>
+
   <div v-if="result" class="card">
     <div class="tablebox">
       <table>
@@ -72,9 +81,10 @@ async function run() {
           <tr v-for="(m, i) in result.measurements" :key="i">
             <td>{{ m.name }}</td>
             <td>
-              <strong v-if="m.supported && !m.error">
-                {{ t("bench.opsPerSec", { n: m.ops_per_sec.toFixed(1) }) }}
-              </strong>
+              <div v-if="m.supported && !m.error" class="minibar">
+                <div class="track"><span :style="{ width: (m.ops_per_sec / maxThroughput) * 100 + '%' }"></span></div>
+                <strong>{{ t("bench.opsPerSec", { n: m.ops_per_sec.toFixed(1) }) }}</strong>
+              </div>
               <span v-else class="badge skip">{{ t("bench.notSupported") }}</span>
             </td>
             <td class="muted">{{ m.supported ? m.ops : "" }}</td>

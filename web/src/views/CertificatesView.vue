@@ -43,6 +43,10 @@ function statusText(status: string, daysLeft: number): string {
     <button class="primary" :disabled="loading" @click="load">{{ t("common.refresh") }}</button>
   </div>
 
+  <div v-if="loading && !data" class="card">
+    <div v-for="n in 4" :key="n" class="skeleton skel-line" style="width: 100%; height: 1.3rem; margin-bottom: 0.6rem"></div>
+  </div>
+
   <template v-if="data">
     <div class="card grid">
       <div class="stat">
@@ -60,9 +64,9 @@ function statusText(status: string, daysLeft: number): string {
     </div>
 
     <div class="card">
-      <p v-if="!(data.certificates ?? []).length" class="muted">
+      <div v-if="!(data.certificates ?? []).length" class="empty">
         {{ t("cert.none") }}
-      </p>
+      </div>
       <div v-else class="tablebox">
         <table>
           <thead>
