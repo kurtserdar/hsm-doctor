@@ -231,6 +231,19 @@ aside .rail-foot {
   gap: var(--sp-3);
 }
 
+/* The language picker sits in the dark rail, so keep it dark in both themes
+   instead of inheriting the white form background used in the light theme. */
+aside .rail-foot select {
+  background: var(--rail-active);
+  color: var(--rail-fg-strong);
+  border-color: var(--rail-active);
+}
+
+aside .rail-foot select option {
+  background: var(--rail-bg);
+  color: var(--rail-fg);
+}
+
 /* --- main area --- */
 main {
   padding: var(--sp-5) var(--sp-6) var(--sp-6);

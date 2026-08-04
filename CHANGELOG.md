@@ -5,6 +5,14 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [1.22.1] - 2026-08-05
+
+### Fixed
+
+- Web UI: the sidebar language picker no longer renders with a white background
+  in the light theme; it now matches the dark rail (in both themes), including
+  its option list.
+
 ## [1.22.0] - 2026-08-05
 
 ### Added
