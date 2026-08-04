@@ -5,6 +5,21 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [Unreleased]
+
+### Added
+
+- Web UI dark mode with an Auto/Light/Dark switcher in the sidebar; it follows
+  the operating-system preference by default and persists the choice.
+
+### Changed
+
+- Web UI visual refresh (no new dependency): a token-driven design system
+  (type scale, spacing, elevation), findings shown as severity-striped cards
+  with a distribution bar instead of a flat table, softer badges, denser
+  tables, skeleton loading and a sparkline area fill. Both themes are styled
+  from the same tokens.
+
 ## [1.15.1] - 2026-08-03
 
 ### Changed
