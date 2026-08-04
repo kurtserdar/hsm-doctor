@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { scan } from "../api";
 import { store } from "../store";
 import { t } from "../i18n";
-import type { ScanReport } from "../types";
+import type { ScanReport, Severity } from "../types";
 
 const report = ref<ScanReport | null>(null);
 const loading = ref(false);
@@ -29,17 +29,37 @@ function scoreClass(score: number): string {
   if (score >= 70) return "warn";
   return "bad";
 }
+
+const severities: Severity[] = ["critical", "high", "medium", "low"];
+
+const sevCounts = computed(() => {
+  const c: Record<string, number> = { critical: 0, high: 0, medium: 0, low: 0 };
+  for (const f of report.value?.findings ?? []) {
+    if (c[f.severity] !== undefined) c[f.severity]++;
+  }
+  return c;
+});
+
+const totalFindings = computed(() =>
+  severities.reduce((n, s) => n + sevCounts.value[s], 0),
+);
 </script>
 
 <template>
   <div v-if="error" class="error">{{ error }}</div>
-  <p v-if="loading" class="muted">{{ t("common.scanning") }}</p>
+
+  <div v-if="loading && !report" class="card grid">
+    <div v-for="n in 6" :key="n" class="stat">
+      <div class="skeleton skel-line" style="width: 60%; height: 1.8rem"></div>
+      <div class="skeleton skel-line" style="width: 80%"></div>
+    </div>
+  </div>
 
   <template v-if="report">
     <div class="card grid">
       <div class="stat">
         <div class="score" :class="scoreClass(report.score)">
-          {{ report.score }}<span style="font-size: 1rem">/100</span>
+          {{ report.score }}<span style="font-size: var(--fs-md)">/100</span>
         </div>
         <div class="label">{{ t("dash.healthScore") }}</div>
       </div>
@@ -70,9 +90,9 @@ function scoreClass(score: number): string {
     </div>
 
     <div v-if="report.vendor" class="card">
-      <h2 style="margin-top: 0; font-size: 1rem">
+      <h2 class="card-title">
         {{ t("dash.vendor", { provider: report.vendor.provider }) }}
-        <span v-if="report.vendor.experimental" class="badge medium" style="font-weight: 400">
+        <span v-if="report.vendor.experimental" class="badge medium">
           {{ t("dash.experimental") }}
         </span>
       </h2>
@@ -104,38 +124,47 @@ function scoreClass(score: number): string {
     </div>
 
     <div class="card">
-      <h2 style="margin-top: 0; font-size: 1rem">
+      <h2 class="card-title">
         {{ t("dash.findingsTitle") }}
-        <span v-if="report.rule_packs?.length" class="muted" style="font-weight: 400; font-size: 0.8rem">
+        <span v-if="report.rule_packs?.length" class="muted" style="font-weight: 400; font-size: var(--fs-sm)">
           — {{ t("dash.rulePacks", { packs: report.rule_packs.join(", ") }) }}
         </span>
       </h2>
-      <p v-if="!(report.findings ?? []).length" class="muted">
-        {{ t("dash.noFindings") }}
-      </p>
-      <div v-else class="tablebox">
-        <table>
-          <thead>
-            <tr>
-              <th>{{ t("th.severity") }}</th>
-              <th>{{ t("th.rule") }}</th>
-              <th>{{ t("th.finding") }}</th>
-              <th>{{ t("th.objectDetail") }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(f, i) in report.findings" :key="i">
-              <td><span class="badge" :class="f.severity">{{ f.severity }}</span></td>
-              <td><code>{{ f.rule_id }}</code></td>
-              <td>{{ f.title }}</td>
-              <td>
-                {{ f.object }}
-                <div v-if="f.detail" class="muted">{{ f.detail }}</div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+
+      <p v-if="!totalFindings" class="muted">{{ t("dash.noFindings") }}</p>
+
+      <template v-else>
+        <div class="sevbar" :aria-label="t('dash.findingsTitle')">
+          <span
+            v-for="s in severities.filter((s) => sevCounts[s] > 0)"
+            :key="s"
+            :class="s"
+            :style="{ width: (sevCounts[s] / totalFindings) * 100 + '%' }"
+          ></span>
+        </div>
+        <div class="sevlegend">
+          <span v-for="s in severities.filter((s) => sevCounts[s] > 0)" :key="s">
+            <span class="dot" :style="{ background: 'var(--' + s + ')' }"></span>
+            {{ t("th." + s) }} {{ sevCounts[s] }}
+          </span>
+        </div>
+
+        <div class="findings" style="margin-top: var(--sp-4)">
+          <div v-for="(f, i) in report.findings" :key="i" class="finding" :class="f.severity">
+            <span class="badge" :class="f.severity">{{ f.severity }}</span>
+            <div>
+              <div class="f-head">
+                <code>{{ f.rule_id }}</code>
+                <span class="f-title">{{ f.title }}</span>
+              </div>
+              <div v-if="f.object || f.detail" class="f-meta">
+                {{ f.object }}<template v-if="f.detail"> — {{ f.detail }}</template>
+              </div>
+              <div v-if="f.remediation" class="f-fix">{{ t("common.fix") }}: {{ f.remediation }}</div>
+            </div>
+          </div>
+        </div>
+      </template>
     </div>
   </template>
 </template>

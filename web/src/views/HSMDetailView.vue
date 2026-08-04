@@ -72,20 +72,20 @@ function scoreClass(score: number): string {
     <div class="card grid">
       <div class="stat">
         <div class="score" :class="scoreClass(latest.score)">
-          {{ latest.score }}<span style="font-size: 1rem">/100</span>
+          {{ latest.score }}<span style="font-size: var(--fs-md)">/100</span>
         </div>
         <div class="label">{{ t("detail.latestScore", { date: fmt(latest.taken_at) }) }}</div>
       </div>
       <div>
-        <div class="label" style="font-size: 0.72rem; text-transform: uppercase; color: var(--muted)">
+        <div class="eyebrow">
           {{ t("detail.scoreHistory", { n: scans.length }) }}
         </div>
         <Sparkline :values="scoreHistory" />
       </div>
       <dl v-if="token">
-        <dt style="font-size: 0.72rem; text-transform: uppercase; color: var(--muted)">{{ t("th.token") }}</dt>
+        <dt class="eyebrow">{{ t("th.token") }}</dt>
         <dd style="font-weight: 500">{{ token.label }}</dd>
-        <dt style="font-size: 0.72rem; text-transform: uppercase; color: var(--muted)">{{ t("detail.device") }}</dt>
+        <dt class="eyebrow">{{ t("detail.device") }}</dt>
         <dd>{{ token.manufacturer }} {{ token.model }} · fw {{ token.firmware_version }}</dd>
       </dl>
       <div class="stat">

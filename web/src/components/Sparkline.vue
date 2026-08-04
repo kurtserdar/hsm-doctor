@@ -34,6 +34,16 @@ const lastPoint = computed(() => {
   const parts = points.value.split(" ");
   return parts[parts.length - 1] ?? "";
 });
+
+// Area path: the line, then down to the baseline and back to the start.
+const area = computed(() => {
+  if (!points.value) return "";
+  const pts = points.value.split(" ");
+  const first = pts[0].split(",")[0];
+  const lastX = pts[pts.length - 1].split(",")[0];
+  const base = H - PAD;
+  return `M${pts.map((p) => p).join(" L")} L${lastX},${base} L${first},${base} Z`;
+});
 </script>
 
 <template>
@@ -43,7 +53,9 @@ const lastPoint = computed(() => {
     :height="H"
     role="img"
     :aria-label="t('spark.aria')"
+    preserveAspectRatio="none"
   >
+    <path :d="area" :fill="color" fill-opacity="0.12" stroke="none" />
     <polyline
       :points="points"
       fill="none"

@@ -89,6 +89,8 @@ export interface Finding {
   severity: Severity;
   object?: string;
   detail?: string;
+  remediation?: string;
+  reference?: string;
 }
 
 export interface VendorInfo {

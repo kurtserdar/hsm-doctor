@@ -5,11 +5,15 @@ import { setAuthToken } from "./api";
 import { store } from "./store";
 import { locale, setLocale, t } from "./i18n";
 import type { Locale } from "./i18n";
+import { setTheme, theme } from "./theme";
+import type { Theme } from "./theme";
 
 const route = useRoute();
 const router = useRouter();
 const title = computed(() => t((route.meta.title as string) ?? "nav.dashboard"));
 const tokenInput = ref("");
+
+const themes: Theme[] = ["auto", "light", "dark"];
 
 function submitToken() {
   setAuthToken(tokenInput.value.trim());
@@ -47,10 +51,20 @@ onMounted(async () => {
       </template>
       <RouterLink to="/fleet">{{ t("nav.fleet") }}</RouterLink>
     </nav>
-    <div class="langpick" style="margin-top: 1.5rem">
-      <label class="muted" style="font-size: 0.75rem; display: block">
+    <div class="rail-foot">
+      <div class="themetoggle" role="group" :aria-label="t('theme.label')">
+        <button
+          v-for="th in themes"
+          :key="th"
+          :class="{ on: theme === th }"
+          @click="setTheme(th)"
+        >
+          {{ t("theme." + th) }}
+        </button>
+      </div>
+      <label class="eyebrow" style="margin: 0">
         {{ t("lang.label") }}
-        <select :value="locale" @change="onLocale" style="margin-top: 0.35rem; width: 100%">
+        <select :value="locale" @change="onLocale" style="width: 100%; margin-top: var(--sp-1)">
           <option value="en">English</option>
           <option value="tr">Türkçe</option>
         </select>
@@ -68,10 +82,8 @@ onMounted(async () => {
         </div>
       </div>
       <div v-if="store.mode === 'local'">
-        <label class="muted" style="font-size: 0.75rem; display: block">
-          {{ t("topbar.token") }}
-        </label>
-        <select v-model.number="store.selectedSlot">
+        <label class="eyebrow" style="margin: 0">{{ t("topbar.token") }}</label>
+        <select v-model.number="store.selectedSlot" style="margin-top: var(--sp-1)">
           <option
             v-for="s in store.slots.filter((s) => s.token_present)"
             :key="s.id"
@@ -84,38 +96,34 @@ onMounted(async () => {
     </div>
     <div v-if="store.error" class="error">{{ store.error }}</div>
     <div v-if="store.authRequired" class="card" style="max-width: 26rem">
-      <h2 style="margin-top: 0; font-size: 1rem">{{ t("auth.signin") }}</h2>
+      <h2 class="card-title">{{ t("auth.signin") }}</h2>
       <template v-if="store.oidc">
-        <p class="muted" style="font-size: 0.85rem">
-          {{ t("auth.sso.note") }}
-        </p>
+        <p class="muted">{{ t("auth.sso.note") }}</p>
         <a class="primary" href="/auth/login"
-           style="display: inline-block; text-decoration: none; margin-bottom: 1rem">
+           style="display: inline-block; text-decoration: none; margin-bottom: var(--sp-4); padding: var(--sp-2) var(--sp-4); border-radius: var(--r-sm)">
           {{ t("auth.sso.button") }}
         </a>
         <details>
-          <summary class="muted" style="font-size: 0.8rem">{{ t("auth.useToken") }}</summary>
-          <form @submit.prevent="submitToken" style="margin-top: 0.75rem">
+          <summary class="muted">{{ t("auth.useToken") }}</summary>
+          <form @submit.prevent="submitToken" style="margin-top: var(--sp-3)">
             <input
               v-model="tokenInput"
               type="password"
               :placeholder="t('auth.token.placeholder')"
-              style="width: 100%; margin-bottom: 0.75rem"
+              style="width: 100%; margin-bottom: var(--sp-3)"
             />
             <button class="primary" type="submit">{{ t("auth.connect") }}</button>
           </form>
         </details>
       </template>
       <template v-else>
-        <p class="muted" style="font-size: 0.85rem">
-          {{ t("auth.token.note") }}
-        </p>
+        <p class="muted">{{ t("auth.token.note") }}</p>
         <form @submit.prevent="submitToken">
           <input
             v-model="tokenInput"
             type="password"
             :placeholder="t('auth.token.placeholder')"
-            style="width: 100%; margin-bottom: 0.75rem"
+            style="width: 100%; margin-bottom: var(--sp-3)"
           />
           <button class="primary" type="submit">{{ t("auth.connect") }}</button>
         </form>

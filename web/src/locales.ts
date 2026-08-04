@@ -18,6 +18,10 @@ const en: Record<string, string> = {
   "token.unlabeled": "(unlabeled)",
   "token.slot": "slot",
   "lang.label": "Language",
+  "theme.label": "Theme",
+  "theme.auto": "Auto",
+  "theme.light": "Light",
+  "theme.dark": "Dark",
 
   // Auth
   "auth.signin": "Sign in",
@@ -96,6 +100,8 @@ const en: Record<string, string> = {
 
   // Common (continued)
   "common.running": "Running…",
+  "common.fix": "fix",
+  "common.loading": "Loading…",
 
   // Fleet
   "fleet.loading": "Loading fleet…",
@@ -209,6 +215,10 @@ const tr: Record<string, string> = {
   "token.unlabeled": "(etiketsiz)",
   "token.slot": "yuva",
   "lang.label": "Dil",
+  "theme.label": "Tema",
+  "theme.auto": "Oto",
+  "theme.light": "Açık",
+  "theme.dark": "Koyu",
 
   // Auth
   "auth.signin": "Oturum aç",
@@ -287,6 +297,8 @@ const tr: Record<string, string> = {
 
   // Common (continued)
   "common.running": "Çalışıyor…",
+  "common.fix": "çözüm",
+  "common.loading": "Yükleniyor…",
 
   // Fleet
   "fleet.loading": "Filo yükleniyor…",
