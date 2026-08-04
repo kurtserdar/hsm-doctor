@@ -41,6 +41,10 @@ list of posture findings.*
   and `cnsa-2.0`), producing a health score with **actionable remediation** on
   every finding, and text/JSON/HTML/**SARIF** reports (upload findings to
   GitHub code scanning).
+- **Cryptographic Bill of Materials** — `scan --format cbom` emits a **CycloneDX
+  1.6 CBOM** of the token's keys, certificates and algorithms, each annotated
+  with its post-quantum standing — the inventory a PQC-migration program builds
+  on.
 - **Deep certificate validation** — self-signed leaves, not-yet-valid and weak
   certificate keys, CA misuse, certificate/key mismatch and opt-in chain
   validation (`scan --ca-bundle`).
@@ -124,7 +128,7 @@ report — see the [`scan` report above](#hsm-doctor).
 | Command | What it does |
 |---|---|
 | `hsmdoctor discover` | Module, slot, token and mechanism discovery |
-| `hsmdoctor scan` | Key/certificate inventory + security posture rules + health score; text, JSON, single-file HTML or SARIF report; `--baseline` gates CI on posture regression |
+| `hsmdoctor scan` | Key/certificate inventory + security posture rules + health score; text, JSON, single-file HTML, SARIF or **CBOM** (CycloneDX 1.6) report; `--baseline` gates CI on posture regression |
 | `hsmdoctor certs` | Certificate expiry monitor with cron/CI-friendly exit codes |
 | `hsmdoctor preflight` | Renewal-readiness gate: token present, login, required mechanisms, session headroom, optional keygen/sign probe and vendor tamper/HA — exit 0 ready, 4 postpone, 1 error |
 | `hsmdoctor test` | Safe functional test profiles (key generation, sign/verify, AES-GCM) with ephemeral session objects |

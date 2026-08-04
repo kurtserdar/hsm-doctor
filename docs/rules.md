@@ -71,12 +71,22 @@ the rule `help`/`helpUri` fields in SARIF output.
 
 ## Output formats
 
-`scan --format` accepts `text` (default), `json`, `html` and `sarif`. The
-SARIF 2.1.0 output (`--format sarif`) lets scan results be uploaded to
+`scan --format` accepts `text` (default), `json`, `html`, `sarif` and `cbom`.
+The SARIF 2.1.0 output (`--format sarif`) lets scan results be uploaded to
 code-scanning dashboards such as GitHub Advanced Security: each rule carries
 its severity (mapped to a SARIF level and a `security-severity` score) and its
 remediation, and each finding carries the offending object as a logical
 location. Both posture and vendor findings are included.
+
+The CBOM output (`--format cbom`) is a CycloneDX 1.6 Cryptographic Bill of
+Materials of the token's assets — keys (`related-crypto-material`),
+certificates and the algorithms behind them — with the token as the metadata
+component and a dependency graph linking each asset to its algorithm. Every
+algorithm carries an `hsmdoctor:quantumVulnerable` property (and, where
+meaningful, a `nistQuantumSecurityLevel`), so a CBOM is directly usable as the
+starting inventory for a post-quantum migration. Only assets present on the
+token are listed (not its full mechanism capability set). Output is
+deterministic (no timestamp or serial number), so successive runs diff cleanly.
 
 Unknown fields anywhere in the file are rejected, so typos fail loudly
 instead of producing rules that never match.

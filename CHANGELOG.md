@@ -5,6 +5,17 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [1.19.0] - 2026-08-04
+
+### Added
+
+- `scan --format cbom` — a CycloneDX 1.6 Cryptographic Bill of Materials of the
+  token's keys, certificates and the algorithms behind them, with a dependency
+  graph and an `hsmdoctor:quantumVulnerable` annotation (plus
+  `nistQuantumSecurityLevel` where meaningful) on every algorithm. Only assets
+  present on the token are listed; output is deterministic for clean diffing.
+  Intended as the starting inventory for a post-quantum migration.
+
 ## [1.18.0] - 2026-08-04
 
 ### Added

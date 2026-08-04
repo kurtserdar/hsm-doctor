@@ -84,8 +84,10 @@ Only object metadata is read; private key material never leaves the HSM.`,
 				err = rep.HTML(out)
 			case "sarif":
 				err = rep.SARIF(out)
+			case "cbom":
+				err = rep.CBOM(out)
 			default:
-				return fmt.Errorf("unknown format %q (want text, json, html or sarif)", format)
+				return fmt.Errorf("unknown format %q (want text, json, html, sarif or cbom)", format)
 			}
 			if err != nil {
 				return err
@@ -99,7 +101,7 @@ Only object metadata is read; private key material never leaves the HSM.`,
 	conn.register(cmd, true)
 	cmd.Flags().StringVar(&rulesPath, "rules", "", "path to a custom rules YAML file replacing all packs")
 	cmd.Flags().StringArrayVar(&packNames, "pack", nil, "policy pack to apply (embedded name or file path; repeatable, see 'hsmdoctor packs')")
-	cmd.Flags().StringVar(&format, "format", "text", "output format: text, json, html or sarif")
+	cmd.Flags().StringVar(&format, "format", "text", "output format: text, json, html, sarif or cbom")
 	cmd.Flags().StringVar(&outPath, "out", "-", "output file ('-' for stdout)")
 	cmd.Flags().StringVar(&failOn, "fail-on", "", "exit non-zero if findings at or above this severity exist (critical, high, medium, low)")
 	cmd.Flags().StringVar(&caBundle, "ca-bundle", "", "PEM trust anchors; enables certificate chain validation (HSM-019)")

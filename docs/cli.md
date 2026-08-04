@@ -55,7 +55,7 @@ Flags:
       --baseline-max-drop int   health-score drop that counts as a regression for --baseline (default 10)
       --ca-bundle string        PEM trust anchors; enables certificate chain validation (HSM-019)
       --fail-on string          exit non-zero if findings at or above this severity exist (critical, high, medium, low)
-      --format string           output format: text, json, html or sarif (default "text")
+      --format string           output format: text, json, html, sarif or cbom (default "text")
   -h, --help                    help for scan
       --module string           path to the PKCS#11 library
       --out string              output file ('-' for stdout) (default "-")

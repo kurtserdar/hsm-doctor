@@ -33,6 +33,10 @@ Which part of the version bumps follows directly from the interfaces below:
 - **SARIF output.** `scan --format sarif` conforms to the OASIS SARIF 2.1.0
   schema, so its shape is fixed by that standard; the mapping of severities to
   SARIF levels and `security-severity` scores is stable within a major version.
+- **CBOM output.** `scan --format cbom` conforms to the CycloneDX 1.6
+  cryptographic-asset schema, so its shape is fixed by that standard. The
+  tool-specific `hsmdoctor:*` properties (e.g. `quantumVulnerable`) are
+  additive metadata, not a stable interface, and may change.
 - **Trace format.** The Flight Recorder JSON Lines schema (`internal/trace`
   `Event`). New fields may be added; existing ones are stable.
 - **Configuration file formats.** The rules/policy-pack YAML, the auth config
