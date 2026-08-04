@@ -107,6 +107,9 @@ const en: Record<string, string> = {
   "fleet.loading": "Loading fleet…",
   "fleet.empty":
     "No HSMs recorded yet. Run a scan (local mode) or enroll an agent (central mode) and reports will appear here.",
+  "fleet.totalHsms": "HSMs",
+  "fleet.needAttention": "need attention",
+  "fleet.avgScore": "avg score",
   "th.score": "Score",
   "th.token": "Token",
   "th.serial": "Serial",
@@ -304,6 +307,9 @@ const tr: Record<string, string> = {
   "fleet.loading": "Filo yükleniyor…",
   "fleet.empty":
     "Henüz kayıtlı HSM yok. Bir tarama çalıştırın (yerel mod) veya bir aracı kaydedin (merkezi mod); raporlar burada görünecek.",
+  "fleet.totalHsms": "HSM",
+  "fleet.needAttention": "dikkat gerekiyor",
+  "fleet.avgScore": "ort. skor",
   "th.score": "Skor",
   "th.token": "Token",
   "th.serial": "Seri No",

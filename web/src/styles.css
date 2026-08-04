@@ -293,6 +293,43 @@ button.primary {
   font-weight: 600;
 }
 
+/* Content links (not the primary button-link). */
+main a:not(.primary) {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+main a:not(.primary):hover {
+  text-decoration: underline;
+}
+
+/* Inline checkbox label. */
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--fg);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.check input {
+  width: auto;
+  accent-color: var(--accent);
+}
+
+/* Group of code chips (mechanism lists). */
+.codes {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+}
+
 button.primary:disabled {
   opacity: 0.45;
   cursor: default;
@@ -477,6 +514,11 @@ tbody tr:last-child td {
   color: var(--info);
   background: color-mix(in srgb, var(--info) 14%, transparent);
   border-color: color-mix(in srgb, var(--info) 30%, transparent);
+}
+
+.badge.lg {
+  font-size: var(--fs-sm);
+  padding: 0.25rem 0.75rem;
 }
 
 /* --- findings list (severity stripe) --- */

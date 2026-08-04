@@ -48,11 +48,11 @@ function yn(v: boolean): string {
 
 <template>
   <div class="formrow">
-    <label style="display: flex; align-items: center; gap: 0.4rem; margin: 0">
+    <label class="check">
       <input v-model="withTest" type="checkbox" />
       {{ t("pqc.probes") }}
     </label>
-    <label style="display: flex; align-items: center; gap: 0.4rem; margin: 0">
+    <label class="check">
       <input v-model="withHost" type="checkbox" />
       {{ t("pqc.hostCheck") }}
     </label>
@@ -65,13 +65,15 @@ function yn(v: boolean): string {
 
   <template v-if="data">
     <div class="card">
-      <span class="badge" :class="verdictClass(data.detection.verdict)" style="font-size: 0.9rem">
-        {{ data.detection.verdict }}
-      </span>
-      <span v-if="data.detection.cryptoki_version" class="muted">
-        · Cryptoki {{ data.detection.cryptoki_version }}
-      </span>
-      <p class="muted" style="margin-bottom: 0">{{ data.exposure.summary }}</p>
+      <div class="card-title">
+        <span class="badge lg" :class="verdictClass(data.detection.verdict)">
+          {{ data.detection.verdict }}
+        </span>
+        <span v-if="data.detection.cryptoki_version" class="muted">
+          · Cryptoki {{ data.detection.cryptoki_version }}
+        </span>
+      </div>
+      <p class="muted" style="margin: 0">{{ data.exposure.summary }}</p>
     </div>
 
     <div class="card">
@@ -89,22 +91,26 @@ function yn(v: boolean): string {
                 <span v-else-if="f.incomplete" class="badge medium">{{ t("pqc.partial") }}</span>
                 <span v-else class="muted">{{ t("pqc.no") }}</span>
               </td>
-              <td class="muted">
-                <code v-for="(m, i) in f.mechanisms ?? []" :key="i" style="margin-right: 0.3rem">{{ m }}</code>
+              <td>
+                <span class="codes">
+                  <code v-for="(m, i) in f.mechanisms ?? []" :key="i">{{ m }}</code>
+                </span>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
-      <p v-if="data.detection.vendor_defined?.length" class="muted" style="margin-bottom: 0; font-size: 0.85rem">
+      <p v-if="data.detection.vendor_defined?.length" class="muted" style="margin: var(--sp-3) 0 0; font-size: var(--fs-sm)">
         {{ t("pqc.vendorDefined") }}
-        <code v-for="(v, i) in data.detection.vendor_defined" :key="i" style="margin-right: 0.3rem">{{ v }}</code>
+        <span class="codes">
+          <code v-for="(v, i) in data.detection.vendor_defined" :key="i">{{ v }}</code>
+        </span>
         {{ t("pqc.vendorHint") }}
       </p>
     </div>
 
     <div v-if="data.tests?.length" class="card">
-      <h2 style="margin-top: 0; font-size: 1rem">{{ t("pqc.probesTitle") }}</h2>
+      <h2 class="card-title">{{ t("pqc.probesTitle") }}</h2>
       <div class="tablebox">
         <table>
           <thead><tr><th>{{ t("th.paramSet") }}</th><th>{{ t("th.status") }}</th><th>{{ t("th.detail") }}</th></tr></thead>
@@ -139,7 +145,7 @@ function yn(v: boolean): string {
     </div>
 
     <div v-if="data.host_openssl" class="card">
-      <h2 style="margin-top: 0; font-size: 1rem">{{ t("pqc.hostTitle") }}</h2>
+      <h2 class="card-title">{{ t("pqc.hostTitle") }}</h2>
       <p v-if="!data.host_openssl.available" class="muted" style="margin: 0">
         {{ t("pqc.noOpenssl") }}
       </p>
