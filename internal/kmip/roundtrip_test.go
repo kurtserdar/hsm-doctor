@@ -25,7 +25,7 @@ type getAttributesResponsePayload struct {
 // exercises the client's real TTLV encoding and decoding.
 func fakeServer(t *testing.T, conn net.Conn, attrs map[string][]kmip.Attribute) {
 	t.Helper()
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 	for {
 		req, err := readTTLV(conn)
 		if err != nil {

@@ -73,11 +73,11 @@ type DriftEvent struct {
 // scans: a health-score drop or a new critical/high finding. It complements
 // DriftEvent, which tracks inventory changes.
 type RegressionEvent struct {
-	ID         int64           `json:"id"`
-	HSMID      int64           `json:"hsm_id"`
-	DetectedAt time.Time       `json:"detected_at"`
-	OldScanID  int64           `json:"old_scan_id"`
-	NewScanID  int64           `json:"new_scan_id"`
+	ID         int64     `json:"id"`
+	HSMID      int64     `json:"hsm_id"`
+	DetectedAt time.Time `json:"detected_at"`
+	OldScanID  int64     `json:"old_scan_id"`
+	NewScanID  int64     `json:"new_scan_id"`
 	// ScoreDelta is the new score minus the old; negative means worse.
 	ScoreDelta int `json:"score_delta"`
 	// Detail is the JSON-encoded regression.Regression that triggered it.

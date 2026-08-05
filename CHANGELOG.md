@@ -5,6 +5,19 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [Unreleased]
+
+### Fixed
+
+- Restored a green CI: `internal/store/store.go` had drifted out of `gofmt`
+  format after the Go 1.25 toolchain bump, failing the CI formatting gate (the
+  release workflow does not run it, so it went unnoticed). Reformatted it, and
+  resolved the lint findings that the failing gate had been masking (errcheck on
+  deferred `store.Store`/`kmip.Client` cleanup via `.golangci.yml`, a `net.Conn`
+  close in a test, and a staticcheck tagged-switch suggestion in `internal/pqc`).
+- Documentation: added the `packs` and `version` commands to the README command
+  table.
+
 ## [1.24.0] - 2026-08-05
 
 ### Added

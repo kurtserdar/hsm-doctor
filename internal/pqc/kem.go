@@ -161,10 +161,10 @@ func kemRoundTrip(modulePath string, session, pub, priv uint64, mech uint) (uint
 	var o1, o2 C.CK_ULONG
 	rc := C.kem_roundtrip(cpath, C.CK_ULONG(session), C.CK_ULONG(pub),
 		C.CK_ULONG(priv), C.CK_ULONG(mech), &o1, &o2)
-	switch {
-	case rc == 0:
+	switch rc {
+	case 0:
 		return uint64(o1), uint64(o2), nil
-	case rc == -1:
+	case -1:
 		return 0, 0, errKEMUnsupported
 	default:
 		return 0, 0, fmt.Errorf("C_EncapsulateKey/C_DecapsulateKey failed (CKR 0x%x)", uint64(rc))

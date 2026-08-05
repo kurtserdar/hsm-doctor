@@ -14,3 +14,6 @@ linters:
         # Deferred cleanup of read-only query results and test databases.
         - (*database/sql.Rows).Close
         - (*github.com/kurtserdar/hsm-doctor/internal/store.DB).Close
+        - (github.com/kurtserdar/hsm-doctor/internal/store.Store).Close
+        # Deferred cleanup of a KMIP client connection.
+        - (*github.com/kurtserdar/hsm-doctor/internal/kmip.Client).Close

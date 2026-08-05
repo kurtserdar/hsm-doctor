@@ -157,6 +157,8 @@ report — see the [`scan` report above](#hsm-doctor).
 | `hsmdoctor serve` | Local web interface + REST API with scan history, automatic drift detection, Prometheus metrics and cron-scheduled scans |
 | `hsmdoctor server` | Central fleet server: collects reports pushed by agents, stores history, detects drift, serves the fleet dashboard |
 | `hsmdoctor agent` | Runs where the vendor PKCS#11 client lives; scans on an interval and pushes reports to the central server |
+| `hsmdoctor packs` | List the built-in policy packs and their rule counts |
+| `hsmdoctor version` | Print the version and build commit |
 
 Tokens can be addressed classically (`--module` + `--slot`) or with an
 RFC 7512 PKCS#11 URI:
