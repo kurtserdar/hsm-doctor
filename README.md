@@ -174,7 +174,20 @@ hsmdoctor scan --uri "pkcs11:token=PROD-PARTITION?module-path=/usr/lib/libCrypto
 
 ## Install
 
-Pre-built binaries for Linux, macOS and Windows are on the
+### Homebrew (macOS / Linux)
+
+```sh
+brew tap kurtserdar/tap
+brew install hsm-doctor
+```
+
+This installs the pre-built binary (no cgo build) along with shell completions
+and man pages. The [tap](https://github.com/kurtserdar/homebrew-tap) tracks
+each release automatically.
+
+### Pre-built binaries
+
+Binaries for Linux, macOS and Windows are on the
 [releases page](https://github.com/kurtserdar/hsm-doctor/releases).
 
 Building from source requires cgo (the PKCS#11 wrapper uses dlopen), so a C

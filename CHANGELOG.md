@@ -5,6 +5,16 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [Unreleased]
+
+### Added
+
+- Homebrew install: `brew tap kurtserdar/tap && brew install hsm-doctor`. The
+  formula lives in a separate [tap](https://github.com/kurtserdar/homebrew-tap)
+  that regenerates itself from each release (version + checksums) on a schedule,
+  installs the pre-built binary plus completions and man pages, and needs no
+  cross-repository token.
+
 ## [1.27.0] - 2026-08-05
 
 ### Added
