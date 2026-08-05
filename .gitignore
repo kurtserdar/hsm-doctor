@@ -49,6 +49,8 @@ Thumbs.db
 # --- Environment / secrets ---
 .env
 .env.*
+# ...but keep committed .env templates (e.g. deploy/.env.example).
+!.env.example
 *.pin
 /web/*.tsbuildinfo
 

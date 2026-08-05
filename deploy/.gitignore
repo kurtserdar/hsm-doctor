@@ -3,3 +3,4 @@
 auth.yaml
 vendor.yaml
 tls/
+monitoring/prometheus.token

@@ -53,5 +53,39 @@ services:
       - "8443:8443"
     restart: unless-stopped
 
+  # Optional monitoring stack. Start it with:
+  #   docker compose --profile monitoring up -d
+  # First: cp monitoring/prometheus.token.example monitoring/prometheus.token
+  # and put one of your viewer tokens from auth.yaml in it.
+  prometheus:
+    image: prom/prometheus:latest
+    profiles: ["monitoring"]
+    depends_on:
+      - server
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus-alerts.yml:/etc/prometheus/hsmdoctor-alerts.yml:ro
+      - ./monitoring/prometheus.token:/etc/prometheus/token:ro
+      - prom-data:/prometheus
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    profiles: ["monitoring"]
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
 volumes:
   db-data:
+  prom-data:
+  grafana-data:

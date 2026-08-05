@@ -5,6 +5,24 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [1.24.0] - 2026-08-05
+
+### Added
+
+- Monitoring bundle under `deploy/monitoring/`: ready-made Prometheus alert
+  rules (health score, critical findings, certificate expiry, posture
+  regression, shared private keys, vendor tamper, HA degradation, stale scans,
+  PQC exposure) and an importable Grafana fleet dashboard. Either drop them into
+  your own Prometheus/Grafana, or start the turnkey stack with
+  `docker compose --profile monitoring up -d` (Prometheus + Grafana,
+  datasource and dashboard auto-provisioned).
+
+### Fixed
+
+- `deploy/.env.example` is now tracked in the repository. A broad `.env.*`
+  gitignore rule had excluded it, so fresh clones were missing the template the
+  deploy guide tells you to copy.
+
 ## [1.23.0] - 2026-08-05
 
 ### Added

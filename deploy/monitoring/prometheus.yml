@@ -1,0 +1,25 @@
+# Prometheus configuration for the bundled HSM Doctor monitoring stack.
+#
+# It scrapes /metrics on the central server over HTTPS with a viewer bearer
+# token. The token is read from a mounted file (see prometheus.token.example);
+# create ./prometheus.token with one of your viewer tokens from auth.yaml.
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+rule_files:
+  - /etc/prometheus/hsmdoctor-alerts.yml
+
+scrape_configs:
+  - job_name: hsmdoctor
+    scheme: https
+    # The bundled stack uses the server's self-signed certificate on the
+    # internal Docker network. Mount your CA and set `ca_file` instead to
+    # verify it; drop insecure_skip_verify in production with real certs.
+    tls_config:
+      insecure_skip_verify: true
+    authorization:
+      type: Bearer
+      credentials_file: /etc/prometheus/token
+    static_configs:
+      - targets: ["server:8443"]

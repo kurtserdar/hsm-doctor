@@ -121,6 +121,16 @@ curl -H "Authorization: Bearer $TOKEN" https://hsm-central.acme.internal:8443/ap
 curl -H "Authorization: Bearer $TOKEN" https://hsm-central.acme.internal:8443/metrics   # Prometheus
 ```
 
+**Prometheus + Grafana** — for a turnkey monitoring stack (alert rules + a fleet
+dashboard, or drop-in artifacts for your own Prometheus/Grafana):
+
+```sh
+cp monitoring/prometheus.token.example monitoring/prometheus.token   # a viewer token
+docker compose --profile monitoring up -d      # Grafana on :3000, dashboard preloaded
+```
+
+See [monitoring/README.md](monitoring/README.md).
+
 ## Production hardening
 
 - Real TLS certificates from your CA (replace `./tls`), not the self-signed one.

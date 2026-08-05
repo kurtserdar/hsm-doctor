@@ -230,13 +230,18 @@ scrape_configs:
       credentials: <viewer token>
 ```
 
-Useful alerts: `hsmdoctor_health_score < 70`,
+Ready-made **alert rules** and a **Grafana dashboard** ship under
+[`deploy/monitoring/`](../deploy/monitoring/) — either drop them into your own
+Prometheus/Grafana, or start the bundled stack with
+`docker compose --profile monitoring up -d`. The rules cover:
+`hsmdoctor_health_score < 70`,
 `hsmdoctor_findings{severity="critical"} > 0`,
-`hsmdoctor_certificate_min_days_to_expiry < 14`,
-`time() - hsmdoctor_last_scan_timestamp_seconds > 3600`,
-`increase(hsmdoctor_posture_regressions_total[1h]) > 0` (posture worsened),
-`hsmdoctor_shared_private_keys > 0` (a private key was found on more than one
-HSM — see `GET /api/v1/shared-keys` and the fleet dashboard for the locations).
+`hsmdoctor_certificate_min_days_to_expiry < 14` (and `< 0` expired),
+`time() - hsmdoctor_last_scan_timestamp_seconds > 3600` (agent stopped
+reporting), `increase(hsmdoctor_posture_regressions_total[1h]) > 0` (posture
+worsened), `hsmdoctor_shared_private_keys > 0` (a private key was found on more
+than one HSM — see `GET /api/v1/shared-keys`), `hsmdoctor_vendor_tamper > 0`,
+and HA degradation.
 
 ## Webhooks
 

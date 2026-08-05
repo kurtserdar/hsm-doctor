@@ -1,0 +1,105 @@
+# Prometheus alerting rules for HSM Doctor fleet metrics.
+#
+# These fire on the series exposed by `hsmdoctor server`/`serve` at /metrics.
+# Drop this file into your Prometheus `rule_files:` (it is loaded automatically
+# by the bundled monitoring stack — see README.md). Tune the thresholds and
+# `for:` durations to your environment.
+groups:
+  - name: hsmdoctor
+    rules:
+      - alert: HSMDoctorHealthScoreLow
+        expr: hsmdoctor_health_score < 70
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "HSM {{ $labels.label }} health score is {{ $value }}/100"
+          description: "The security posture score dropped below 70. Run `hsmdoctor scan` (or open the dashboard) to see the findings."
+
+      - alert: HSMDoctorHealthScoreCritical
+        expr: hsmdoctor_health_score < 50
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: "HSM {{ $labels.label }} health score is {{ $value }}/100"
+          description: "The security posture score is critically low."
+
+      - alert: HSMDoctorCriticalFinding
+        expr: hsmdoctor_findings{severity="critical"} > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $value }} critical finding(s) on HSM {{ $labels.label }}"
+          description: "A critical posture finding is present (e.g. an extractable private key)."
+
+      - alert: HSMDoctorCertificateExpiringSoon
+        expr: hsmdoctor_certificate_min_days_to_expiry >= 0 and hsmdoctor_certificate_min_days_to_expiry < 14
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "A certificate on HSM {{ $labels.label }} expires in {{ $value }} day(s)"
+          description: "Renew the certificate before it expires and roll it onto the token."
+
+      - alert: HSMDoctorCertificateExpired
+        expr: hsmdoctor_certificate_min_days_to_expiry < 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "A certificate on HSM {{ $labels.label }} has expired"
+          description: "Re-issue the certificate and remove the expired object from the token."
+
+      - alert: HSMDoctorPostureRegression
+        expr: increase(hsmdoctor_posture_regressions_total[1h]) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "Posture regression on HSM {{ $labels.label }}"
+          description: "The score dropped or a new critical/high finding appeared versus the previous scan."
+
+      - alert: HSMDoctorSharedPrivateKey
+        expr: hsmdoctor_shared_private_keys > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $value }} private key(s) shared across HSMs in the fleet"
+          description: "The same private-key fingerprint appears on more than one HSM — a sign the key material left its hardware boundary. See GET /api/v1/shared-keys."
+
+      - alert: HSMDoctorVendorTamper
+        expr: hsmdoctor_vendor_tamper > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "Tamper condition on HSM {{ $labels.label }} ({{ $labels.provider }})"
+          description: "The vendor provider reports a tamper condition."
+
+      - alert: HSMDoctorHADegraded
+        expr: hsmdoctor_vendor_ha_members_up < hsmdoctor_vendor_ha_members_total
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "HA group degraded on HSM {{ $labels.label }} ({{ $labels.provider }})"
+          description: "{{ $value }} HA member(s) up out of the configured total."
+
+      - alert: HSMDoctorStaleScan
+        expr: time() - hsmdoctor_last_scan_timestamp_seconds > 3600
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "No recent scan for HSM {{ $labels.label }}"
+          description: "The most recent scan is over an hour old; the agent may have stopped reporting."
+
+      - alert: HSMDoctorHNDLExposure
+        expr: hsmdoctor_pqc_hndl_exposed_keys > 0
+        for: 1h
+        labels:
+          severity: info
+        annotations:
+          summary: "{{ $value }} harvest-now-decrypt-later key(s) on HSM {{ $labels.label }}"
+          description: "Quantum-vulnerable keys that can decrypt or unwrap. Plan a migration to ML-KEM and rotate them."
