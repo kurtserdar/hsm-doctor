@@ -2,6 +2,15 @@ package kmip
 
 import "testing"
 
+func defaultRuleSet(t *testing.T) *RuleSet {
+	t.Helper()
+	rs, err := DefaultRuleSet()
+	if err != nil {
+		t.Fatalf("DefaultRuleSet: %v", err)
+	}
+	return rs
+}
+
 func has(rep *Report, ruleID string) bool {
 	for _, f := range rep.Findings {
 		if f.RuleID == ruleID {
@@ -18,7 +27,7 @@ func TestEvaluateWeakAndState(t *testing.T) {
 		{ID: "3", Type: "SymmetricKey", Algorithm: "AES", Length: 256, State: "Deactivated", Names: []string{"old"}},
 		{ID: "4", Type: "SymmetricKey", Algorithm: "AES", Length: 256, State: "Active", Names: []string{"good"}},
 	}}
-	rep := Evaluate(inv)
+	rep := Evaluate(inv, defaultRuleSet(t))
 	if !has(rep, "KMIP-001") {
 		t.Error("weak RSA-1024 should raise KMIP-001")
 	}
@@ -45,7 +54,7 @@ func TestEvaluateUsageAndUnnamed(t *testing.T) {
 			UsageMask: []string{"Sign", "Decrypt"}, Names: []string{"mixed"}},
 		{ID: "6", Type: "SymmetricKey", Algorithm: "AES", Length: 256, State: "Active"}, // no name
 	}}
-	rep := Evaluate(inv)
+	rep := Evaluate(inv, defaultRuleSet(t))
 	if !has(rep, "KMIP-004") {
 		t.Error("sign+decrypt usage should raise KMIP-004")
 	}

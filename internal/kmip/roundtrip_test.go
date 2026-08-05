@@ -147,7 +147,7 @@ func TestClientRoundTrip(t *testing.T) {
 	}
 
 	// The full inventory + posture path flags the weak key.
-	rep := Evaluate(&Inventory{Objects: []Object{obj}})
+	rep := Evaluate(&Inventory{Objects: []Object{obj}}, defaultRuleSet(t))
 	if !has(rep, "KMIP-001") {
 		t.Error("round-tripped weak RSA-1024 should raise KMIP-001")
 	}

@@ -5,6 +5,17 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [1.27.0] - 2026-08-05
+
+### Added
+
+- Custom KMIP posture rules. The built-in `KMIP-001..005` checks are now a YAML
+  rule set evaluated by a small KMIP engine, so `kmip scan --rules FILE` can
+  replace them with your own. Conditions cover object type, algorithm, key
+  length, lifecycle state, usage mask and naming, plus a `weak_key` composite;
+  `kmip rules` prints the built-in set as a starting point. Behavior of the
+  built-in rules is unchanged.
+
 ## [1.26.0] - 2026-08-05
 
 ### Added

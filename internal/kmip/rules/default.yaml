@@ -1,0 +1,48 @@
+# Default KMIP posture rules. These reproduce HSM Doctor's built-in checks;
+# copy this file as a starting point for custom rules (kmip scan --rules FILE).
+pack:
+  name: default
+  description: Default KMIP posture rules for managed objects.
+
+rules:
+  - id: KMIP-001
+    title: Weak cryptographic key
+    severity: high
+    description: The object's algorithm/length is below the accepted minimum strength.
+    remediation: >-
+      Replace the key with an approved strength (RSA-2048+/ECC P-224+/AES-128+)
+      and re-key its consumers.
+    match:
+      weak_key: true
+
+  - id: KMIP-002
+    title: Compromised key still present
+    severity: critical
+    description: An object in the Compromised state is still stored on the server.
+    remediation: Destroy the compromised object and rotate anything it protected.
+    match:
+      state_in: [Compromised, "Destroyed Compromised"]
+
+  - id: KMIP-003
+    title: Deactivated key not destroyed
+    severity: medium
+    description: A Deactivated object is retained rather than destroyed.
+    remediation: Destroy deactivated keys once their retention period ends.
+    match:
+      state_in: [Deactivated]
+
+  - id: KMIP-004
+    title: Key mixes signing and decryption
+    severity: medium
+    description: The usage mask grants both Sign and Decrypt (role mixing).
+    remediation: Split signing and decryption into separate single-purpose keys.
+    match:
+      usage_all_of: [Sign, Decrypt]
+
+  - id: KMIP-005
+    title: Unnamed managed object
+    severity: low
+    description: The object has no Name attribute, so operators cannot identify it.
+    remediation: Give every managed object a Name so operators can identify it.
+    match:
+      unnamed: true

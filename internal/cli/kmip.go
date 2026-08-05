@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -24,23 +25,64 @@ evaluate their security posture. Read-only: no keys are created, modified or
 destroyed.`,
 	}
 	cmd.AddCommand(newKMIPScanCmd())
+	cmd.AddCommand(newKMIPRulesCmd())
 	return cmd
+}
+
+// resolveKMIPRules loads the KMIP rule set: a custom file when path is set,
+// otherwise the built-in rules.
+func resolveKMIPRules(path string) (*kmip.RuleSet, error) {
+	if path == "" {
+		return kmip.DefaultRuleSet()
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("reading KMIP rules: %w", err)
+	}
+	return kmip.Load(data)
+}
+
+func kmipRulesName(rs *kmip.RuleSet, path string) string {
+	if rs.Pack != nil && rs.Pack.Name != "" {
+		return rs.Pack.Name
+	}
+	if path != "" {
+		return strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
+	}
+	return "default"
+}
+
+// newKMIPRulesCmd prints the built-in KMIP rules, a starting point for --rules.
+func newKMIPRulesCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "rules",
+		Short: "Print the built-in KMIP posture rules (a starting point for --rules)",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			_, err := cmd.OutOrStdout().Write(kmip.DefaultRules)
+			return err
+		},
+	}
 }
 
 func newKMIPScanCmd() *cobra.Command {
 	var cfg kmip.Config
-	var format, outPath, failOn, baseline string
+	var format, outPath, failOn, baseline, rulesPath string
 	var baselineMaxDrop int
 
 	cmd := &cobra.Command{
 		Use:   "scan",
 		Short: "Inventory a KMIP server and report its security posture",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			rules, err := resolveKMIPRules(rulesPath)
+			if err != nil {
+				return err
+			}
 			inv, err := kmip.Collect(cfg, time.Now())
 			if err != nil {
 				return err
 			}
-			rep := kmip.Evaluate(inv)
+			rep := kmip.Evaluate(inv, rules)
+			rep.RulePacks = []string{kmipRulesName(rules, rulesPath)}
 
 			out, closeOut, err := openOutput(outPath)
 			if err != nil {
@@ -74,6 +116,7 @@ func newKMIPScanCmd() *cobra.Command {
 	cmd.Flags().StringVar(&cfg.ClientKey, "client-key", "", "client private key for mutual TLS")
 	cmd.Flags().BoolVar(&cfg.Insecure, "insecure", false, "skip server certificate verification (labs only)")
 	cmd.Flags().DurationVar(&cfg.Timeout, "timeout", 15*time.Second, "connection and request timeout")
+	cmd.Flags().StringVar(&rulesPath, "rules", "", "custom KMIP rules YAML file replacing the built-in rules (see 'kmip rules')")
 	cmd.Flags().StringVar(&format, "format", "text", "output format: text, json or sarif")
 	cmd.Flags().StringVar(&outPath, "out", "-", "output file ('-' for stdout)")
 	cmd.Flags().StringVar(&failOn, "fail-on", "", "exit non-zero if findings at or above this severity exist (critical, high, medium, low)")

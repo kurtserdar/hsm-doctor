@@ -50,3 +50,37 @@ as the PKCS#11 scan).
 
 Findings carry remediation text, and `--fail-on` turns them into a non-zero
 exit for CI.
+
+## Custom rules
+
+The built-in rules above are a YAML rule set evaluated by a small KMIP engine —
+print it with `hsmdoctor kmip rules` as a starting point, and replace it with
+your own via `kmip scan --rules FILE`. A rule is metadata plus a `match` whose
+conditions must all hold (logical AND):
+
+| Condition | Meaning |
+|---|---|
+| `object_type_in` | KMIP object type is listed (case-insensitive) |
+| `algorithm_in` | Cryptographic algorithm is listed (case-insensitive) |
+| `length_lt` | Known key length is below N bits |
+| `state_in` | Lifecycle state is listed (case-insensitive) |
+| `usage_all_of` | Usage mask grants every listed usage |
+| `usage_any_of` | Usage mask grants any listed usage |
+| `unnamed` | Object has (or lacks) a Name attribute |
+| `weak_key` | Built-in below-minimum-strength heuristic (as in `KMIP-001`) |
+
+```yaml
+pack:
+  name: strict-kmip
+rules:
+  - id: ORG-KMIP-001
+    title: RSA key below 3072 bits
+    severity: high
+    remediation: Re-key at RSA-3072 or migrate to ECC P-384.
+    match:
+      algorithm_in: [RSA]
+      length_lt: 3072
+```
+
+Unknown fields and rules with an empty `match` are rejected, so typos fail
+loudly. `--rules` replaces the built-in set entirely.
