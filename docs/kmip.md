@@ -24,8 +24,14 @@ hsmdoctor kmip scan \
   `--insecure` to skip verification (labs only).
 - `--client-cert` / `--client-key` — client certificate for mutual TLS; most
   KMIP servers require it.
-- `--format text|json`, `--out FILE`, `--fail-on <severity>` for CI, and
-  `--timeout` behave as they do for `scan`.
+- `--format text|json|sarif`, `--out FILE`, `--fail-on <severity>` for CI, and
+  `--timeout` behave as they do for `scan`. `--format sarif` emits the same
+  SARIF 2.1.0 shape as `scan`, so KMIP findings upload to code-scanning
+  dashboards too; each result is qualified by the server endpoint.
+- `--baseline FILE` (with `--baseline-max-drop N`, default 10) compares the
+  current posture against a saved JSON report and exits non-zero on a
+  regression — the KMIP counterpart of `scan --baseline`, sharing the same
+  detection logic.
 
 ## What it reports
 

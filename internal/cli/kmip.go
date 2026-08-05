@@ -1,12 +1,17 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/kurtserdar/hsm-doctor/internal/kmip"
 	"github.com/kurtserdar/hsm-doctor/internal/policy"
+	"github.com/kurtserdar/hsm-doctor/internal/regression"
+	"github.com/kurtserdar/hsm-doctor/internal/report"
+	"github.com/kurtserdar/hsm-doctor/internal/version"
 	"github.com/spf13/cobra"
 )
 
@@ -24,7 +29,8 @@ destroyed.`,
 
 func newKMIPScanCmd() *cobra.Command {
 	var cfg kmip.Config
-	var format, outPath, failOn string
+	var format, outPath, failOn, baseline string
+	var baselineMaxDrop int
 
 	cmd := &cobra.Command{
 		Use:   "scan",
@@ -49,8 +55,15 @@ func newKMIPScanCmd() *cobra.Command {
 				if err := jsonEncoder(out).Encode(rep); err != nil {
 					return err
 				}
+			case "sarif":
+				if err := report.FindingsSARIF(out, version.Version, inv.Endpoint, rep.Findings); err != nil {
+					return err
+				}
 			default:
-				return fmt.Errorf("unknown format %q (want text or json)", format)
+				return fmt.Errorf("unknown format %q (want text, json or sarif)", format)
+			}
+			if err := checkKMIPBaseline(cmd, baseline, baselineMaxDrop, rep); err != nil {
+				return err
 			}
 			return checkKMIPFailOn(failOn, rep)
 		},
@@ -61,11 +74,39 @@ func newKMIPScanCmd() *cobra.Command {
 	cmd.Flags().StringVar(&cfg.ClientKey, "client-key", "", "client private key for mutual TLS")
 	cmd.Flags().BoolVar(&cfg.Insecure, "insecure", false, "skip server certificate verification (labs only)")
 	cmd.Flags().DurationVar(&cfg.Timeout, "timeout", 15*time.Second, "connection and request timeout")
-	cmd.Flags().StringVar(&format, "format", "text", "output format: text or json")
+	cmd.Flags().StringVar(&format, "format", "text", "output format: text, json or sarif")
 	cmd.Flags().StringVar(&outPath, "out", "-", "output file ('-' for stdout)")
 	cmd.Flags().StringVar(&failOn, "fail-on", "", "exit non-zero if findings at or above this severity exist (critical, high, medium, low)")
+	cmd.Flags().StringVar(&baseline, "baseline", "", "compare against a saved JSON report (from --format json) and exit non-zero on posture regression")
+	cmd.Flags().IntVar(&baselineMaxDrop, "baseline-max-drop", regression.DefaultScoreDropThreshold, "health-score drop that counts as a regression for --baseline")
 	_ = cmd.MarkFlagRequired("endpoint")
 	return cmd
+}
+
+// checkKMIPBaseline compares the current KMIP posture against a saved report
+// and turns a regression into a non-zero exit, mirroring scan --baseline.
+func checkKMIPBaseline(cmd *cobra.Command, path string, maxDrop int, rep *kmip.Report) error {
+	if path == "" {
+		return nil
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("reading baseline: %w", err)
+	}
+	var base kmip.Report
+	if err := json.Unmarshal(data, &base); err != nil {
+		return fmt.Errorf("parsing baseline report %q: %w", path, err)
+	}
+	reg := regression.Detect(base.Score, rep.Score, base.Findings, rep.Findings, maxDrop)
+	if reg == nil {
+		return nil
+	}
+	errw := cmd.ErrOrStderr()
+	fmt.Fprintf(errw, "KMIP posture regressed against baseline (score %d → %d):\n", base.Score, rep.Score)
+	for _, reason := range reg.Reasons {
+		fmt.Fprintf(errw, "  - %s\n", reason)
+	}
+	return fmt.Errorf("KMIP posture regressed against baseline (score %d → %d)", base.Score, rep.Score)
 }
 
 func printKMIP(cmd *cobra.Command, rep *kmip.Report) {

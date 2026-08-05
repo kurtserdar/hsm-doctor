@@ -15,13 +15,29 @@ import (
 // logical location (the offending object, qualified by the token serial)
 // rather than a physical one.
 func (r *Report) SARIF(w io.Writer) error {
+	serial := ""
+	if r.Inventory != nil && r.Inventory.Slot.Token != nil {
+		serial = r.Inventory.Slot.Token.SerialNumber
+	}
+	findings := append([]policy.Finding{}, r.Findings...)
+	if r.Vendor != nil {
+		findings = append(findings, r.Vendor.Findings...)
+	}
+	return FindingsSARIF(w, r.Version, serial, findings)
+}
+
+// FindingsSARIF writes a SARIF 2.1.0 log for an arbitrary set of findings,
+// each qualified by a source identifier (a token serial number for PKCS#11, a
+// server endpoint for KMIP). It is the shared core behind Report.SARIF so that
+// every scanner emits identical SARIF shapes.
+func FindingsSARIF(w io.Writer, version, sourceID string, findings []policy.Finding) error {
 	log := sarifLog{
 		Schema:  "https://json.schemastore.org/sarif-2.1.0.json",
 		Version: "2.1.0",
 		Runs: []sarifRun{{
 			Tool: sarifTool{Driver: sarifDriver{
 				Name:           "hsmdoctor",
-				Version:        r.Version,
+				Version:        version,
 				InformationURI: "https://github.com/kurtserdar/hsm-doctor",
 				Rules:          []sarifRule{},
 			}},
@@ -29,16 +45,7 @@ func (r *Report) SARIF(w io.Writer) error {
 		}},
 	}
 	run := &log.Runs[0]
-
-	serial := ""
-	if r.Inventory != nil && r.Inventory.Slot.Token != nil {
-		serial = r.Inventory.Slot.Token.SerialNumber
-	}
-
-	findings := append([]policy.Finding{}, r.Findings...)
-	if r.Vendor != nil {
-		findings = append(findings, r.Vendor.Findings...)
-	}
+	serial := sourceID
 
 	ruleIndex := map[string]int{}
 	for _, f := range findings {

@@ -136,3 +136,33 @@ func TestSARIFEmpty(t *testing.T) {
 		t.Error("results should be an empty array, not null")
 	}
 }
+
+// FindingsSARIF is the reusable core other scanners (e.g. KMIP) call directly,
+// qualifying each finding by an arbitrary source identifier.
+func TestFindingsSARIFWithSourceID(t *testing.T) {
+	findings := []policy.Finding{
+		{RuleID: "KMIP-002", Title: "Compromised key still present", Severity: policy.SevCritical,
+			Object: "SymmetricKey aes (id 42)", Detail: "state=Compromised",
+			Remediation: "Destroy the compromised object."},
+	}
+	var buf bytes.Buffer
+	if err := FindingsSARIF(&buf, "9.9", "kms.example.com:5696", findings); err != nil {
+		t.Fatalf("FindingsSARIF: %v", err)
+	}
+	var log sarifLog
+	if err := json.Unmarshal(buf.Bytes(), &log); err != nil {
+		t.Fatalf("not valid JSON: %v", err)
+	}
+	run := log.Runs[0]
+	if run.Tool.Driver.Version != "9.9" || len(run.Tool.Driver.Rules) != 1 || len(run.Results) != 1 {
+		t.Fatalf("unexpected shape: %+v", run)
+	}
+	res := run.Results[0]
+	if res.Level != "error" { // critical -> error
+		t.Errorf("critical should map to error, got %q", res.Level)
+	}
+	// The source identifier qualifies the object's logical location.
+	if len(res.Locations) == 0 || res.Locations[0].LogicalLocations[0].FullyQualifiedName != "kms.example.com:5696/SymmetricKey aes (id 42)" {
+		t.Errorf("source-qualified location wrong: %+v", res.Locations)
+	}
+}

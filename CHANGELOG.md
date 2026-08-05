@@ -5,6 +5,16 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [1.23.0] - 2026-08-05
+
+### Added
+
+- `kmip scan` gains output-pipeline parity with `scan`: `--format sarif` emits
+  SARIF 2.1.0 (each finding qualified by the server endpoint), and `--baseline
+  FILE` / `--baseline-max-drop N` gate CI on a KMIP posture regression using the
+  same detection logic as `scan --baseline`. The SARIF emitter was refactored
+  into a reusable `report.FindingsSARIF` so every scanner emits identical SARIF.
+
 ## [1.22.1] - 2026-08-05
 
 ### Fixed

@@ -153,7 +153,7 @@ report — see the [`scan` report above](#hsm-doctor).
 | `hsmdoctor pqc` | Post-quantum readiness: ML-KEM/ML-DSA/SLH-DSA support matrix, functional probes (full ML-KEM encapsulate/decapsulate), quantum-vulnerable inventory exposure, host OpenSSL check |
 | `hsmdoctor vendor` | Appliance-level health via vendor providers: device, HA, partitions, tamper, backup (SoftHSM stable; Luna/nShield/CloudHSM/gcp/azure-hsm/bouncyhsm experimental) |
 | `hsmdoctor trace` | Flight Recorder call traces: `analyze` leaks/ordering/errors/performance, `coverage` exercised functions, `keys` per-key usage and idle keys |
-| `hsmdoctor kmip` | Diagnose a KMIP key-management server over (mutual) TLS: inventory and security posture (experimental, read-only) |
+| `hsmdoctor kmip` | Diagnose a KMIP key-management server over (mutual) TLS: inventory and security posture, with SARIF output and `--baseline` CI gating like `scan` (experimental, read-only) |
 | `hsmdoctor serve` | Local web interface + REST API with scan history, automatic drift detection, Prometheus metrics and cron-scheduled scans |
 | `hsmdoctor server` | Central fleet server: collects reports pushed by agents, stores history, detects drift, serves the fleet dashboard |
 | `hsmdoctor agent` | Runs where the vendor PKCS#11 client lives; scans on an interval and pushes reports to the central server |
