@@ -18,7 +18,7 @@ func newDoctorCmd() *cobra.Command {
 	var conn connFlags
 	var packNames []string
 	var withTests bool
-	var vendorConfig, format, failOn string
+	var vendorConfig, format, failOn, advisories string
 
 	cmd := &cobra.Command{
 		Use:   "doctor",
@@ -71,6 +71,10 @@ Only object metadata is read; private key material never leaves the HSM.`,
 				}
 			}
 
+			if err := mergeAdvisories(res, rep, inv, advisories); err != nil {
+				return err
+			}
+
 			var tests *funtest.Result
 			if withTests {
 				if tests, err = funtest.Run(client, slot, pin, "sign-verify"); err != nil {
@@ -103,6 +107,7 @@ Only object metadata is read; private key material never leaves the HSM.`,
 	cmd.Flags().StringArrayVar(&packNames, "pack", nil, "policy pack to apply (embedded name or file path; repeatable)")
 	cmd.Flags().BoolVar(&withTests, "with-tests", false, "also run an ephemeral key-generation and signing smoke test")
 	cmd.Flags().StringVar(&vendorConfig, "vendor-config", "", "vendor configuration file enabling appliance-level checks")
+	cmd.Flags().StringVar(&advisories, "advisories", "", "advisory feed file to match firmware/library versions against (default: built-in feed)")
 	cmd.Flags().StringVar(&format, "format", "text", "output format: text or json")
 	cmd.Flags().StringVar(&failOn, "fail-on", "", "exit non-zero when the verdict is at or above this level (attention or critical)")
 	return cmd

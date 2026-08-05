@@ -1,0 +1,43 @@
+# HSM Doctor advisory feed — known-vulnerability entries matched against a
+# token's firmware version and its PKCS#11 library version.
+#
+# IMPORTANT: this shipped feed is a small, ILLUSTRATIVE starter only. The
+# entries below are examples that demonstrate the matching mechanism; they are
+# NOT authoritative vulnerability reports. Operators should supply their own
+# curated, current advisory data (from vendor bulletins and CVE feeds) with:
+#
+#   hsmdoctor scan --advisories /path/to/advisories.yaml
+#
+# Each advisory matches when the component's version is below `fixed_in` (and at
+# or above `introduced_in`, if set), the manufacturer contains `manufacturer`,
+# and the optional `model` substring matches. component is "firmware" (token) or
+# "library" (PKCS#11 module).
+data_version: "2026-08-05 (illustrative starter feed)"
+
+advisories:
+  - id: HSMDOCTOR-ADV-EXAMPLE-0001
+    title: "Example: outdated PKCS#11 library (illustrative, not a real CVE)"
+    severity: info
+    description: >-
+      Illustrative entry demonstrating library-version matching. It is not a
+      real vulnerability report — replace this feed with authoritative advisory
+      data via --advisories.
+    remediation: "Track your vendor's security bulletins and keep the PKCS#11 library current."
+    match:
+      component: library
+      manufacturer: SoftHSM
+      fixed_in: "99.0.0"
+
+  - id: HSMDOCTOR-ADV-EXAMPLE-0002
+    title: "Example: outdated appliance firmware (illustrative, not a real CVE)"
+    severity: info
+    description: >-
+      Illustrative entry demonstrating firmware-version matching by manufacturer
+      and model. It is not a real vulnerability report.
+    remediation: "Apply the vendor's firmware updates on your maintenance schedule."
+    match:
+      component: firmware
+      manufacturer: ExampleVendor
+      model: ExampleHSM
+      introduced_in: "1.0.0"
+      fixed_in: "2.5.0"

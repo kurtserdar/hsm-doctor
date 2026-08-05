@@ -39,6 +39,48 @@ Flags:
       --uri string      RFC 7512 PKCS#11 URI, e.g. "pkcs11:token=PROD?module-path=/usr/lib/libpkcs11.so"
 ```
 
+## hsmdoctor advisories
+
+```
+Prints the advisory feed that scan matches against firmware and PKCS#11
+library versions. The built-in feed is a small, dated, illustrative starter;
+supply your own authoritative feed with --advisories (here and on scan/doctor).
+
+Usage:
+  hsmdoctor advisories [flags]
+
+Flags:
+      --advisories string   advisory feed file to list instead of the built-in one
+  -h, --help                help for advisories
+```
+
+`scan --advisories FILE` and `doctor --advisories FILE` match the token's
+firmware version and the PKCS#11 library version against the feed, folding any
+hits into the findings and health score. An advisory matches when the
+component's version is below `fixed_in` (and at or above `introduced_in`, if
+set), its manufacturer contains the advisory's `manufacturer` substring, and the
+optional `model` substring matches. The **built-in feed is illustrative** — its
+entries demonstrate the mechanism and are not real vulnerability reports; supply
+authoritative vendor/CVE data for production use.
+
+Feed format (YAML):
+
+```yaml
+data_version: "2026-08-05"
+advisories:
+  - id: CVE-2025-XXXXX
+    title: Example firmware issue
+    severity: high            # critical | high | medium | low | info
+    remediation: Upgrade to firmware 7.7.2 or later.
+    reference: https://vendor.example/advisory/123
+    match:
+      component: firmware     # firmware (token) or library (PKCS#11 module)
+      manufacturer: Acme      # case-insensitive substring
+      model: vHSM             # optional substring
+      introduced_in: "7.0.0"  # optional lower bound (inclusive)
+      fixed_in: "7.7.2"       # affected when the version is below this
+```
+
 ## hsmdoctor doctor
 
 ```

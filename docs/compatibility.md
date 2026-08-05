@@ -70,6 +70,12 @@ in output and docs:
   runs a full encapsulate/decapsulate round trip; it reports `KEYGEN ONLY` when
   the module offers no `C_EncapsulateKey` (pre-3.2), and on Windows or non-cgo
   builds, where the round trip is unavailable.
+- **Known-vulnerability advisory feed.** The built-in feed shipped under
+  `internal/advisory` is a small, dated, **illustrative** starter, not an
+  authoritative vulnerability database; its entries and the feed's contents may
+  change at any time. Supply your own data with `--advisories`. The feed's YAML
+  schema (`id`/`severity`/`match`…) aims to be stable, but the shipped data is
+  not an interface.
 - **KMIP diagnostics (`kmip scan`).** A first-pass KMIP 1.x integration
   validated against PyKMIP; its `KMIP-00x` rules, attribute mapping and flags
   may change as it is validated against more servers.

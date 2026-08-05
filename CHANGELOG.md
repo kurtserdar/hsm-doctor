@@ -5,6 +5,19 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [1.25.0] - 2026-08-05
+
+### Added
+
+- Known-vulnerability advisory checks. `scan` and `doctor` now match the token's
+  firmware version and the PKCS#11 library version against a curated advisory
+  feed and fold any hits into the findings and health score; a new `advisories`
+  command lists the feed. The built-in feed is a small, dated, illustrative
+  starter — supply authoritative vendor/CVE data with `--advisories FILE` (a
+  YAML feed with per-advisory `severity` and a `match` on component/manufacturer/
+  model and an affected version range). Version matching is numeric and tolerant
+  of vendor prefixes/suffixes.
+
 ## [1.24.1] - 2026-08-05
 
 ### Fixed

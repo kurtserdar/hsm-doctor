@@ -17,7 +17,7 @@ import (
 
 func newScanCmd() *cobra.Command {
 	var conn connFlags
-	var rulesPath, format, outPath, failOn, vendorConfig, caBundle, baseline string
+	var rulesPath, format, outPath, failOn, vendorConfig, caBundle, baseline, advisories string
 	var packNames []string
 	var baselineMaxDrop int
 
@@ -69,6 +69,10 @@ Only object metadata is read; private key material never leaves the HSM.`,
 				rep.Score = res.Score
 			}
 
+			if err := mergeAdvisories(res, rep, inv, advisories); err != nil {
+				return err
+			}
+
 			out, closeOut, err := openOutput(outPath)
 			if err != nil {
 				return err
@@ -106,6 +110,7 @@ Only object metadata is read; private key material never leaves the HSM.`,
 	cmd.Flags().StringVar(&failOn, "fail-on", "", "exit non-zero if findings at or above this severity exist (critical, high, medium, low)")
 	cmd.Flags().StringVar(&caBundle, "ca-bundle", "", "PEM trust anchors; enables certificate chain validation (HSM-019)")
 	cmd.Flags().StringVar(&vendorConfig, "vendor-config", "", "vendor configuration file enabling appliance-level checks")
+	cmd.Flags().StringVar(&advisories, "advisories", "", "advisory feed file to match firmware/library versions against (default: built-in feed)")
 	cmd.Flags().StringVar(&baseline, "baseline", "", "compare against a saved JSON report (from --format json) and exit non-zero on posture regression")
 	cmd.Flags().IntVar(&baselineMaxDrop, "baseline-max-drop", regression.DefaultScoreDropThreshold, "health-score drop that counts as a regression for --baseline")
 	return cmd

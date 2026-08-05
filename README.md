@@ -45,6 +45,10 @@ list of posture findings.*
   and `cnsa-2.0`), producing a health score with **actionable remediation** on
   every finding, and text/JSON/HTML/**SARIF** reports (upload findings to
   GitHub code scanning).
+- **Known-vulnerability advisories** — `scan` matches the token's firmware
+  version and its PKCS#11 library version against a curated, dated advisory feed
+  and folds any hits into the score. The built-in feed is a small illustrative
+  starter; supply authoritative vendor/CVE data with `--advisories FILE`.
 - **Compliance evidence reports** — `evidence --pack fips-140-3` turns a pack
   into an **auditor-facing report**: every control marked pass / fail /
   not-applicable, with the objects behind each failure, as single-file HTML or
@@ -158,6 +162,7 @@ report — see the [`scan` report above](#hsm-doctor).
 | `hsmdoctor server` | Central fleet server: collects reports pushed by agents, stores history, detects drift, serves the fleet dashboard |
 | `hsmdoctor agent` | Runs where the vendor PKCS#11 client lives; scans on an interval and pushes reports to the central server |
 | `hsmdoctor packs` | List the built-in policy packs and their rule counts |
+| `hsmdoctor advisories` | List the known-vulnerability advisory feed that `scan` matches firmware/library versions against |
 | `hsmdoctor version` | Print the version and build commit |
 
 Tokens can be addressed classically (`--module` + `--slot`) or with an
