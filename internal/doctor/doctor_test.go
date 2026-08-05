@@ -12,6 +12,7 @@ import (
 	"github.com/kurtserdar/hsm-doctor/internal/policy"
 	"github.com/kurtserdar/hsm-doctor/internal/pqc"
 	"github.com/kurtserdar/hsm-doctor/internal/report"
+	vendor "github.com/kurtserdar/hsm-doctor/internal/vendors"
 )
 
 func mkReport(score int, hndl int, findings ...policy.Finding) *report.Report {
@@ -66,6 +67,33 @@ func TestFunctionalFailureIsCritical(t *testing.T) {
 	}
 	if !checkRan(d, "functional") {
 		t.Error("functional check should be marked as run")
+	}
+}
+
+func TestVendorFindingsReachTheDiagnosis(t *testing.T) {
+	// A critical vendor finding (e.g. tamper) lives on report.Vendor, not in
+	// report.Findings. The diagnosis must still surface it and escalate.
+	rep := mkReport(100, 0) // no posture findings, perfect score
+	rep.Vendor = &vendor.Info{
+		Provider: "luna",
+		Findings: []policy.Finding{
+			{RuleID: "LUNA-001", Title: "Tamper condition", Severity: policy.SevCritical,
+				Object: "device", Remediation: "Investigate the tamper event."},
+		},
+	}
+	d := Build("t", Input{Report: rep, VendorRan: true})
+
+	if d.Verdict != VerdictCritical {
+		t.Errorf("a critical vendor finding must make the verdict critical, got %s", d.Verdict)
+	}
+	var found bool
+	for _, i := range d.Issues {
+		if i.Source == "vendor" && i.Title == "Tamper condition" {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("vendor finding missing from the diagnosis issues: %+v", d.Issues)
 	}
 }
 

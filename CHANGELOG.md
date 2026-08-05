@@ -5,6 +5,16 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [1.25.1] - 2026-08-05
+
+### Fixed
+
+- `doctor` now includes vendor findings (tamper, HA, disk) in its diagnosis and
+  verdict. They live on the report's vendor section rather than the main
+  findings list, so the aggregation was skipping them — a critical appliance
+  condition such as a tamper event could be left out of the diagnosis and
+  understate the verdict.
+
 ## [1.25.0] - 2026-08-05
 
 ### Added

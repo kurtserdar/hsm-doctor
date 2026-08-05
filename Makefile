@@ -1,6 +1,6 @@
 BINARY  := hsmdoctor
 MODULE  := github.com/kurtserdar/hsm-doctor
-VERSION ?= 1.25.0
+VERSION ?= 1.25.1
 COMMIT  ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
 LDFLAGS := -X $(MODULE)/internal/version.Version=$(VERSION) \
            -X $(MODULE)/internal/version.Commit=$(COMMIT)

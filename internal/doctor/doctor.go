@@ -35,7 +35,7 @@ func (v Verdict) Rank() int {
 // Issue is one prioritized problem found across the checks.
 type Issue struct {
 	Severity policy.Severity `json:"severity"`
-	Source   string          `json:"source"` // posture | pqc | functional
+	Source   string          `json:"source"` // posture | vendor | pqc | functional
 	Title    string          `json:"title"`
 	Detail   string          `json:"detail,omitempty"`
 	Action   string          `json:"action,omitempty"`
@@ -87,7 +87,7 @@ func Build(version string, in Input) *Report {
 
 	var issues []Issue
 
-	// Posture (and merged vendor) findings.
+	// Posture (and advisory) findings.
 	if in.Report != nil {
 		for _, f := range in.Report.Findings {
 			issues = append(issues, Issue{
@@ -97,6 +97,21 @@ func Build(version string, in Input) *Report {
 				Detail:   findingDetail(f),
 				Action:   f.Remediation,
 			})
+		}
+		// Vendor findings live on the report's Vendor section, not in
+		// Findings (report.New captured Findings before the vendor merge), so
+		// collect them separately — otherwise the diagnosis would miss
+		// appliance issues such as a tamper condition or a degraded HA group.
+		if in.Report.Vendor != nil {
+			for _, f := range in.Report.Vendor.Findings {
+				issues = append(issues, Issue{
+					Severity: f.Severity,
+					Source:   "vendor",
+					Title:    f.Title,
+					Detail:   findingDetail(f),
+					Action:   f.Remediation,
+				})
+			}
 		}
 	}
 
