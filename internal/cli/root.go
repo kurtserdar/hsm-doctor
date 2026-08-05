@@ -29,6 +29,11 @@ through the standard PKCS#11 interface.`,
 	SilenceErrors: true,
 }
 
+// RootCmd returns the assembled command tree. It exists so documentation
+// generators (man pages, completions) can walk the commands without linking
+// their heavier dependencies into the main binary.
+func RootCmd() *cobra.Command { return rootCmd }
+
 // Execute runs the root command and exits with a non-zero status on error.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {

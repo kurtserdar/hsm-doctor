@@ -85,7 +85,10 @@ jobs:
           TAG="${{ steps.tag.outputs.tag }}"
           NAME="hsmdoctor_${TAG#v}_${{ matrix.os }}_${{ matrix.arch }}"
           mkdir "$NAME"
+          # Shell completions and man pages, generated from the command tree.
+          go run ./cmd/gendocs "$NAME/docs"
           if [ "${{ matrix.os }}" = "windows" ]; then
+            rm -rf "$NAME/docs/man"   # man pages are not used on Windows
             cp hsmdoctor.exe LICENSE README.md "$NAME/"
             7z a "$NAME.zip" "$NAME" > /dev/null
           else

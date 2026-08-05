@@ -5,6 +5,17 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [1.26.0] - 2026-08-05
+
+### Added
+
+- Shell completions and man pages. `hsmdoctor completion bash|zsh|fish` was
+  always available; the release archives now also bundle generated completions
+  (`docs/completions/`) and man pages (`docs/man/`), and `make docs` produces
+  them from a source checkout. Generation is driven by the command tree via a
+  new `cmd/gendocs` build-time tool, so the docs stay in sync with the CLI (the
+  man-page dependency is isolated to that tool and not linked into the binary).
+
 ## [1.25.1] - 2026-08-05
 
 ### Fixed

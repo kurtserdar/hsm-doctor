@@ -1,13 +1,16 @@
 BINARY  := hsmdoctor
 MODULE  := github.com/kurtserdar/hsm-doctor
-VERSION ?= 1.25.1
+VERSION ?= 1.26.0
 COMMIT  ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
 LDFLAGS := -X $(MODULE)/internal/version.Version=$(VERSION) \
            -X $(MODULE)/internal/version.Commit=$(COMMIT)
 
 SHIM := hsmdoctor-trace.so
 
-.PHONY: build shim ui test integration vet fmt clean
+.PHONY: build shim ui docs test integration vet fmt clean
+
+# Output directory for generated shell completions and man pages.
+DOCS_DIR ?= dist/docs
 
 build:
 	go build -ldflags "$(LDFLAGS)" -o $(BINARY) ./cmd/hsmdoctor
@@ -20,6 +23,10 @@ shim:
 # Run "make ui build" to produce a binary with the embedded UI.
 ui:
 	cd web && npm install && npm run build
+
+# Generates shell completions and man pages into $(DOCS_DIR).
+docs:
+	go run ./cmd/gendocs $(DOCS_DIR)
 
 test:
 	go test ./...

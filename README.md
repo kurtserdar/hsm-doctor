@@ -193,6 +193,21 @@ or
 go install github.com/kurtserdar/hsm-doctor/cmd/hsmdoctor@latest
 ```
 
+### Shell completions and man pages
+
+The release archives bundle shell completions (`docs/completions/`) and man
+pages (`docs/man/`). Generate them from a source checkout with `make docs`.
+
+```sh
+# Completions (bash shown; zsh and fish also supported)
+hsmdoctor completion bash > /etc/bash_completion.d/hsmdoctor   # or source it in ~/.bashrc
+hsmdoctor completion zsh  > "${fpath[1]}/_hsmdoctor"
+hsmdoctor completion fish > ~/.config/fish/completions/hsmdoctor.fish
+
+# Man pages (from a release archive or `make docs`)
+sudo cp docs/man/*.1 /usr/local/share/man/man1/ && man hsmdoctor
+```
+
 ### Docker
 
 A container image is published on GHCR with SoftHSM2 and OpenSC baked in, so
