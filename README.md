@@ -178,12 +178,14 @@ hsmdoctor scan --uri "pkcs11:token=PROD-PARTITION?module-path=/usr/lib/libCrypto
 
 ```sh
 brew tap kurtserdar/tap
+brew trust kurtserdar/tap    # recent Homebrew requires trusting third-party taps
 brew install hsm-doctor
 ```
 
 This installs the pre-built binary (no cgo build) along with shell completions
 and man pages. The [tap](https://github.com/kurtserdar/homebrew-tap) tracks
-each release automatically.
+each release automatically. (`brew trust` is a one-time, per-tap step that
+current Homebrew requires for any third-party tap.)
 
 ### Pre-built binaries
 
