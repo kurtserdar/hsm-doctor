@@ -10,6 +10,7 @@ import (
 	"github.com/kurtserdar/hsm-doctor/internal/inventory"
 	"github.com/kurtserdar/hsm-doctor/internal/p11"
 	"github.com/kurtserdar/hsm-doctor/internal/policy"
+	vendor "github.com/kurtserdar/hsm-doctor/internal/vendors"
 )
 
 func b(v bool) *bool { return &v }
@@ -118,5 +119,36 @@ func TestHTMLReport(t *testing.T) {
 	}
 	if !strings.Contains(buf.String(), "no login") {
 		t.Error("HTML report should warn about missing login")
+	}
+}
+
+// Vendor findings count toward the score, so text and HTML must display them
+// (they live on the vendor section, not the main findings list).
+func TestVendorFindingsAreRendered(t *testing.T) {
+	rep := sampleReport()
+	rep.Vendor = &vendor.Info{
+		Provider: "softhsm",
+		Findings: []policy.Finding{
+			{RuleID: "SOFTHSM-002", Title: "Token store is world-accessible",
+				Severity: policy.SevMedium, Detail: "mode 0755", Remediation: "restrict it"},
+		},
+	}
+
+	var txt bytes.Buffer
+	if err := rep.Text(&txt); err != nil {
+		t.Fatalf("Text: %v", err)
+	}
+	for _, want := range []string{"SOFTHSM-002", "world-accessible", "restrict it"} {
+		if !strings.Contains(txt.String(), want) {
+			t.Errorf("text vendor section missing %q", want)
+		}
+	}
+
+	var html bytes.Buffer
+	if err := rep.HTML(&html); err != nil {
+		t.Fatalf("HTML: %v", err)
+	}
+	if !strings.Contains(html.String(), "SOFTHSM-002") {
+		t.Error("HTML vendor section missing the finding")
 	}
 }

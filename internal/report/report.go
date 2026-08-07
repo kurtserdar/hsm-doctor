@@ -157,6 +157,20 @@ func (r *Report) Text(w io.Writer) error {
 		if len(v.Partitions) > 0 {
 			fmt.Fprintf(w, "  Partitions:     %d\n", len(v.Partitions))
 		}
+		// Vendor findings count toward the score, so they must be shown here —
+		// they are not part of the main findings list above.
+		if len(v.Findings) > 0 {
+			fmt.Fprintln(w, "  Findings:")
+			for _, f := range v.Findings {
+				fmt.Fprintf(w, "    [%s] %s (%s)\n", f.RuleID, f.Title, f.Severity)
+				if f.Detail != "" {
+					fmt.Fprintf(w, "        %s\n", f.Detail)
+				}
+				if f.Remediation != "" {
+					fmt.Fprintf(w, "        fix: %s\n", f.Remediation)
+				}
+			}
+		}
 	}
 
 	if p := r.PQC; p != nil {

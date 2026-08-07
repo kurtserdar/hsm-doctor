@@ -5,6 +5,16 @@ All notable changes to HSM Doctor are documented here. The format is based on
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 under the guarantees in [docs/compatibility.md](docs/compatibility.md).
 
+## [1.27.2] - 2026-08-07
+
+### Fixed
+
+- `scan` text and HTML reports now display vendor findings (e.g. a
+  world-accessible SoftHSM token store). They count toward the health score but
+  were only summarised as device/HA/tamper stats, so the score could drop with
+  no visible reason. The vendor section now lists each finding with its detail
+  and fix.
+
 ## [1.27.1] - 2026-08-05
 
 ### Added

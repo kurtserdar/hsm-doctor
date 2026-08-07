@@ -144,6 +144,18 @@
       {{if .Partitions}}<div><dt>Partitions</dt><dd>{{len .Partitions}}</dd></div>{{end}}
       {{if .HA}}<div><dt>HA members</dt><dd>{{len .HA.Members}}</dd></div>{{end}}
     </dl>
+    {{if .Findings}}
+    <div class="tablebox"><table><tbody>
+      {{range .Findings}}
+      <tr>
+        <td><span class="badge {{.Severity}}">{{.Severity}}</span></td>
+        <td><code>{{.RuleID}}</code> {{.Title}}
+          {{if .Detail}}<div class="muted">{{.Detail}}</div>{{end}}
+          {{if .Remediation}}<div class="fix">{{.Remediation}}</div>{{end}}</td>
+      </tr>
+      {{end}}
+    </tbody></table></div>
+    {{end}}
     {{if .Experimental}}<p class="muted" style="font-size:.8rem;margin-bottom:0">Experimental provider — not validated on real hardware.</p>{{end}}
   </div>
   {{end}}
