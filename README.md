@@ -432,9 +432,29 @@ persisted to SQLite, consecutive scans are diffed automatically, and
 `/metrics` exposes Prometheus gauges per HSM. Everything is also available
 as a JSON API under `/api/v1` — see [docs/api.md](docs/api.md).
 
-Optional hardening: `--auth-config` (bearer tokens with admin/viewer
-roles), `--tls-cert`/`--tls-key`, `--webhook-url` for drift notifications
-and `--schedule "0 */6 * * *"` for automatic scans.
+### Viewing it from another machine
+
+The server binds to loopback (`127.0.0.1`) by default, so it is reachable only
+from the machine it runs on — deliberately, because the local UI is
+unauthenticated and the process holds the token PIN in memory. To view it from
+your laptop, forward the port over SSH (encrypted, nothing exposed to the
+network):
+
+```sh
+ssh -L 8080:localhost:8080 user@server     # then open http://localhost:8080 locally
+```
+
+Only if you must expose it directly, add authentication and TLS rather than
+serving it in the clear:
+
+```sh
+hsmdoctor serve --module … --pin-env HSM_PIN \
+  --listen 0.0.0.0:8080 --auth-config auth.yaml --tls-cert tls.crt --tls-key tls.key
+```
+
+Other options: `--auth-config` (bearer tokens with admin/viewer roles),
+`--webhook-url` for drift notifications and `--schedule "0 */6 * * *"` for
+automatic scans.
 
 ## PKCS#11 Flight Recorder
 
