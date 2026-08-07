@@ -258,20 +258,43 @@ with cosign.
 For a multi-vendor fleet, a ready-to-run central-server stack (PostgreSQL +
 fleet server) with a step-by-step guide lives in [deploy/](deploy/).
 
-## Quick start (with SoftHSM)
+## Quick start
 
-No HSM at hand? SoftHSM works out of the box:
+**If you have an HSM** — point `--module` at your vendor's PKCS#11 library.
+That's the whole thing; no other setup:
 
 ```sh
-sudo apt-get install softhsm2
-softhsm2-util --init-token --free --label DEMO --so-pin 12345678 --pin 123456
-
-# discover slots and tokens
-hsmdoctor discover --module /usr/lib/softhsm/libsofthsm2.so
-
-# full scan: inventory + posture + health score
-hsmdoctor scan --module /usr/lib/softhsm/libsofthsm2.so --slot <SLOT-ID> --pin-env HSM_PIN
+export HSM_PIN=******                       # your token's user PIN
+hsmdoctor scan --module /path/to/vendor-pkcs11.so --pin-env HSM_PIN
 ```
+
+**No hardware? Try it with SoftHSM.** Copy-paste this whole block — it sets up a
+throwaway token, adds one (deliberately weak) key, and scans it. You don't need
+to understand the setup lines; they just create an isolated demo store that
+needs no root:
+
+```sh
+sudo apt-get install -y softhsm2 opensc
+
+# throwaway, isolated token store (nothing system-wide is touched)
+export SOFTHSM2_CONF="$(mktemp -d)/softhsm.conf"
+mkdir -p "$(dirname "$SOFTHSM2_CONF")/tokens"
+echo "directories.tokendir = $(dirname "$SOFTHSM2_CONF")/tokens" > "$SOFTHSM2_CONF"
+MOD=/usr/lib/softhsm/libsofthsm2.so
+
+# create a token and a weak RSA-1024 key (so the scan has something to flag)
+softhsm2-util --init-token --free --label DEMO --so-pin 12345678 --pin 123456
+pkcs11-tool --module "$MOD" --token-label DEMO --login --pin 123456 \
+  --keypairgen --key-type rsa:1024 --label demo-key --id 01
+
+# scan it — no slot IDs to look up, the token label is enough
+hsmdoctor scan   --uri "pkcs11:token=DEMO?module-path=$MOD" --pin 123456
+hsmdoctor doctor --uri "pkcs11:token=DEMO?module-path=$MOD" --pin 123456
+```
+
+> The `SOFTHSM2_CONF` export lasts for the current terminal only; re-run it in a
+> new shell. `--pin` on the command line is fine for a demo; use `--pin-env` in
+> production so the PIN stays out of your shell history.
 
 Example scan output:
 
