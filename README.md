@@ -174,6 +174,16 @@ hsmdoctor scan --uri "pkcs11:token=PROD-PARTITION?module-path=/usr/lib/libCrypto
 
 ## Install
 
+### One-line install (Linux / macOS)
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/kurtserdar/hsm-doctor/main/install.sh | sh
+```
+
+Downloads the latest release binary for your OS/architecture and installs it to
+`/usr/local/bin` (uses `sudo` if needed). For a no-sudo install into your home
+directory: `… | PREFIX="$HOME/.local/bin" sh`.
+
 ### Homebrew (macOS / Linux)
 
 ```sh
